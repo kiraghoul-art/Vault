@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KIRA — Portfolio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="grain"></div>
+
+<nav>
+  <div class="nav-logo">K<span>ira</span></div>
+  <div class="nav-links">
+    <button class="active" data-page="home">Home</button>
+    <button data-page="shorts">Shorts</button>
+    <button data-page="vault">Vault</button>
+    <button data-page="settings">Setup</button>
+  </div>
+  <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu">&#9776;</button>
+</nav>
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="hero">
+    <div class="hero-label">Portfolio &amp; Archive</div>
+    <h1>Kira<br><em>creates.</em></h1>
+    <p class="hero-sub">Short-form content, ideas, and a private vault — all in one place.</p>
+    <div class="hero-cta">
+      <button class="btn-primary" data-goto="shorts">View Shorts</button>
+      <button class="btn-ghost" data-goto="vault">Open Vault</button>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-num" id="stat-shorts">0</span>
+        <span class="stat-label">Shorts</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num" id="stat-items">0</span>
+        <span class="stat-label">Vault Items</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-num" id="stat-tags">0</span>
+        <span class="stat-label">Tags</span>
+      </div>
+    </div>
+  </div>
+  <div class="marquee-strip">
+    <div class="marquee-inner" id="marquee-inner"></div>
+  </div>
+</div>
+
+<!-- SHORTS -->
+<div class="page" id="page-shorts">
+  <div class="section-header">
+    <div>
+      <h2>Shorts</h2>
+      <p>Your video portfolio</p>
+    </div>
+  </div>
+  <div class="filter-bar" id="filter-bar">
+    <button class="filter-btn active" data-filter="all">All</button>
+  </div>
+  <div class="shorts-grid" id="shorts-grid"></div>
+  <button class="add-short-btn" id="btn-add-short">+ Add Short</button>
+</div>
+
+<!-- VAULT -->
+<div class="page" id="page-vault">
+  <div class="vault-layout">
+    <div class="vault-sidebar">
+      <div class="vault-sidebar-title">Categories</div>
+      <div class="vault-cat active" data-vault-filter="all"><span class="vault-cat-icon">▦</span> All</div>
+      <div class="vault-cat" data-vault-filter="link"><span class="vault-cat-icon">⊞</span> Links</div>
+      <div class="vault-cat" data-vault-filter="note"><span class="vault-cat-icon">≡</span> Notes</div>
+      <div class="vault-cat" data-vault-filter="file"><span class="vault-cat-icon">◫</span> Files</div>
+      <div class="vault-cat" data-vault-filter="idea"><span class="vault-cat-icon">◇</span> Ideas</div>
+      <div class="vault-divider"></div>
+      <div id="tag-sidebar"></div>
+      <div class="vault-divider"></div>
+      <div class="discord-status">
+        <div class="discord-dot off" id="discord-dot"></div>
+        <span id="discord-label">Discord: not configured</span>
+      </div>
+    </div>
+    <div class="vault-main">
+      <div class="vault-topbar">
+        <input class="vault-search" placeholder="Search vault…" id="vault-search-input">
+        <button class="vault-add-btn" id="btn-add-vault">+ New Item</button>
+      </div>
+      <div class="vault-cards" id="vault-cards"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="page" id="page-settings">
+  <div class="settings-layout">
+
+    <div class="settings-section">
+      <h3>How it works</h3>
+      <p>The site runs on GitHub Pages (static). To talk to Discord, a small <strong>Cloudflare Worker</strong> acts as a secure proxy — your bot token lives there, never in the browser.</p>
+      <div class="step-guide">
+        <div class="step"><div class="step-num">1</div><div class="step-content">Go to <a href="https://discord.com/developers/applications" target="_blank" class="link">discord.com/developers/applications</a> → create an app → under <strong>Bot</strong>, enable it and copy the token.</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-content">In Discord → Settings → <strong>Advanced</strong> → enable <strong>Developer Mode</strong>. Then right-click each channel → <strong>Copy Channel ID</strong>.</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-content">Deploy the Cloudflare Worker from the <code class="code-inline">/worker</code> folder (see <code class="code-inline">DEPLOY.md</code>). Set <code class="code-inline">DISCORD_TOKEN</code> and <code class="code-inline">ALLOWED_ORIGIN</code> as environment variables.</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-content">Paste your Worker URL and channel IDs below. These are stored in <code class="code-inline">localStorage</code> — never sent anywhere except your own Worker.</div></div>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Cloudflare Worker</h3>
+      <p>The URL of your deployed Worker, e.g. <code class="code-inline">https://kira-discord-proxy.yourname.workers.dev</code></p>
+      <div class="field-group">
+        <label class="field-label">Worker URL</label>
+        <input class="field-input" type="url" id="cfg-worker" placeholder="https://kira-discord-proxy.yourname.workers.dev">
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Channel IDs</h3>
+      <p>Right-click each channel in Discord (with Developer Mode on) → Copy ID.</p>
+      <div class="field-group">
+        <label class="field-label">Links Channel ID</label>
+        <input class="field-input" type="text" id="cfg-ch-links" placeholder="e.g. 1493193077765181550">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Notes Channel ID</label>
+        <input class="field-input" type="text" id="cfg-ch-notes" placeholder="e.g. 1493193123336028170">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Files Channel ID</label>
+        <input class="field-input" type="text" id="cfg-ch-files" placeholder="e.g. 1493193181544845454">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Ideas Channel ID</label>
+        <input class="field-input" type="text" id="cfg-ch-ideas" placeholder="e.g. 1493193239551934515">
+      </div>
+      <button class="test-btn" id="btn-test-connection">Test Connection</button>
+      <div class="connection-result" id="connection-result"></div>
+      <br><br>
+      <button class="settings-save" id="btn-save-config">Save Configuration</button>
+    </div>
+
+    <div class="settings-section">
+      <h3>Profile</h3>
+      <div class="field-group">
+        <label class="field-label">Display Name</label>
+        <input class="field-input" type="text" id="cfg-name" placeholder="Kira">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Tagline</label>
+        <input class="field-input" type="text" id="cfg-tagline" placeholder="Short-form content creator">
+      </div>
+      <button class="settings-save" id="btn-save-profile">Save Profile</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ADD SHORT MODAL -->
+<div class="modal-backdrop" id="modal-short">
+  <div class="modal">
+    <div class="modal-title">Add Short</div>
+    <div class="field-group">
+      <label class="field-label">Title</label>
+      <input class="field-input" type="text" id="short-title" placeholder="Short title…">
+    </div>
+    <div class="field-group">
+      <label class="field-label">URL (YouTube / TikTok / Instagram)</label>
+      <input class="field-input" type="url" id="short-url" placeholder="https://…">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Category</label>
+      <input class="field-input" type="text" id="short-cat" placeholder="e.g. Tech, Vlog, Comedy…">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Views (optional)</label>
+      <input class="field-input" type="text" id="short-views" placeholder="e.g. 12.4K">
+    </div>
+    <div class="saving-indicator" id="short-saving">Saving to Discord…</div>
+    <div class="modal-footer">
+      <button class="modal-cancel" data-close="modal-short">Cancel</button>
+      <button class="btn-primary" id="btn-confirm-short">Add Short</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD VAULT MODAL -->
+<div class="modal-backdrop" id="modal-vault">
+  <div class="modal">
+    <div class="modal-title">New Vault Item</div>
+    <div class="type-select">
+      <button class="type-opt active" data-type="link">Link</button>
+      <button class="type-opt" data-type="note">Note</button>
+      <button class="type-opt" data-type="idea">Idea</button>
+      <button class="type-opt" data-type="file">File Ref</button>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Title</label>
+      <input class="field-input" type="text" id="vault-title" placeholder="Title…">
+    </div>
+    <div class="field-group" id="vault-url-group">
+      <label class="field-label">URL</label>
+      <input class="field-input" type="url" id="vault-url" placeholder="https://…">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Content / Notes</label>
+      <textarea class="field-input" id="vault-content" rows="3" placeholder="Description, notes…"></textarea>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Tags (comma-separated)</label>
+      <input class="field-input" type="text" id="vault-tags" placeholder="e.g. dev, resources, inspo">
+    </div>
+    <div class="saving-indicator" id="vault-saving">Saving to Discord…</div>
+    <div class="modal-footer">
+      <button class="modal-cancel" data-close="modal-vault">Cancel</button>
+      <button class="btn-primary" id="btn-confirm-vault">Save to Vault</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
