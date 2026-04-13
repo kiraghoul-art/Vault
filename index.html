@@ -145,6 +145,32 @@
     </div>
 
     <div class="settings-section">
+      <h3>Cloud Config — any device, one password</h3>
+      <p>Save your entire configuration encrypted to a private Discord channel. On any new device, just enter the channel ID and your password to restore everything instantly.</p>
+      <div class="step-guide">
+        <div class="step"><div class="step-num">1</div><div class="step-content">Create a private channel in Discord, e.g. <code class="code-inline">#vault-config</code> — only you and the bot should have access.</div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-content">Copy its ID (Developer Mode → right-click → Copy ID) and paste below.</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-content">Choose a strong password. Your config is <strong>AES-256 encrypted</strong> before being stored — even if someone reads the channel they can't decrypt it.</div></div>
+        <div class="step"><div class="step-num">4</div><div class="step-content">On a new device: enter the Worker URL, Config Channel ID, and password → click <strong>Load from Discord</strong>.</div></div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Config Channel ID</label>
+        <input class="field-input" type="text" id="cfg-ch-config" placeholder="e.g. 1234567890123456789">
+        <div class="field-hint">A private channel only you and the bot can see</div>
+      </div>
+      <div class="field-group">
+        <label class="field-label">Password</label>
+        <input class="field-input" type="password" id="cfg-password" placeholder="Your encryption password">
+        <div class="field-hint">Never stored anywhere — used only to encrypt/decrypt locally</div>
+      </div>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.5rem;">
+        <button class="settings-save" id="btn-cloud-save">Save to Discord</button>
+        <button class="test-btn" id="btn-cloud-load">Load from Discord</button>
+      </div>
+      <div class="connection-result" id="cloud-result"></div>
+    </div>
+
+    <div class="settings-section">
       <h3>Profile</h3>
       <div class="field-group">
         <label class="field-label">Display Name</label>
