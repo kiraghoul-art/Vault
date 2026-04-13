@@ -393,3 +393,34 @@ textarea.field-input { resize: vertical; }
 .btn-logout:hover { border-color: #e87070; color: #e87070; }
 
 .field-hint { font-family: var(--mono); font-size: 0.62rem; color: var(--muted); margin-top: 0.4rem; line-height: 1.5; }
+
+/* ── LOGIN / SETUP SCREENS ── */
+#login-screen, #setup-screen {
+  position: fixed; inset: 0; background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 500; padding: 1.5rem;
+}
+.login-box, .setup-box {
+  width: 100%; max-width: 400px;
+  background: var(--surface); border: 0.5px solid var(--border2);
+  padding: 2.5rem 2rem;
+}
+.setup-box { max-width: 480px; }
+.setup-header { margin-bottom: 1.5rem; }
+.login-logo { font-family: var(--serif); font-size: 2rem; font-weight: 600; letter-spacing: 0.08em; color: var(--text); margin-bottom: 0.4rem; }
+.login-logo span { color: var(--accent); font-style: italic; }
+.login-sub { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 1.75rem; }
+.setup-header .login-sub { margin-bottom: 0; }
+.login-hint { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); margin-top: 1rem; text-align: center; line-height: 1.5; }
+.login-result { font-family: var(--mono); font-size: 0.72rem; padding: 0.6rem 0.9rem; margin-top: 0.75rem; display: none; border: 0.5px solid var(--border); }
+.login-result.ok  { display: block; color: #23d18b; border-color: rgba(35,209,139,0.3); background: rgba(35,209,139,0.06); }
+.login-result.err { display: block; color: #e87070; border-color: rgba(232,112,112,0.3); background: rgba(232,112,112,0.06); }
+
+/* ── LOGOUT ── */
+.btn-logout {
+  background: none; border: 0.5px solid var(--border); color: var(--muted);
+  width: 28px; height: 28px; cursor: pointer; font-size: 0.85rem;
+  display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+}
+.btn-logout:hover { border-color: #e87070; color: #e87070; }
+.field-hint { font-family: var(--mono); font-size: 0.62rem; color: var(--muted); margin-top: 0.4rem; line-height: 1.5; }
