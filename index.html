@@ -11,6 +11,40 @@
 <body>
 <div class="grain"></div>
 
+<!-- ── LOGIN SCREEN ── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">K<span>ira</span></div>
+    <p class="login-sub">Enter your credentials to continue</p>
+    <div class="field-group">
+      <label class="field-label">Worker URL</label>
+      <input class="field-input" type="url" id="login-worker" placeholder="https://kira-discord-proxy.yourname.workers.dev">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Auth Channel ID</label>
+      <input class="field-input" type="text" id="login-auth-ch" placeholder="Your #vault-auth channel ID">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Config Channel ID</label>
+      <input class="field-input" type="text" id="login-cfg-ch" placeholder="Your #vault-config channel ID">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Username</label>
+      <input class="field-input" type="text" id="login-user" placeholder="Kira_Ghoul">
+    </div>
+    <div class="field-group">
+      <label class="field-label">Password</label>
+      <input class="field-input" type="password" id="login-pass" placeholder="••••••••">
+    </div>
+    <div class="login-result" id="login-result"></div>
+    <button class="btn-primary" id="btn-login" style="width:100%;margin-top:1rem;">Enter</button>
+    <p class="login-hint">Session ends when you close this tab. Nothing is stored locally.</p>
+  </div>
+</div>
+
+<!-- ── MAIN APP ── -->
+<div id="app" style="display:none">
+
 <nav>
   <div class="nav-logo">K<span>ira</span></div>
   <div class="nav-links">
@@ -19,7 +53,10 @@
     <button data-page="vault">Vault</button>
     <button data-page="settings">Setup</button>
   </div>
-  <button class="nav-hamburger" id="nav-hamburger" aria-label="Menu">&#9776;</button>
+  <div style="display:flex;align-items:center;gap:1rem;">
+    <button class="nav-hamburger" id="nav-hamburger">&#9776;</button>
+    <button class="btn-logout" id="btn-logout" title="Logout">&#x23FB;</button>
+  </div>
 </nav>
 
 <!-- HOME -->
@@ -33,32 +70,18 @@
       <button class="btn-ghost" data-goto="vault">Open Vault</button>
     </div>
     <div class="stats-bar">
-      <div class="stat-item">
-        <span class="stat-num" id="stat-shorts">0</span>
-        <span class="stat-label">Shorts</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-num" id="stat-items">0</span>
-        <span class="stat-label">Vault Items</span>
-      </div>
-      <div class="stat-item">
-        <span class="stat-num" id="stat-tags">0</span>
-        <span class="stat-label">Tags</span>
-      </div>
+      <div class="stat-item"><span class="stat-num" id="stat-shorts">0</span><span class="stat-label">Shorts</span></div>
+      <div class="stat-item"><span class="stat-num" id="stat-items">0</span><span class="stat-label">Vault Items</span></div>
+      <div class="stat-item"><span class="stat-num" id="stat-tags">0</span><span class="stat-label">Tags</span></div>
     </div>
   </div>
-  <div class="marquee-strip">
-    <div class="marquee-inner" id="marquee-inner"></div>
-  </div>
+  <div class="marquee-strip"><div class="marquee-inner" id="marquee-inner"></div></div>
 </div>
 
 <!-- SHORTS -->
 <div class="page" id="page-shorts">
   <div class="section-header">
-    <div>
-      <h2>Shorts</h2>
-      <p>Your video portfolio</p>
-    </div>
+    <div><h2>Shorts</h2><p>Your video portfolio</p></div>
   </div>
   <div class="filter-bar" id="filter-bar">
     <button class="filter-btn active" data-filter="all">All</button>
@@ -81,8 +104,8 @@
       <div id="tag-sidebar"></div>
       <div class="vault-divider"></div>
       <div class="discord-status">
-        <div class="discord-dot off" id="discord-dot"></div>
-        <span id="discord-label">Discord: not configured</span>
+        <div class="discord-dot" id="discord-dot"></div>
+        <span id="discord-label">Discord: connected</span>
       </div>
     </div>
     <div class="vault-main">
@@ -100,74 +123,32 @@
   <div class="settings-layout">
 
     <div class="settings-section">
-      <h3>How it works</h3>
-      <p>The site runs on GitHub Pages (static). To talk to Discord, a small <strong>Cloudflare Worker</strong> acts as a secure proxy — your bot token lives there, never in the browser.</p>
-      <div class="step-guide">
-        <div class="step"><div class="step-num">1</div><div class="step-content">Go to <a href="https://discord.com/developers/applications" target="_blank" class="link">discord.com/developers/applications</a> → create an app → under <strong>Bot</strong>, enable it and copy the token.</div></div>
-        <div class="step"><div class="step-num">2</div><div class="step-content">In Discord → Settings → <strong>Advanced</strong> → enable <strong>Developer Mode</strong>. Then right-click each channel → <strong>Copy Channel ID</strong>.</div></div>
-        <div class="step"><div class="step-num">3</div><div class="step-content">Deploy the Cloudflare Worker from the <code class="code-inline">/worker</code> folder (see <code class="code-inline">DEPLOY.md</code>). Set <code class="code-inline">DISCORD_TOKEN</code> and <code class="code-inline">ALLOWED_ORIGIN</code> as environment variables.</div></div>
-        <div class="step"><div class="step-num">4</div><div class="step-content">Paste your Worker URL and channel IDs below. These are stored in <code class="code-inline">localStorage</code> — never sent anywhere except your own Worker.</div></div>
-      </div>
-    </div>
-
-    <div class="settings-section">
-      <h3>Cloudflare Worker</h3>
-      <p>The URL of your deployed Worker, e.g. <code class="code-inline">https://kira-discord-proxy.yourname.workers.dev</code></p>
+      <h3>Active Configuration</h3>
+      <p>Currently loaded from Discord. Changes here update the session and save back to Discord.</p>
       <div class="field-group">
         <label class="field-label">Worker URL</label>
-        <input class="field-input" type="url" id="cfg-worker" placeholder="https://kira-discord-proxy.yourname.workers.dev">
+        <input class="field-input" type="url" id="cfg-worker" placeholder="https://…">
       </div>
-    </div>
-
-    <div class="settings-section">
-      <h3>Channel IDs</h3>
-      <p>Right-click each channel in Discord (with Developer Mode on) → Copy ID.</p>
       <div class="field-group">
         <label class="field-label">Links Channel ID</label>
-        <input class="field-input" type="text" id="cfg-ch-links" placeholder="e.g. 1493193077765181550">
+        <input class="field-input" type="text" id="cfg-ch-links" placeholder="">
       </div>
       <div class="field-group">
         <label class="field-label">Notes Channel ID</label>
-        <input class="field-input" type="text" id="cfg-ch-notes" placeholder="e.g. 1493193123336028170">
+        <input class="field-input" type="text" id="cfg-ch-notes" placeholder="">
       </div>
       <div class="field-group">
         <label class="field-label">Files Channel ID</label>
-        <input class="field-input" type="text" id="cfg-ch-files" placeholder="e.g. 1493193181544845454">
+        <input class="field-input" type="text" id="cfg-ch-files" placeholder="">
       </div>
       <div class="field-group">
         <label class="field-label">Ideas Channel ID</label>
-        <input class="field-input" type="text" id="cfg-ch-ideas" placeholder="e.g. 1493193239551934515">
+        <input class="field-input" type="text" id="cfg-ch-ideas" placeholder="">
       </div>
       <button class="test-btn" id="btn-test-connection">Test Connection</button>
       <div class="connection-result" id="connection-result"></div>
       <br><br>
-      <button class="settings-save" id="btn-save-config">Save Configuration</button>
-    </div>
-
-    <div class="settings-section">
-      <h3>Cloud Config — any device, one password</h3>
-      <p>Save your entire configuration encrypted to a private Discord channel. On any new device, just enter the channel ID and your password to restore everything instantly.</p>
-      <div class="step-guide">
-        <div class="step"><div class="step-num">1</div><div class="step-content">Create a private channel in Discord, e.g. <code class="code-inline">#vault-config</code> — only you and the bot should have access.</div></div>
-        <div class="step"><div class="step-num">2</div><div class="step-content">Copy its ID (Developer Mode → right-click → Copy ID) and paste below.</div></div>
-        <div class="step"><div class="step-num">3</div><div class="step-content">Choose a strong password. Your config is <strong>AES-256 encrypted</strong> before being stored — even if someone reads the channel they can't decrypt it.</div></div>
-        <div class="step"><div class="step-num">4</div><div class="step-content">On a new device: enter the Worker URL, Config Channel ID, and password → click <strong>Load from Discord</strong>.</div></div>
-      </div>
-      <div class="field-group">
-        <label class="field-label">Config Channel ID</label>
-        <input class="field-input" type="text" id="cfg-ch-config" placeholder="e.g. 1234567890123456789">
-        <div class="field-hint">A private channel only you and the bot can see</div>
-      </div>
-      <div class="field-group">
-        <label class="field-label">Password</label>
-        <input class="field-input" type="password" id="cfg-password" placeholder="Your encryption password">
-        <div class="field-hint">Never stored anywhere — used only to encrypt/decrypt locally</div>
-      </div>
-      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.5rem;">
-        <button class="settings-save" id="btn-cloud-save">Save to Discord</button>
-        <button class="test-btn" id="btn-cloud-load">Load from Discord</button>
-      </div>
-      <div class="connection-result" id="cloud-result"></div>
+      <button class="settings-save" id="btn-save-config">Save to Discord</button>
     </div>
 
     <div class="settings-section">
@@ -183,8 +164,20 @@
       <button class="settings-save" id="btn-save-profile">Save Profile</button>
     </div>
 
+    <div class="settings-section">
+      <h3>Discord Setup Guide</h3>
+      <p>Channels needed in your Discord server (all private — only the bot has access):</p>
+      <div class="step-guide">
+        <div class="step"><div class="step-num">1</div><div class="step-content"><code class="code-inline">#vault-auth</code> — one message in format:<br><code class="code-inline">User: Kira_Ghoul<br>Pass: yourpassword</code></div></div>
+        <div class="step"><div class="step-num">2</div><div class="step-content"><code class="code-inline">#vault-config</code> — auto-managed by the site when you save config</div></div>
+        <div class="step"><div class="step-num">3</div><div class="step-content"><code class="code-inline">#vault-links</code>, <code class="code-inline">#vault-notes</code>, <code class="code-inline">#vault-files</code>, <code class="code-inline">#vault-ideas</code> — vault storage</div></div>
+      </div>
+    </div>
+
   </div>
 </div>
+
+</div><!-- end #app -->
 
 <!-- ADD SHORT MODAL -->
 <div class="modal-backdrop" id="modal-short">
@@ -195,7 +188,7 @@
       <input class="field-input" type="text" id="short-title" placeholder="Short title…">
     </div>
     <div class="field-group">
-      <label class="field-label">URL (YouTube / TikTok / Instagram)</label>
+      <label class="field-label">URL</label>
       <input class="field-input" type="url" id="short-url" placeholder="https://…">
     </div>
     <div class="field-group">
