@@ -1141,3 +1141,24 @@ textarea.field-input { resize: vertical; min-height: 80px; }
 }
 .cv-upload-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
 .cv-upload-box p { font-style: italic; color: var(--text-dim); margin-bottom: 1rem; }
+
+/* ── FILE DROP ZONE ──────────────────────────────────────────────── */
+.file-drop-zone {
+  border: 2px dashed var(--border-med);
+  border-radius: 3px;
+  padding: 1.25rem;
+  text-align: center;
+  background: rgba(10,8,4,0.5);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  display: flex; flex-direction: column; align-items: center; gap: 0.4rem;
+}
+.file-drop-zone:hover, .file-drop-zone.drag-over {
+  border-color: var(--gold-dim);
+  background: rgba(201,168,76,0.04);
+}
+.file-drop-icon { font-size: 1.5rem; }
+#vault-file-label {
+  font-family: var(--serif); font-style: italic;
+  font-size: 0.82rem; color: var(--text-muted);
+}
