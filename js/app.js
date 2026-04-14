@@ -36,7 +36,22 @@ const DISCORD = {
 
 // ── PUBLIC INIT (runs immediately, no login needed) ───────────────────────────
 window.addEventListener('DOMContentLoaded', async function() {
-  // Load public config from worker
+  // Check if coming from login.html with owner session
+  const ownerFlag = sessionStorage.getItem('kira_owner');
+  const storedCfg = sessionStorage.getItem('kira_cfg');
+  if (ownerFlag === '1' && storedCfg) {
+    try {
+      cfg = JSON.parse(storedCfg);
+      enterOwnerMode();
+      return;
+    } catch(e) {}
+  }
+  // Check setup redirect
+  if (window.location.search.includes('setup=1')) {
+    document.getElementById('setup-screen').style.display = 'flex';
+    return;
+  }
+  // Normal public load
   try {
     const res = await DISCORD.get('/public-config');
     if (res.ok && res.config) {
@@ -134,6 +149,8 @@ function enterOwnerMode() {
 document.getElementById('btn-logout').addEventListener('click', function() {
   isOwner = false;
   cfg = {}; shorts = []; vaultItems = []; socials = [];
+  sessionStorage.removeItem('kira_owner');
+  sessionStorage.removeItem('kira_cfg');
   document.querySelectorAll('.owner-only').forEach(function(el){ el.style.display='none'; });
   document.getElementById('btn-logout').style.display = 'none';
   document.getElementById('nav-settings').style.display = 'none';
