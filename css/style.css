@@ -41,7 +41,7 @@
 html { height: 100%; }
 body {
   height: 100%;
-  background: radial-gradient(circle, #120d05, #080604);
+  background: #080604;
   color: var(--text);
   font-family: var(--serif);
   font-size: 15px;
@@ -68,27 +68,31 @@ body {
 }
 
 .bg-img {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: -1;
-  overflow: hidden;
+  z-index: 0; /* ⚠️ NÃO usar negativo */
 }
 
 .bg-img img {
   position: absolute;
-
-  top: -5%;
-  left: -5%;
+  inset: 0;
 
   width: 110%;
   height: 110%;
+  top: -5%;
+  left: -5%;
 
   object-fit: cover;
-
   opacity: 0.45;
 
   transform: translateZ(0);
-  will-change: transform;
+}
+
+.bg-overlay,
+.bg-grain {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
 }
 
 .bg-overlay {
@@ -386,7 +390,7 @@ textarea.field-input { resize: vertical; min-height: 80px; }
 
 /* ── APP SHELL ──────────────────────────────────────────────────── */
 #app {
-  position: relative; z-index: 1;
+  position: relative;
   min-height: 100vh;
   padding-top: var(--nav-h);
 }
@@ -1011,12 +1015,6 @@ textarea.field-input { resize: vertical; min-height: 80px; }
 .saving-indicator::before { content: '⏳ '; }
 
 /* ── RESPONSIVE ─────────────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .bg-img {
-    background-attachment: scroll; /* ou simplesmente remove */
-  }
-}
-
 @media (max-width: 900px) {
   .home-layout { grid-template-columns: 1fr; }
   .home-right { display: none; }
