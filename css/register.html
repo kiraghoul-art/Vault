@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Register Discord Commands</title>
+<style>
+  body { font-family: monospace; background: #0d0d0d; color: #e0e0e0; padding: 2rem; max-width: 600px; margin: 0 auto; }
+  input { width: 100%; padding: 0.6rem; margin: 0.4rem 0 1rem; background: #1a1a1a; border: 1px solid #333; color: #fff; border-radius: 4px; font-family: monospace; }
+  button { background: #c9a84c; color: #000; border: none; padding: 0.75rem 2rem; font-weight: bold; cursor: pointer; border-radius: 4px; font-size: 1rem; }
+  button:hover { background: #e8d08a; }
+  #log { margin-top: 1.5rem; background: #1a1a1a; border: 1px solid #333; padding: 1rem; border-radius: 4px; min-height: 60px; white-space: pre-wrap; font-size: 0.85rem; }
+  .ok  { color: #7aad5a; }
+  .err { color: #cc6644; }
+  label { font-size: 0.8rem; color: #888; }
+</style>
+</head>
+<body>
+<h2 style="color:#c9a84c">⚔ Register Discord Commands</h2>
+<p style="color:#666;font-size:0.85rem">Corre isto uma vez para registar os slash commands no Discord.</p>
+
+<label>Bot Token</label>
+<input type="password" id="token" placeholder="MTQ5Mz...">
+
+<button onclick="register()">Register Commands</button>
+
+<div id="log">Aguardando...</div>
+
+<script>
+const APP_ID = '1493193974221897860';
+
+const commands = [
+  {
+    name: 'bg',
+    description: 'Muda o fundo do Keep',
+    options: [
+      { name: 'url', description: 'URL da imagem de fundo', type: 3, required: true }
+    ]
+  },
+  {
+    name: 'add',
+    description: 'Adiciona um item ao Vault',
+    options: [
+      {
+        name: 'link', description: 'Adiciona um link', type: 1,
+        options: [
+          { name: 'titulo',  description: 'Título',  type: 3, required: true },
+          { name: 'url',     description: 'URL',     type: 3, required: true },
+          { name: 'content', description: 'Descrição', type: 3, required: false },
+          { name: 'tags',    description: 'Tags (vírgula)', type: 3, required: false }
+        ]
+      },
+      {
+        name: 'note', description: 'Adiciona uma nota', type: 1,
+        options: [
+          { name: 'titulo',  description: 'Título',    type: 3, required: true },
+          { name: 'content', description: 'Conteúdo',  type: 3, required: true },
+          { name: 'tags',    description: 'Tags (vírgula)', type: 3, required: false }
+        ]
+      },
+      {
+        name: 'idea', description: 'Adiciona uma ideia', type: 1,
+        options: [
+          { name: 'titulo',  description: 'Título',    type: 3, required: true },
+          { name: 'content', description: 'Descrição', type: 3, required: true },
+          { name: 'tags',    description: 'Tags (vírgula)', type: 3, required: false }
+        ]
+      },
+      {
+        name: 'file', description: 'Adiciona um ficheiro', type: 1,
+        options: [
+          { name: 'titulo',  description: 'Título',           type: 3, required: true },
+          { name: 'url',     description: 'URL do ficheiro',  type: 3, required: false },
+          { name: 'content', description: 'Descrição',        type: 3, required: false },
+          { name: 'tags',    description: 'Tags (vírgula)',   type: 3, required: false }
+        ]
+      },
+      {
+        name: 'code', description: 'Adiciona código', type: 1,
+        options: [
+          { name: 'titulo',   description: 'Título',          type: 3, required: true },
+          { name: 'language', description: 'Linguagem (js, py…)', type: 3, required: false },
+          { name: 'content',  description: 'Código',          type: 3, required: false },
+          { name: 'tags',     description: 'Tags (vírgula)',  type: 3, required: false }
+        ]
+      },
+      {
+        name: 'short', description: 'Adiciona um short/vídeo', type: 1,
+        options: [
+          { name: 'titulo',   description: 'Título',          type: 3, required: true },
+          { name: 'url',      description: 'URL do vídeo',    type: 3, required: false },
+          { name: 'category', description: 'Categoria',       type: 3, required: false },
+          { name: 'content',  description: 'Descrição',       type: 3, required: false }
+        ]
+      }
+    ]
+  }
+];
+
+async function register() {
+  const token = document.getElementById('token').value.trim();
+  const log   = document.getElementById('log');
+  if (!token) { log.innerHTML = '<span class="err">Mete o token primeiro.</span>'; return; }
+  log.innerHTML = '⏳ A registar comandos...';
+  try {
+    const res = await fetch('https://discord.com/api/v10/applications/' + APP_ID + '/commands', {
+      method: 'PUT',
+      headers: { 'Authorization': 'Bot ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(commands)
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      log.innerHTML = '<span class="err">ERRO: ' + JSON.stringify(data, null, 2) + '</span>';
+    } else {
+      const names = data.map(c => '/' + c.name).join(', ');
+      log.innerHTML = '<span class="ok">✅ Comandos registados: ' + names + '\n\nPodes fechar esta página.</span>';
+    }
+  } catch(e) {
+    log.innerHTML = '<span class="err">Erro de rede: ' + e.message + '</span>';
+  }
+}
+</script>
+</body>
+</html>
