@@ -304,8 +304,25 @@
       <button class="type-opt" data-type="code">Code</button>
     </div>
     <div class="field-group"><label class="field-label">Title</label><input class="field-input" type="text" id="vault-title" placeholder="Title…"></div>
+
+    <!-- URL group (link, file with external URL) -->
     <div class="field-group" id="vault-url-group"><label class="field-label">URL</label><input class="field-input" type="url" id="vault-url" placeholder="https://…"></div>
+
+    <!-- File upload group (txt, code files) -->
+    <div class="field-group" id="vault-file-group" style="display:none">
+      <label class="field-label">Upload File <span style="color:var(--text-muted);font-size:0.6rem;text-transform:none;letter-spacing:0">(txt, js, py, cs, json, md — max 1MB)</span></label>
+      <div class="file-drop-zone" id="vault-file-drop">
+        <span class="file-drop-icon">📂</span>
+        <span id="vault-file-label">Drag & drop or click to browse</span>
+        <input type="file" id="vault-file-input" accept=".txt,.js,.ts,.py,.cs,.java,.html,.css,.json,.md,.xml,.csv,.sh,.sql" style="display:none">
+      </div>
+      <div class="field-hint">Or paste a Google Drive / Dropbox / direct URL below</div>
+      <input class="field-input" type="url" id="vault-file-url" placeholder="https://drive.google.com/... or direct URL" style="margin-top:0.5rem">
+    </div>
+
+    <!-- Language (code) -->
     <div class="field-group" id="vault-lang-group" style="display:none"><label class="field-label">Language</label><input class="field-input" type="text" id="vault-lang" placeholder="e.g. javascript, python…"></div>
+
     <div class="field-group"><label class="field-label" id="vault-content-label">Content / Notes</label><textarea class="field-input" id="vault-content" rows="4" placeholder="Write thy chronicle…" style="font-family:var(--mono);font-size:0.8rem"></textarea></div>
     <div class="field-group"><label class="field-label">Tags (comma-separated)</label><input class="field-input" type="text" id="vault-tags" placeholder="e.g. sorcery, battles"></div>
     <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem">
