@@ -2,8 +2,6 @@
 // Login: username + password only. Worker URL comes from #vault-config.
 // Session only — tab closes = everything gone.
 
-// The worker URL is the only thing we need hardcoded — it's not sensitive
-// and never changes. Set it here once.
 const WORKER = 'https://kira-discord-proxy.ghoullkira.workers.dev';
 
 let cfg = {};
@@ -26,7 +24,7 @@ const DISCORD = {
     return r.json();
   },
   async send(type, content) {
-    const ch = { link: cfg.links, note: cfg.notes, file: cfg.files, idea: cfg.ideas }[type];
+    const ch = { link: cfg.links, note: cfg.notes, file: cfg.files, idea: cfg.ideas, code: cfg.code, bg: cfg.bg }[type];
     if (!ch) return false;
     try { const d = await this.post('/channel/' + ch + '/message', { content }); return d.ok; }
     catch { return false; }
@@ -44,11 +42,24 @@ document.getElementById('btn-login').addEventListener('click', doLogin);
 });
 
 async function doLogin() {
+  // ── DEV SKIP — remove before production ──
+  cfg = {
+    links:  '1493193077765181550',
+    notes:  '1493193123336028170',
+    files:  '1493193181544845454',
+    ideas:  '1493193239551934515',
+    code:   '1493563889701486612',
+    bg:     '1493563959423537314',
+  };
+  enterApp();
+  return;
+  // ── END DEV SKIP ──
+
   const username = document.getElementById('login-user').value.trim();
   const password = document.getElementById('login-pass').value.trim();
   const btn      = document.getElementById('btn-login');
 
-  if (!username || !password) { showLoginMsg(false, 'Enter username and password.'); return; }
+  if (!username || !password) { showLoginMsg(false, 'Thou must provide thy name and seal.'); return; }
 
   btn.textContent = 'Verifying…'; btn.disabled = true;
 
@@ -57,15 +68,14 @@ async function doLogin() {
     res = await DISCORD.post('/auth', { username, password });
   } catch (e) {
     btn.textContent = 'Enter'; btn.disabled = false;
-    showLoginMsg(false, 'Cannot reach server. Try again.'); return;
+    showLoginMsg(false, 'The courier cannot be reached. Try again.'); return;
   }
 
   btn.textContent = 'Enter'; btn.disabled = false;
 
-  if (!res.ok) { showLoginMsg(false, 'Invalid credentials.'); return; }
+  if (!res.ok) { showLoginMsg(false, 'Thy identity is unknown to the Keep.'); return; }
 
   if (res.firstTime || !res.config) {
-    // Config channel is empty — show first time setup
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('setup-screen').style.display = 'flex';
     return;
@@ -87,7 +97,7 @@ document.getElementById('btn-setup-save').addEventListener('click', async () => 
   const notes = document.getElementById('setup-notes').value.trim();
   const files = document.getElementById('setup-files').value.trim();
   const ideas = document.getElementById('setup-ideas').value.trim();
-  if (!links || !notes || !files || !ideas) { showMsg('setup-result', false, 'All channel IDs are required.'); return; }
+  if (!links || !notes || !files || !ideas) { showMsg('setup-result', false, 'All chamber IDs must be provided.'); return; }
   const btn = document.getElementById('btn-setup-save');
   btn.textContent = 'Saving…'; btn.disabled = true;
   try {
@@ -105,9 +115,45 @@ function enterApp() {
   document.getElementById('app').style.display = 'block';
   applyProfile();
   loadSettingsForm();
+  fetchBgImage();
   renderShorts(); renderFilterBar();
   syncFromDiscord();
-  updateStats(); buildMarquee();
+  updateStats();
+}
+
+// ── BACKGROUND IMAGE ──────────────────────────────────────────────────────────
+async function fetchBgImage() {
+  if (!cfg.bg) return;
+  try {
+    const msgs = await DISCORD.fetchMessages(cfg.bg);
+    if (!msgs || !msgs.length) return;
+    // Find last message with an image attachment
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      const m = msgs[i];
+      if (m.attachments && m.attachments.length > 0) {
+        const att = m.attachments[0];
+        if (att.url && /\.(jpg|jpeg|png|webp|gif)$/i.test(att.url)) {
+          applyBgImage(att.url);
+          return;
+        }
+      }
+      // Also check for image URL in content
+      if (m.content) {
+        const match = m.content.match(/https?:\/\/\S+\.(jpg|jpeg|png|webp|gif)/i);
+        if (match) { applyBgImage(match[0]); return; }
+      }
+    }
+  } catch (e) {
+    console.warn('fetchBgImage failed:', e);
+  }
+}
+
+function applyBgImage(url) {
+  // Apply directly to the .bg-img element
+  const bgImg = document.querySelector('.bg-img');
+  if (bgImg) bgImg.style.backgroundImage = 'url(' + url + ')';
+  // Also set CSS var as fallback
+  document.documentElement.style.setProperty('--bg-image', 'url(' + url + ')');
 }
 
 // ── LOGOUT ────────────────────────────────────────────────────────────────────
@@ -124,7 +170,7 @@ document.getElementById('btn-logout').addEventListener('click', () => {
 // ── SYNC FROM DISCORD ─────────────────────────────────────────────────────────
 async function syncFromDiscord() {
   if (!cfg.links && !cfg.notes && !cfg.files && !cfg.ideas) return;
-  document.getElementById('discord-label').textContent = 'Discord: syncing…';
+  document.getElementById('discord-label').textContent = 'Consulting the courier…';
   const types = [
     { key: 'links', type: 'link' }, { key: 'notes', type: 'note' },
     { key: 'files', type: 'file' }, { key: 'ideas', type: 'idea' }
@@ -137,12 +183,12 @@ async function syncFromDiscord() {
   }
   vaultItems = synced;
   renderVault(); renderTagSidebar(); updateStats();
-  document.getElementById('discord-label').textContent = 'Discord: connected';
+  document.getElementById('discord-label').textContent = 'Discord courier: ready';
 }
 
 function parseMessages(messages, type) {
   return messages
-    .filter(m => m.content && m.content.includes('[' + type.toUpperCase() + ']'))
+    .filter(m => m.content && (m.content.includes('[' + type.toUpperCase() + ']') || (type==='code' && m.content.includes('[CODE]'))))
     .map(m => {
       const lines   = m.content.split('\n');
       const tm      = lines[0].match(/\*\*\[.*?\]\s(.+?)\*\*/);
@@ -157,9 +203,10 @@ function parseMessages(messages, type) {
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
 function showPage(id) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => { p.classList.remove('active'); });
   document.querySelectorAll('.nav-links button').forEach(b => b.classList.toggle('active', b.dataset.page === id));
-  document.getElementById('page-' + id).classList.add('active');
+  const pg = document.getElementById('page-' + id);
+  if (pg) pg.classList.add('active');
   document.querySelector('.nav-links').classList.remove('open');
   if (id === 'vault') syncFromDiscord();
 }
@@ -172,9 +219,12 @@ document.getElementById('nav-hamburger').addEventListener('click', () => documen
 function applyProfile() {
   const name    = cfg.profileName    || 'Kira';
   const tagline = cfg.profileTagline || 'Short-form content, ideas, and a private vault — all in one place.';
-  document.getElementById('nav-logo').innerHTML = name.charAt(0) + '<span>' + name.slice(1) + '</span>';
-  document.getElementById('hero-title').innerHTML = name + '<br><em>creates.</em>';
-  document.getElementById('hero-sub').textContent = tagline;
+  const navLogo = document.getElementById('nav-logo');
+  if (navLogo) navLogo.innerHTML = name.charAt(0) + '<span>' + name.slice(1) + '</span>';
+  const heroTitle = document.getElementById('hero-title');
+  const taglineEl = document.getElementById('hero-tagline');
+  if (heroTitle) heroTitle.innerHTML = name + '<em id="hero-sub-em">' + (cfg.profileTagline || 'creates.') + '</em>';
+  if (taglineEl) taglineEl.textContent = tagline;
 }
 document.getElementById('btn-save-profile').addEventListener('click', async () => {
   cfg.profileName    = document.getElementById('cfg-name').value.trim() || 'Kira';
@@ -190,6 +240,8 @@ function loadSettingsForm() {
   document.getElementById('cfg-ch-notes').value = cfg.notes || '';
   document.getElementById('cfg-ch-files').value = cfg.files || '';
   document.getElementById('cfg-ch-ideas').value = cfg.ideas || '';
+  if(document.getElementById('cfg-ch-code')) document.getElementById('cfg-ch-code').value = cfg.code || '';
+  if(document.getElementById('cfg-ch-bg')) document.getElementById('cfg-ch-bg').value = cfg.bg || '';
   document.getElementById('cfg-name').value     = cfg.profileName    || 'Kira';
   document.getElementById('cfg-tagline').value  = cfg.profileTagline || '';
 }
@@ -198,6 +250,9 @@ document.getElementById('btn-save-config').addEventListener('click', async () =>
   cfg.notes = document.getElementById('cfg-ch-notes').value.trim();
   cfg.files = document.getElementById('cfg-ch-files').value.trim();
   cfg.ideas = document.getElementById('cfg-ch-ideas').value.trim();
+  cfg.code  = document.getElementById('cfg-ch-code').value.trim();
+  const bgEl = document.getElementById('cfg-ch-bg');
+  if (bgEl) cfg.bg = bgEl.value.trim();
   const res = await DISCORD.post('/config/save', { config: cfg });
   showMsg('connection-result', res.ok, res.ok ? 'Saved to Discord.' : 'Failed to save.');
 });
@@ -268,16 +323,19 @@ document.getElementById('btn-confirm-vault').addEventListener('click', async () 
   const tags    = document.getElementById('vault-tags').value.trim().split(',').map(t=>t.trim()).filter(Boolean);
   if (!title) return;
   document.getElementById('vault-saving').style.display = 'block';
-  const emoji = {link:'🔗',note:'📝',file:'📁',idea:'💡'}[currentVaultType];
+  const emoji = {link:'🔗',note:'📝',file:'📁',idea:'💡',code:'💻'}[currentVaultType];
+  const lang = (document.getElementById('vault-lang')||{}).value || '';
   let msg = emoji + ' **[' + currentVaultType.toUpperCase() + '] ' + title + '**';
+  if (lang)        msg += '\nLanguage: ' + lang;
   if (url)         msg += '\n' + url;
-  if (content)     msg += '\n' + content;
+  if (content && currentVaultType==='code') msg += '\n```' + lang + '\n' + content + '\n```';
+  else if (content) msg += '\n' + content;
   if (tags.length) msg += '\nTags: ' + tags.join(', ');
   await DISCORD.send(currentVaultType, msg);
   document.getElementById('vault-saving').style.display = 'none';
   vaultItems.push({ id: Date.now(), type: currentVaultType, title, url, content, tags, date: new Date().toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) });
   renderVault(); renderTagSidebar(); updateStats();
-  closeModal('modal-vault'); clearForm(['vault-title','vault-url','vault-content','vault-tags']);
+  closeModal('modal-vault'); clearForm(['vault-title','vault-url','vault-content','vault-tags','vault-lang']);
 });
 
 // ── STATS & MARQUEE ───────────────────────────────────────────────────────────
