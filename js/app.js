@@ -171,7 +171,7 @@ async function syncPublicData() {
     const msgs = await DISCORD.fetchMessages(cfg[key]);
     synced = synced.concat(parseMessages(msgs,type));
   }
-  // Public only shows items with [PUBLIC] tag
+  // Public shows everything except [PRIVATE] items
   vaultItems = synced.filter(function(v){ return v.isPublic; });
   renderVault(); renderTagSidebar(); updateStats();
   // Socials
@@ -218,7 +218,8 @@ function parseMessages(messages, type) {
       const tagLine = lines.find(function(l){ return l.startsWith('Tags:'); });
       const tags    = tagLine ? tagLine.replace('Tags: ','').split(', ').map(function(t){ return t.trim(); }) : [];
       const content = lines.filter(function(l){ return !l.startsWith('**')&&!l.startsWith('http')&&!l.startsWith('Tags:')&&l.trim(); }).join(' ').trim();
-      const isPublic = m.content.includes('[PUBLIC]');
+      // Default: public. Only private if explicitly tagged [PRIVATE]
+      const isPublic = !m.content.includes('[PRIVATE]');
       return { id:m.id, type, title, url, content, tags, isPublic, date:new Date(m.timestamp).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}), fromDiscord:true };
     });
 }
@@ -488,7 +489,7 @@ document.getElementById('btn-confirm-short').addEventListener('click', async fun
   const isPublic = document.getElementById('short-public').checked;
   if (!title) return;
   document.getElementById('short-saving').style.display='block';
-  const pubTag = isPublic ? ' [PUBLIC]' : '';
+  const pubTag = isPublic ? '' : ' [PRIVATE]'; // default is public, [PRIVATE] hides from guests
   await DISCORD.send('note','📽️ **[SHORT] '+title+'**'+pubTag+'\nCategory: '+cat+(url?'\n'+url:'')+(views?'\nViews: '+views:''));
   document.getElementById('short-saving').style.display='none';
   shorts.push({id:Date.now().toString(),title,url,cat,views,isPublic,date:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})});
@@ -564,7 +565,7 @@ document.getElementById('btn-confirm-vault').addEventListener('click', async fun
   document.getElementById('vault-saving').style.display='block';
 
   const emoji  = {link:'🔗',note:'📝',file:'📁',idea:'💡',code:'💻'}[currentVaultType];
-  const pubTag = isPublic ? ' [PUBLIC]' : '';
+  const pubTag = isPublic ? '' : ' [PRIVATE]'; // default is public, [PRIVATE] hides from guests
   let msg      = emoji+' **['+currentVaultType.toUpperCase()+'] '+title+'**'+pubTag;
   let finalUrl = urlVal;
   let fileContent = txtContent;
