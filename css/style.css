@@ -66,14 +66,14 @@ body {
 .bg-img {
   position: absolute; inset: 0;
   background: var(--bg-image, none) center/cover no-repeat;
-  opacity: 0.12;
+  opacity: 0.45;
   transition: opacity 1s ease;
 }
 .bg-overlay {
   position: absolute; inset: 0;
-  background: radial-gradient(ellipse at 30% 20%, rgba(90,55,10,0.35) 0%, transparent 60%),
-              radial-gradient(ellipse at 80% 80%, rgba(40,20,5,0.4) 0%, transparent 60%),
-              linear-gradient(180deg, rgba(8,6,4,0.7) 0%, rgba(8,6,4,0.4) 50%, rgba(8,6,4,0.85) 100%);
+  background: radial-gradient(ellipse at 30% 20%, rgba(90,55,10,0.2) 0%, transparent 60%),
+              radial-gradient(ellipse at 80% 80%, rgba(40,20,5,0.25) 0%, transparent 60%),
+              linear-gradient(180deg, rgba(8,6,4,0.5) 0%, rgba(8,6,4,0.2) 50%, rgba(8,6,4,0.65) 100%);
 }
 .bg-grain {
   position: absolute; inset: 0; opacity: 0.04;
