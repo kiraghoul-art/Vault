@@ -163,24 +163,30 @@ document.getElementById('btn-logout').addEventListener('click', function() {
 
 // ── SYNC PUBLIC (no login) ────────────────────────────────────────────────────
 async function syncPublicData() {
-  if (!cfg.links && !cfg.notes && !cfg.files && !cfg.ideas) return;
-  const types = [{key:'links',type:'link'},{key:'notes',type:'note'},{key:'files',type:'file'},{key:'ideas',type:'idea'}];
-  let synced = [];
-  for (const {key,type} of types) {
-    if (!cfg[key]) continue;
-    const msgs = await DISCORD.fetchMessages(cfg[key]);
-    synced = synced.concat(parseMessages(msgs,type));
+  var hasChannels = cfg.links || cfg.notes || cfg.files || cfg.ideas;
+  if (!hasChannels) {
+    // Try reload config once more
+    try {
+      var res = await DISCORD.get('/public-config');
+      if (res.ok && res.config) cfg = res.config;
+    } catch(e) {}
   }
-  // Public shows everything except [PRIVATE] items
+  if (!cfg.links && !cfg.notes && !cfg.files && !cfg.ideas) return;
+  var types = [{key:'links',type:'link'},{key:'notes',type:'note'},{key:'files',type:'file'},{key:'ideas',type:'idea'}];
+  var synced = [];
+  for (var i = 0; i < types.length; i++) {
+    var key = types[i].key; var type = types[i].type;
+    if (!cfg[key]) continue;
+    var msgs = await DISCORD.fetchMessages(cfg[key]);
+    synced = synced.concat(parseMessages(msgs, type));
+  }
   vaultItems = synced.filter(function(v){ return v.isPublic; });
   renderVault(); renderTagSidebar(); updateStats();
-  // Socials
   if (cfg.socials) {
-    const sMsgs = await DISCORD.fetchMessages(cfg.socials);
+    var sMsgs = await DISCORD.fetchMessages(cfg.socials);
     socials = parseSocials(sMsgs).filter(function(s){ return s.isPublic; });
     renderSocials();
   }
-  // CV
   if (cfg.cv) loadCurriculum();
 }
 
@@ -357,7 +363,22 @@ document.getElementById('btn-add-social').addEventListener('click', async functi
 
 async function saveSocial(social) {
   if (!cfg.socials) return;
-  await DISCORD.send('socials', 'SOCIAL:'+JSON.stringify(social));
+  // Delete existing message with same id to avoid duplicates
+  try {
+    var existing = await DISCORD.fetchMessages(cfg.socials);
+    for (var i = 0; i < existing.length; i++) {
+      var m = existing[i];
+      if (m.content && m.content.startsWith('SOCIAL:')) {
+        try {
+          var parsed = JSON.parse(m.content.replace('SOCIAL:', ''));
+          if (parsed.id === social.id) {
+            await DISCORD.post('/channel/' + cfg.socials + '/delete/' + m.id, {});
+          }
+        } catch(e) {}
+      }
+    }
+  } catch(e) {}
+  await DISCORD.send('socials', 'SOCIAL:' + JSON.stringify(social));
 }
 
 async function rebuildSocialsChannel() {
