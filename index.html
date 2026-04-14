@@ -10,21 +10,19 @@
 </head>
 <body>
 
-<!-- BACKGROUND -->
 <div class="bg-wrap">
-  <div class="bg-img">
-    <img id="bgImage" alt="">
-  </div>
+  <div class="bg-img"></div>
   <div class="bg-overlay"></div>
   <div class="bg-grain"></div>
 </div>
 
-<!-- LOGIN -->
-<div id="login-screen">
+<!-- LOGIN MODAL (overlay) -->
+<div id="login-screen" style="display:none">
   <div class="login-box">
     <div class="login-glass">
       <div class="login-corner tl"></div><div class="login-corner tr"></div>
       <div class="login-corner bl"></div><div class="login-corner br"></div>
+      <button class="login-close" id="btn-close-login">✕</button>
       <div class="login-emblem">
         <svg viewBox="0 0 80 70" xmlns="http://www.w3.org/2000/svg">
           <path d="M20 55 L20 36 L30 46 L40 22 L50 46 L60 36 L60 55 Z" stroke-linejoin="round"/>
@@ -50,7 +48,7 @@
   </div>
 </div>
 
-<!-- SETUP -->
+<!-- SETUP (first time) -->
 <div id="setup-screen" style="display:none">
   <div class="setup-box">
     <div class="login-glass">
@@ -58,12 +56,14 @@
       <div class="login-corner bl"></div><div class="login-corner br"></div>
       <div class="login-logo">K<span>ira</span></div>
       <p class="login-sub">First Audience — Seal the Channels</p>
-      <div class="field-group"><label class="field-label">Links Channel ID</label><input class="field-input" type="text" id="setup-links" placeholder="#vault-links → Copy ID"></div>
-      <div class="field-group"><label class="field-label">Notes Channel ID</label><input class="field-input" type="text" id="setup-notes" placeholder="#vault-notes → Copy ID"></div>
-      <div class="field-group"><label class="field-label">Files Channel ID</label><input class="field-input" type="text" id="setup-files" placeholder="#vault-files → Copy ID"></div>
-      <div class="field-group"><label class="field-label">Ideas Channel ID</label><input class="field-input" type="text" id="setup-ideas" placeholder="#vault-ideas → Copy ID"></div>
-      <div class="field-group"><label class="field-label">Code Channel ID</label><input class="field-input" type="text" id="setup-code" placeholder="#vault-code → Copy ID"></div>
-      <div class="field-group"><label class="field-label">Background Channel ID</label><input class="field-input" type="text" id="setup-bg" placeholder="#vault-bg → Copy ID"></div>
+      <div class="field-group"><label class="field-label">Links Channel ID</label><input class="field-input" type="text" id="setup-links" placeholder="#vault-links"></div>
+      <div class="field-group"><label class="field-label">Notes Channel ID</label><input class="field-input" type="text" id="setup-notes" placeholder="#vault-notes"></div>
+      <div class="field-group"><label class="field-label">Files Channel ID</label><input class="field-input" type="text" id="setup-files" placeholder="#vault-files"></div>
+      <div class="field-group"><label class="field-label">Ideas Channel ID</label><input class="field-input" type="text" id="setup-ideas" placeholder="#vault-ideas"></div>
+      <div class="field-group"><label class="field-label">Code Channel ID</label><input class="field-input" type="text" id="setup-code" placeholder="#vault-code"></div>
+      <div class="field-group"><label class="field-label">Background Channel ID</label><input class="field-input" type="text" id="setup-bg" placeholder="#vault-bg"></div>
+      <div class="field-group"><label class="field-label">Socials Channel ID</label><input class="field-input" type="text" id="setup-socials" placeholder="#vault-socials"></div>
+      <div class="field-group"><label class="field-label">Curriculum Channel ID</label><input class="field-input" type="text" id="setup-cv" placeholder="#vault-cv"></div>
       <div class="login-result" id="setup-result"></div>
       <button class="btn-primary" id="btn-setup-save" style="width:100%;margin-top:1.5rem;">Seal the Covenant</button>
       <p class="login-hint">Thy configuration shall be enshrined — never to repeat</p>
@@ -71,8 +71,8 @@
   </div>
 </div>
 
-<!-- APP -->
-<div id="app" style="display:none">
+<!-- APP — visible to everyone -->
+<div id="app">
 
 <nav>
   <div class="nav-logo" id="nav-logo">K<span>ira</span></div>
@@ -80,11 +80,14 @@
     <button class="active" data-page="home">Home</button>
     <button data-page="shorts">Shorts</button>
     <button data-page="vault">Vault</button>
-    <button data-page="settings">Setup</button>
+    <button data-page="socials">Socials</button>
+    <button data-page="curriculum">Curriculum</button>
+    <button data-page="settings" class="owner-only" id="nav-settings" style="display:none">Setup</button>
   </div>
   <div style="display:flex;align-items:center;gap:0.75rem;">
     <button class="nav-hamburger" id="nav-hamburger">&#9776;</button>
-    <button class="btn-logout" id="btn-logout" title="Logout">&#x23FB;</button>
+    <button class="btn-logout owner-only" id="btn-logout" title="Logout" style="display:none">&#x23FB;</button>
+    <button class="btn-login-nav" id="btn-open-login" title="Enter the Keep">⚔</button>
   </div>
 </nav>
 
@@ -99,6 +102,7 @@
         <div class="home-divider-diamond"></div>
         <div class="home-divider-line" style="background:linear-gradient(90deg,transparent,rgba(201,168,76,0.5))"></div>
       </div>
+      <p class="home-tagline" id="hero-tagline">Short-form content, ideas, and a private vault.</p>
       <div class="home-cta">
         <button class="btn-primary" data-goto="shorts">View Shorts</button>
         <button class="btn-ghost" data-goto="vault">Open Vault</button>
@@ -109,9 +113,7 @@
         <div class="stat-item"><span class="stat-num" id="stat-tags">0</span><span class="stat-label">Tags</span></div>
       </div>
     </div>
-    <div class="home-right">
-      <div class="home-right-veil"></div>
-    </div>
+    <div class="home-right"><div class="home-right-veil"></div></div>
   </div>
 </div>
 
@@ -124,7 +126,7 @@
     </div>
     <div class="filter-bar" id="filter-bar"><button class="filter-btn active" data-filter="all">All</button></div>
     <div class="shorts-grid" id="shorts-grid"></div>
-    <button class="add-short-btn" id="btn-add-short">✦ Add Scroll</button>
+    <button class="add-short-btn owner-only" id="btn-add-short" style="display:none">✦ Add Scroll</button>
   </div>
 </div>
 
@@ -151,7 +153,7 @@
       <div class="vault-main">
         <div class="vault-topbar">
           <input class="vault-search" placeholder="Search the chronicles…" id="vault-search-input">
-          <button class="vault-add-btn" id="btn-add-vault">✦ New Scroll</button>
+          <button class="vault-add-btn owner-only" id="btn-add-vault" style="display:none">✦ New Scroll</button>
         </div>
         <div class="vault-cards" id="vault-cards"></div>
       </div>
@@ -159,19 +161,80 @@
   </div>
 </div>
 
-<!-- SETTINGS -->
+<!-- SOCIALS -->
+<div class="page" id="page-socials">
+  <div class="page-inner">
+    <div class="section-header">
+      <div><h2>So<span>cials</span></h2></div>
+      <p>Find me across the realm</p>
+    </div>
+    <div class="socials-grid" id="socials-grid">
+      <div class="socials-empty">Loading…</div>
+    </div>
+    <!-- Owner add form -->
+    <div class="owner-only socials-add-wrap" id="socials-edit-area" style="display:none">
+      <div class="settings-section" style="margin-top:2rem">
+        <h3>Add <span>Social</span></h3>
+        <div class="socials-form-row">
+          <div class="field-group"><label class="field-label">Platform</label><input class="field-input" id="social-platform" placeholder="Instagram, TikTok…"></div>
+          <div class="field-group"><label class="field-label">URL</label><input class="field-input" id="social-url" placeholder="https://…"></div>
+          <div class="field-group"><label class="field-label">Handle</label><input class="field-input" id="social-handle" placeholder="@kira"></div>
+          <div class="field-group"><label class="field-label">Icon (emoji)</label><input class="field-input" id="social-icon" placeholder="📸"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem">
+          <input type="checkbox" id="social-public" checked style="accent-color:var(--gold);width:16px;height:16px">
+          <label class="field-label" style="margin:0;cursor:pointer" for="social-public">Visible to public</label>
+        </div>
+        <button class="settings-save" id="btn-add-social">✦ Add Social</button>
+        <div class="connection-result" id="social-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CURRICULUM -->
+<div class="page" id="page-curriculum">
+  <div class="page-inner">
+    <div class="section-header">
+      <div><h2>Curri<span>culum</span></h2></div>
+      <p>Chronicles of Experience</p>
+    </div>
+    <div id="cv-content">
+      <div class="cv-empty">No curriculum uploaded yet.</div>
+    </div>
+    <div class="owner-only" id="cv-edit-area" style="display:none;margin-top:2rem">
+      <div class="settings-section">
+        <h3>Upload <span>CV</span></h3>
+        <p>Upload a PDF — it will be displayed inline for visitors.</p>
+        <div class="cv-upload-box" id="cv-upload-box">
+          <div class="cv-upload-icon">📜</div>
+          <p>Drag & drop PDF here or click to browse</p>
+          <input type="file" id="cv-file-input" accept=".pdf" style="display:none">
+          <button class="btn-ghost" onclick="document.getElementById('cv-file-input').click()">Choose PDF</button>
+          <div id="cv-file-name" style="margin-top:0.5rem;font-size:0.8rem;color:var(--gold-dim)"></div>
+        </div>
+        <button class="settings-save" id="btn-save-cv" style="margin-top:1rem">Seal the Scroll</button>
+        <div class="connection-result" id="cv-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS (owner only) -->
 <div class="page" id="page-settings">
   <div class="page-inner">
     <div class="settings-inner">
       <div class="settings-section">
         <h3>Channel <span>Config</span></h3>
         <p>Update your Discord channel IDs.</p>
-        <div class="field-group"><label class="field-label">Links Channel ID</label><input class="field-input" type="text" id="cfg-ch-links"></div>
-        <div class="field-group"><label class="field-label">Notes Channel ID</label><input class="field-input" type="text" id="cfg-ch-notes"></div>
-        <div class="field-group"><label class="field-label">Files Channel ID</label><input class="field-input" type="text" id="cfg-ch-files"></div>
-        <div class="field-group"><label class="field-label">Ideas Channel ID</label><input class="field-input" type="text" id="cfg-ch-ideas"></div>
-        <div class="field-group"><label class="field-label">Code Channel ID</label><input class="field-input" type="text" id="cfg-ch-code"><div class="field-hint">Code snippets — saved as Discord code blocks with syntax highlighting</div></div>
-        <div class="field-group"><label class="field-label">Background Channel ID</label><input class="field-input" type="text" id="cfg-ch-bg"><div class="field-hint">Post an image in this channel → it becomes the site wallpaper automatically</div></div>
+        <div class="field-group"><label class="field-label">Links</label><input class="field-input" type="text" id="cfg-ch-links"></div>
+        <div class="field-group"><label class="field-label">Notes</label><input class="field-input" type="text" id="cfg-ch-notes"></div>
+        <div class="field-group"><label class="field-label">Files</label><input class="field-input" type="text" id="cfg-ch-files"></div>
+        <div class="field-group"><label class="field-label">Ideas</label><input class="field-input" type="text" id="cfg-ch-ideas"></div>
+        <div class="field-group"><label class="field-label">Code</label><input class="field-input" type="text" id="cfg-ch-code"></div>
+        <div class="field-group"><label class="field-label">Background</label><input class="field-input" type="text" id="cfg-ch-bg"></div>
+        <div class="field-group"><label class="field-label">Socials</label><input class="field-input" type="text" id="cfg-ch-socials"></div>
+        <div class="field-group"><label class="field-label">Curriculum</label><input class="field-input" type="text" id="cfg-ch-cv"></div>
         <button class="test-btn" id="btn-test-connection">Test the Courier</button>
         <div class="connection-result" id="connection-result"></div>
         <br><br>
@@ -184,27 +247,31 @@
         <div class="field-group">
           <label class="field-label">Background Image URL</label>
           <input class="field-input" type="url" id="cfg-bg-url" placeholder="https://i.imgur.com/...">
-          <div class="field-hint">Cola qualquer URL de imagem — muda o fundo do Keep instantaneamente</div>
+          <div class="field-hint">Cola aqui o URL da imagem de fundo</div>
         </div>
         <button class="settings-save" id="btn-save-profile">Seal Profile</button>
         <div class="connection-result" id="profile-result"></div>
       </div>
       <div class="settings-section">
         <h3>Discord <span>Commands</span></h3>
-        <p>Use slash commands from any account to add items directly to the Vault:</p>
+        <p>Slash commands disponíveis:</p>
         <div class="step-guide">
-          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add link [title] [url] [tags]</code></div></div>
-          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add note [title] [content] [tags]</code></div></div>
-          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add code [title] [language] [content]</code></div></div>
-          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add idea [title] [content]</code></div></div>
+          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/bg [url]</code></div></div>
+          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add link [titulo] [url] [content] [tags]</code></div></div>
+          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add note [titulo] [content] [tags]</code></div></div>
+          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add idea [titulo] [content] [tags]</code></div></div>
+          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add file [titulo] [url] [content] [tags]</code></div></div>
+          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add code [titulo] [language] [content] [tags]</code></div></div>
+          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add short [titulo] [url] [category] [content]</code></div></div>
         </div>
-        <p style="margin-top:1rem">For slash commands to work, redeploy the Worker with the slash command support added.</p>
+        <button class="test-btn" id="btn-reregister-commands" style="margin-top:1rem">Re-register Commands</button>
+        <div class="connection-result" id="commands-result"></div>
       </div>
     </div>
   </div>
 </div>
 
-</div>
+</div><!-- #app -->
 
 <!-- MODALS -->
 <div class="modal-backdrop" id="modal-short">
@@ -213,7 +280,11 @@
     <div class="field-group"><label class="field-label">Title</label><input class="field-input" type="text" id="short-title" placeholder="Name thy scroll…"></div>
     <div class="field-group"><label class="field-label">URL</label><input class="field-input" type="url" id="short-url" placeholder="https://…"></div>
     <div class="field-group"><label class="field-label">Category</label><input class="field-input" type="text" id="short-cat" placeholder="e.g. Battles, Wisdom…"></div>
-    <div class="field-group"><label class="field-label">Views (optional)</label><input class="field-input" type="text" id="short-views" placeholder="e.g. 12.4K Witnesses"></div>
+    <div class="field-group"><label class="field-label">Views (optional)</label><input class="field-input" type="text" id="short-views" placeholder="e.g. 12.4K"></div>
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem">
+      <input type="checkbox" id="short-public" style="accent-color:var(--gold);width:16px;height:16px">
+      <label class="field-label" style="margin:0;cursor:pointer" for="short-public">Visible to public</label>
+    </div>
     <div class="saving-indicator" id="short-saving">Dispatching courier…</div>
     <div class="modal-footer">
       <button class="modal-cancel" data-close="modal-short">Cancel</button>
@@ -234,9 +305,13 @@
     </div>
     <div class="field-group"><label class="field-label">Title</label><input class="field-input" type="text" id="vault-title" placeholder="Title…"></div>
     <div class="field-group" id="vault-url-group"><label class="field-label">URL</label><input class="field-input" type="url" id="vault-url" placeholder="https://…"></div>
-    <div class="field-group" id="vault-lang-group" style="display:none"><label class="field-label">Language</label><input class="field-input" type="text" id="vault-lang" placeholder="e.g. javascript, python, csharp…"></div>
+    <div class="field-group" id="vault-lang-group" style="display:none"><label class="field-label">Language</label><input class="field-input" type="text" id="vault-lang" placeholder="e.g. javascript, python…"></div>
     <div class="field-group"><label class="field-label" id="vault-content-label">Content / Notes</label><textarea class="field-input" id="vault-content" rows="4" placeholder="Write thy chronicle…" style="font-family:var(--mono);font-size:0.8rem"></textarea></div>
     <div class="field-group"><label class="field-label">Tags (comma-separated)</label><input class="field-input" type="text" id="vault-tags" placeholder="e.g. sorcery, battles"></div>
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem">
+      <input type="checkbox" id="vault-public" style="accent-color:var(--gold);width:16px;height:16px">
+      <label class="field-label" style="margin:0;cursor:pointer" for="vault-public">Visible to public</label>
+    </div>
     <div class="saving-indicator" id="vault-saving">Dispatching courier…</div>
     <div class="modal-footer">
       <button class="modal-cancel" data-close="modal-vault">Cancel</button>
