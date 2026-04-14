@@ -41,7 +41,7 @@
 html { height: 100%; }
 body {
   height: 100%;
-  background: #080604;
+  background: var(--bg);
   color: var(--text);
   font-family: var(--serif);
   font-size: 15px;
@@ -61,40 +61,15 @@ body {
 
 /* ── BACKGROUND ─────────────────────────────────────────────────── */
 .bg-wrap {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
 }
-
 .bg-img {
-  position: absolute;
-  inset: 0;
-  z-index: 0; /* ⚠️ NÃO usar negativo */
-}
-
-.bg-img img {
-  position: absolute;
-  inset: 0;
-
-  width: 110%;
-  height: 110%;
-  top: -5%;
-  left: -5%;
-
-  object-fit: cover;
+  position: fixed; inset: 0;
+  background: var(--bg-image, none) center center / cover no-repeat fixed;
   opacity: 0.45;
-
-  transform: translateZ(0);
+  transition: opacity 1s ease;
+  will-change: transform;
 }
-
-.bg-overlay,
-.bg-grain {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-}
-
 .bg-overlay {
   position: absolute; inset: 0;
   background: radial-gradient(ellipse at 30% 20%, rgba(90,55,10,0.2) 0%, transparent 60%),
@@ -390,7 +365,7 @@ textarea.field-input { resize: vertical; min-height: 80px; }
 
 /* ── APP SHELL ──────────────────────────────────────────────────── */
 #app {
-  position: relative;
+  position: relative; z-index: 1;
   min-height: 100vh;
   padding-top: var(--nav-h);
 }
@@ -1034,3 +1009,135 @@ textarea.field-input { resize: vertical; min-height: 80px; }
   .home-stats { gap: 1.25rem; }
   .shorts-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
 }
+
+/* ── LOGIN MODAL OVERLAY ────────────────────────────────────────── */
+#login-screen {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(4,3,1,0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.login-close {
+  position: absolute; top: 1rem; right: 1rem;
+  background: transparent; border: none;
+  color: var(--text-muted); font-size: 1rem;
+  cursor: pointer; padding: 0.25rem 0.5rem;
+  transition: color 0.2s;
+}
+.login-close:hover { color: var(--gold-dim); }
+.btn-login-nav {
+  background: transparent;
+  border: 1px solid rgba(201,168,76,0.2);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition: color 0.2s, border-color 0.2s;
+  letter-spacing: 0.05em;
+}
+.btn-login-nav:hover { color: var(--gold-dim); border-color: var(--gold-dim); }
+
+/* ── HOME TAGLINE ────────────────────────────────────────────────── */
+.home-tagline {
+  font-family: var(--serif);
+  font-size: 0.95rem;
+  color: var(--text-dim);
+  font-style: italic;
+  margin-bottom: 1.5rem;
+  max-width: 400px;
+}
+
+/* ── VISIBILITY TOGGLE ───────────────────────────────────────────── */
+.item-vis-toggle {
+  cursor: pointer; font-size: 0.75rem;
+  opacity: 0.6; transition: opacity 0.2s;
+  margin-left: 0.35rem;
+}
+.item-vis-toggle:hover { opacity: 1; }
+.vault-vis { vertical-align: middle; }
+
+/* ── SOCIALS PAGE ────────────────────────────────────────────────── */
+.socials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.social-card {
+  display: flex; align-items: center; gap: 1rem;
+  background: linear-gradient(160deg, rgba(18,13,6,0.9) 0%, rgba(10,8,4,0.95) 100%);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1rem 1.25rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+  position: relative;
+}
+.social-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,168,76,0.2), transparent);
+}
+.social-card:hover {
+  border-color: var(--gold-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-gold);
+}
+.social-icon-wrap {
+  font-size: 1.6rem; flex-shrink: 0;
+  width: 42px; height: 42px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(201,168,76,0.06);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+.social-info { flex: 1; min-width: 0; }
+.social-name {
+  font-family: var(--display);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold-light);
+}
+.social-handle {
+  font-family: var(--serif);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+.social-del {
+  position: absolute; top: 0.5rem; right: 0.5rem;
+  background: transparent; border: none;
+  color: var(--text-muted); font-size: 0.7rem;
+  cursor: pointer; padding: 0.2rem 0.35rem;
+  border-radius: 2px; opacity: 0;
+  transition: opacity 0.2s, color 0.2s;
+}
+.social-card:hover .social-del { opacity: 1; }
+.social-del:hover { color: #cc6644; }
+.socials-empty { font-style: italic; color: var(--text-muted); padding: 2rem 0; }
+.socials-form-row {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 0.75rem;
+}
+
+/* ── CURRICULUM PAGE ─────────────────────────────────────────────── */
+.cv-empty { font-style: italic; color: var(--text-muted); padding: 2rem 0; }
+.cv-viewer { width: 100%; }
+.cv-upload-box {
+  border: 2px dashed var(--border-med);
+  border-radius: 4px;
+  padding: 2.5rem;
+  text-align: center;
+  background: rgba(10,8,4,0.5);
+  transition: border-color 0.2s, background 0.2s;
+  cursor: pointer;
+}
+.cv-upload-box.drag-over {
+  border-color: var(--gold);
+  background: rgba(201,168,76,0.05);
+}
+.cv-upload-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+.cv-upload-box p { font-style: italic; color: var(--text-dim); margin-bottom: 1rem; }
