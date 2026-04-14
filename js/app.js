@@ -49,7 +49,7 @@ async function doLogin() {
     files:  '1493193181544845454',
     ideas:  '1493193239551934515',
     code:   '1493563889701486612',
-    bg:     '1493563959423537314',
+    bg:     '1493580916055085147',
   };
   enterApp();
   return;
@@ -127,20 +127,17 @@ async function fetchBgImage() {
   try {
     const msgs = await DISCORD.fetchMessages(cfg.bg);
     if (!msgs || !msgs.length) return;
-    // Find last message with an image attachment
-    for (let i = msgs.length - 1; i >= 0; i--) {
+    // Procura a última mensagem com URL de imagem no conteúdo
+    for (let i = 0; i < msgs.length; i++) {
       const m = msgs[i];
+      if (m.content) {
+        const match = m.content.match(/https?:\/\/\S+/);
+        if (match) { applyBgImage(match[0]); return; }
+      }
+      // Ou attachment
       if (m.attachments && m.attachments.length > 0) {
         const att = m.attachments[0];
-        if (att.url && /\.(jpg|jpeg|png|webp|gif)$/i.test(att.url)) {
-          applyBgImage(att.url);
-          return;
-        }
-      }
-      // Also check for image URL in content
-      if (m.content) {
-        const match = m.content.match(/https?:\/\/\S+\.(jpg|jpeg|png|webp|gif)/i);
-        if (match) { applyBgImage(match[0]); return; }
+        if (att.url) { applyBgImage(att.url); return; }
       }
     }
   } catch (e) {
@@ -229,6 +226,22 @@ function applyProfile() {
 document.getElementById('btn-save-profile').addEventListener('click', async () => {
   cfg.profileName    = document.getElementById('cfg-name').value.trim() || 'Kira';
   cfg.profileTagline = document.getElementById('cfg-tagline').value.trim();
+  const bgUrlEl = document.getElementById('cfg-bg-url');
+  if (bgUrlEl && bgUrlEl.value.trim()) {
+    const newUrl = bgUrlEl.value.trim();
+    // Apaga mensagens antigas do canal bg e posta o novo URL
+    if (cfg.bg) {
+      try {
+        const old = await DISCORD.fetchMessages(cfg.bg);
+        for (const m of old) {
+          await DISCORD.post('/channel/' + cfg.bg + '/delete/' + m.id, {});
+        }
+      } catch(e) {}
+      await DISCORD.send('bg', newUrl);
+    }
+    applyBgImage(newUrl);
+    bgUrlEl.value = '';
+  }
   applyProfile();
   const res = await DISCORD.post('/config/save', { config: cfg });
   showMsg('profile-result', res.ok, res.ok ? 'Profile saved.' : 'Failed to save.');
@@ -244,6 +257,7 @@ function loadSettingsForm() {
   if(document.getElementById('cfg-ch-bg')) document.getElementById('cfg-ch-bg').value = cfg.bg || '';
   document.getElementById('cfg-name').value     = cfg.profileName    || 'Kira';
   document.getElementById('cfg-tagline').value  = cfg.profileTagline || '';
+  if(document.getElementById('cfg-bg-url')) document.getElementById('cfg-bg-url').value = cfg.bgUrl || '';
 }
 document.getElementById('btn-save-config').addEventListener('click', async () => {
   cfg.links = document.getElementById('cfg-ch-links').value.trim();
