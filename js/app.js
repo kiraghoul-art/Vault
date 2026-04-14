@@ -522,29 +522,101 @@ function renderTagSidebar() {
 document.querySelectorAll('.vault-cat[data-vault-filter]').forEach(function(el){ el.addEventListener('click', function(){ document.querySelectorAll('.vault-cat').forEach(function(b){ b.classList.remove('active'); }); el.classList.add('active'); currentVaultFilter=el.dataset.vaultFilter; renderVault(); }); });
 document.getElementById('vault-search-input').addEventListener('input', function(e){ const q=e.target.value.trim().toLowerCase(); if(!q){renderVault();return;} renderVault(vaultItems.filter(function(v){ return v.title.toLowerCase().includes(q)||(v.content||'').toLowerCase().includes(q)||(v.tags||[]).some(function(t){ return t.toLowerCase().includes(q); }); })); });
 document.getElementById('btn-add-vault').addEventListener('click', function(){ openModal('modal-vault'); });
-document.querySelectorAll('.type-opt').forEach(function(b){ b.addEventListener('click', function(){ currentVaultType=b.dataset.type; document.querySelectorAll('.type-opt').forEach(function(x){ x.classList.remove('active'); }); b.classList.add('active'); document.getElementById('vault-url-group').style.display=(currentVaultType==='link'||currentVaultType==='file')?'block':'none'; document.getElementById('vault-lang-group').style.display=currentVaultType==='code'?'block':'none'; }); });
+document.querySelectorAll('.type-opt').forEach(function(b){ b.addEventListener('click', function(){
+  currentVaultType = b.dataset.type;
+  document.querySelectorAll('.type-opt').forEach(function(x){ x.classList.remove('active'); });
+  b.classList.add('active');
+  // Show/hide groups based on type
+  document.getElementById('vault-url-group').style.display    = currentVaultType==='link' ? 'block' : 'none';
+  document.getElementById('vault-file-group').style.display   = currentVaultType==='file' ? 'block' : 'none';
+  document.getElementById('vault-lang-group').style.display   = currentVaultType==='code' ? 'block' : 'none';
+  var cl = document.getElementById('vault-content-label');
+  if (cl) cl.textContent = currentVaultType==='code' ? 'Code' : currentVaultType==='note' ? 'Note Content' : 'Content / Notes';
+}); });
+
+// File drop zone
+(function(){
+  const dropZone = document.getElementById('vault-file-drop');
+  const fileInput = document.getElementById('vault-file-input');
+  if (!dropZone) return;
+  dropZone.addEventListener('click', function(){ fileInput.click(); });
+  dropZone.addEventListener('dragover', function(e){ e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', function(){ dropZone.classList.remove('drag-over'); });
+  dropZone.addEventListener('drop', function(e){
+    e.preventDefault(); dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) { fileInput.files = e.dataTransfer.files; document.getElementById('vault-file-label').textContent = file.name; }
+  });
+  fileInput.addEventListener('change', function(){
+    if (fileInput.files[0]) document.getElementById('vault-file-label').textContent = fileInput.files[0].name;
+  });
+})();
 document.getElementById('btn-confirm-vault').addEventListener('click', async function() {
   const title    = document.getElementById('vault-title').value.trim();
-  const url      = document.getElementById('vault-url').value.trim();
-  const content  = document.getElementById('vault-content').value.trim();
+  const urlVal   = document.getElementById('vault-url') ? document.getElementById('vault-url').value.trim() : '';
+  const fileUrl  = document.getElementById('vault-file-url') ? document.getElementById('vault-file-url').value.trim() : '';
+  const txtContent = document.getElementById('vault-content').value.trim();
   const tags     = document.getElementById('vault-tags').value.trim().split(',').map(function(t){ return t.trim(); }).filter(Boolean);
   const isPublic = document.getElementById('vault-public').checked;
-  if (!title) return;
-  document.getElementById('vault-saving').style.display='block';
-  const emoji    = {link:'🔗',note:'📝',file:'📁',idea:'💡',code:'💻'}[currentVaultType];
   const lang     = (document.getElementById('vault-lang')||{}).value||'';
-  const pubTag   = isPublic ? ' [PUBLIC]' : '';
-  let msg = emoji+' **['+currentVaultType.toUpperCase()+'] '+title+'**'+pubTag;
-  if (lang)    msg+='\nLanguage: '+lang;
-  if (url)     msg+='\n'+url;
-  if (content&&currentVaultType==='code') msg+='\n```'+lang+'\n'+content+'\n```';
-  else if (content) msg+='\n'+content;
-  if (tags.length) msg+='\nTags: '+tags.join(', ');
+  if (!title) return;
+
+  document.getElementById('vault-saving').style.display='block';
+
+  const emoji  = {link:'🔗',note:'📝',file:'📁',idea:'💡',code:'💻'}[currentVaultType];
+  const pubTag = isPublic ? ' [PUBLIC]' : '';
+  let msg      = emoji+' **['+currentVaultType.toUpperCase()+'] '+title+'**'+pubTag;
+  let finalUrl = urlVal;
+  let fileContent = txtContent;
+
+  // Handle file upload (txt/code files — read as text)
+  if (currentVaultType === 'file') {
+    const fileInput = document.getElementById('vault-file-input');
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+      const file = fileInput.files[0];
+      const ext  = file.name.split('.').pop().toLowerCase();
+      const textExts = ['txt','js','ts','py','cs','java','html','css','json','md','xml','csv','sh','sql'];
+      if (textExts.includes(ext) && file.size < 1800000) {
+        // Read file as text and embed in Discord message
+        fileContent = await new Promise(function(resolve, reject) {
+          const reader = new FileReader();
+          reader.onload = function(e){ resolve(e.target.result); };
+          reader.onerror = reject;
+          reader.readAsText(file);
+        });
+        msg += '\nFilename: '+file.name;
+        if (tags.length) msg += '\nTags: '+tags.join(', ');
+        // Discord has 2000 char limit — truncate if needed
+        const codeBlock = '\n```'+ext+'\n'+fileContent.substring(0, 1500)+(fileContent.length>1500?'\n[truncated…]':'')+'\n```';
+        msg += codeBlock;
+        await DISCORD.send('file', msg);
+        document.getElementById('vault-saving').style.display='none';
+        vaultItems.push({id:Date.now().toString(),type:'file',title,url:'',content:fileContent.substring(0,200),tags,isPublic,date:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})});
+        renderVault(); renderTagSidebar(); updateStats();
+        closeModal('modal-vault'); clearForm(['vault-title','vault-url','vault-content','vault-tags','vault-lang','vault-file-url']);
+        document.getElementById('vault-file-label').textContent = 'Drag & drop or click to browse';
+        document.getElementById('vault-file-input').value = '';
+        return;
+      }
+    }
+    // External file URL (Google Drive, Dropbox, etc)
+    finalUrl = fileUrl || urlVal;
+    msg += '\nFile Type: '+( finalUrl ? finalUrl.split('.').pop().toUpperCase().split('?')[0] : 'External');
+  }
+
+  if (lang && currentVaultType==='code') msg += '\nLanguage: '+lang;
+  if (finalUrl) msg += '\n'+finalUrl;
+  if (fileContent && currentVaultType==='code') msg += '\n```'+lang+'\n'+fileContent+'\n```';
+  else if (fileContent && currentVaultType!=='file') msg += '\n'+fileContent;
+  if (tags.length) msg += '\nTags: '+tags.join(', ');
+
   await DISCORD.send(currentVaultType, msg);
   document.getElementById('vault-saving').style.display='none';
-  vaultItems.push({id:Date.now().toString(),type:currentVaultType,title,url,content,tags,isPublic,date:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})});
+  vaultItems.push({id:Date.now().toString(),type:currentVaultType,title,url:finalUrl,content:fileContent.substring(0,200),tags,isPublic,date:new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})});
   renderVault(); renderTagSidebar(); updateStats();
-  closeModal('modal-vault'); clearForm(['vault-title','vault-url','vault-content','vault-tags','vault-lang']);
+  closeModal('modal-vault'); clearForm(['vault-title','vault-url','vault-content','vault-tags','vault-lang','vault-file-url']);
+  document.getElementById('vault-file-label').textContent = 'Drag & drop or click to browse';
+  if(document.getElementById('vault-file-input')) document.getElementById('vault-file-input').value='';
 });
 
 // ── STATS & MARQUEE ───────────────────────────────────────────────────────────
