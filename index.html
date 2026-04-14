@@ -10,9 +10,12 @@
 </head>
 <body>
 
-<div class="cursor" id="cursor"></div>
-<div class="cursor-ring" id="cursor-ring"></div>
-<canvas id="bg-canvas"></canvas>
+<!-- BACKGROUND -->
+<div class="bg-wrap">
+  <div class="bg-img"></div>
+  <div class="bg-overlay"></div>
+  <div class="bg-grain"></div>
+</div>
 
 <!-- LOGIN -->
 <div id="login-screen">
@@ -29,7 +32,7 @@
         </svg>
       </div>
       <div class="login-logo">K<span>ira</span></div>
-      <p class="login-sub">Private Chamber</p>
+      <p class="login-sub">Ye Private Chamber</p>
       <div class="field-group">
         <label class="field-label">Username</label>
         <input class="field-input" type="text" id="login-user" placeholder="Enter your name" autocomplete="username">
@@ -39,8 +42,8 @@
         <input class="field-input" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
       </div>
       <div class="login-result" id="login-result"></div>
-      <button class="btn-primary" id="btn-login" style="width:100%;margin-top:1.5rem;text-align:center;">Enter the Vault</button>
-      <p class="login-hint">Session expires when tab is closed</p>
+      <button class="btn-primary" id="btn-login" style="width:100%;margin-top:1.5rem;text-align:center;">Enter the Keep</button>
+      <p class="login-hint">Thy session fadeth when the tab is sealed</p>
     </div>
   </div>
 </div>
@@ -52,14 +55,16 @@
       <div class="login-corner tl"></div><div class="login-corner tr"></div>
       <div class="login-corner bl"></div><div class="login-corner br"></div>
       <div class="login-logo">K<span>ira</span></div>
-      <p class="login-sub">First Time — Configure Channels</p>
+      <p class="login-sub">First Audience — Seal the Channels</p>
       <div class="field-group"><label class="field-label">Links Channel ID</label><input class="field-input" type="text" id="setup-links" placeholder="#vault-links → Copy ID"></div>
       <div class="field-group"><label class="field-label">Notes Channel ID</label><input class="field-input" type="text" id="setup-notes" placeholder="#vault-notes → Copy ID"></div>
       <div class="field-group"><label class="field-label">Files Channel ID</label><input class="field-input" type="text" id="setup-files" placeholder="#vault-files → Copy ID"></div>
       <div class="field-group"><label class="field-label">Ideas Channel ID</label><input class="field-input" type="text" id="setup-ideas" placeholder="#vault-ideas → Copy ID"></div>
+      <div class="field-group"><label class="field-label">Code Channel ID</label><input class="field-input" type="text" id="setup-code" placeholder="#vault-code → Copy ID"></div>
+      <div class="field-group"><label class="field-label">Background Channel ID</label><input class="field-input" type="text" id="setup-bg" placeholder="#vault-bg → Copy ID"></div>
       <div class="login-result" id="setup-result"></div>
-      <button class="btn-primary" id="btn-setup-save" style="width:100%;margin-top:1.5rem;">Seal the Vault</button>
-      <p class="login-hint">Saved to #vault-config — never needed again</p>
+      <button class="btn-primary" id="btn-setup-save" style="width:100%;margin-top:1.5rem;">Seal the Covenant</button>
+      <p class="login-hint">Thy configuration shall be enshrined — never to repeat</p>
     </div>
   </div>
 </div>
@@ -85,12 +90,12 @@
 <div class="page active" id="page-home">
   <div class="home-layout">
     <div class="home-left">
-      <div class="home-eyebrow">Portfolio &amp; Archive</div>
-      <h1 class="home-h1" id="hero-title">Kira<em id="hero-sub">creates.</em></h1>
+      <div class="home-eyebrow">Chronicles &amp; Legacy</div>
+      <h1 class="home-h1" id="hero-title">Kira<em>creates.</em></h1>
       <div class="home-divider">
         <div class="home-divider-line"></div>
         <div class="home-divider-diamond"></div>
-        <div class="home-divider-line" style="background:linear-gradient(90deg,transparent,rgba(201,168,76,0.6))"></div>
+        <div class="home-divider-line" style="background:linear-gradient(90deg,transparent,rgba(201,168,76,0.5))"></div>
       </div>
       <div class="home-cta">
         <button class="btn-primary" data-goto="shorts">View Shorts</button>
@@ -103,42 +108,28 @@
       </div>
     </div>
     <div class="home-right">
-      <div class="home-card">
-        <div class="card-image">
-          <canvas id="card-canvas"></canvas>
-          <div class="card-image-overlay"></div>
-          <div class="card-image-text">
-            <h3>The Royal Vault</h3>
-            <p>Your private archive, connected to Discord</p>
-          </div>
-        </div>
-        <div class="card-bottom">
-          <span class="card-bottom-label">Discord Sync Active</span>
-          <div class="card-bottom-dot"></div>
-        </div>
-      </div>
+      <div class="home-right-veil"></div>
     </div>
   </div>
-  <div class="marquee-strip"><div class="marquee-inner" id="marquee-inner"></div></div>
 </div>
 
 <!-- SHORTS -->
 <div class="page" id="page-shorts">
-  <div class="dark-section">
+  <div class="page-inner" style="display:flex;flex-direction:column;">
     <div class="section-header">
       <div><h2>Short<span>s</span></h2></div>
-      <p>Your Video Portfolio</p>
+      <p>Thine Moving Scrolls</p>
     </div>
     <div class="filter-bar" id="filter-bar"><button class="filter-btn active" data-filter="all">All</button></div>
     <div class="shorts-grid" id="shorts-grid"></div>
-    <button class="add-short-btn" id="btn-add-short">✦ Add Short</button>
+    <button class="add-short-btn" id="btn-add-short">✦ Add Scroll</button>
   </div>
 </div>
 
 <!-- VAULT -->
 <div class="page" id="page-vault">
-  <div class="dark-section">
-    <div class="vault-layout">
+  <div class="page-inner" style="overflow:hidden;display:flex;flex-direction:column;">
+    <div class="vault-layout" style="flex:1;overflow:hidden;">
       <div class="vault-sidebar">
         <div class="vault-sidebar-title">Categories</div>
         <div class="vault-cat active" data-vault-filter="all"><span class="vault-cat-icon">▦</span> All</div>
@@ -146,6 +137,7 @@
         <div class="vault-cat" data-vault-filter="note"><span class="vault-cat-icon">≡</span> Notes</div>
         <div class="vault-cat" data-vault-filter="file"><span class="vault-cat-icon">◫</span> Files</div>
         <div class="vault-cat" data-vault-filter="idea"><span class="vault-cat-icon">◇</span> Ideas</div>
+        <div class="vault-cat" data-vault-filter="code"><span class="vault-cat-icon">&#60;/&#62;</span> Code</div>
         <div class="vault-divider"></div>
         <div id="tag-sidebar"></div>
         <div class="vault-divider"></div>
@@ -156,8 +148,8 @@
       </div>
       <div class="vault-main">
         <div class="vault-topbar">
-          <input class="vault-search" placeholder="Search the archives…" id="vault-search-input">
-          <button class="vault-add-btn" id="btn-add-vault">✦ New Item</button>
+          <input class="vault-search" placeholder="Search the chronicles…" id="vault-search-input">
+          <button class="vault-add-btn" id="btn-add-vault">✦ New Scroll</button>
         </div>
         <div class="vault-cards" id="vault-cards"></div>
       </div>
@@ -167,157 +159,85 @@
 
 <!-- SETTINGS -->
 <div class="page" id="page-settings">
-  <div class="dark-section">
-    <div class="settings-layout">
+  <div class="page-inner">
+    <div class="settings-inner">
       <div class="settings-section">
         <h3>Channel <span>Config</span></h3>
-        <p>Update your Discord channel IDs. Changes save directly to #vault-config.</p>
+        <p>Update your Discord channel IDs.</p>
         <div class="field-group"><label class="field-label">Links Channel ID</label><input class="field-input" type="text" id="cfg-ch-links"></div>
         <div class="field-group"><label class="field-label">Notes Channel ID</label><input class="field-input" type="text" id="cfg-ch-notes"></div>
         <div class="field-group"><label class="field-label">Files Channel ID</label><input class="field-input" type="text" id="cfg-ch-files"></div>
         <div class="field-group"><label class="field-label">Ideas Channel ID</label><input class="field-input" type="text" id="cfg-ch-ideas"></div>
-        <button class="test-btn" id="btn-test-connection">Test Connection</button>
+        <div class="field-group"><label class="field-label">Code Channel ID</label><input class="field-input" type="text" id="cfg-ch-code"><div class="field-hint">Code snippets — saved as Discord code blocks with syntax highlighting</div></div>
+        <div class="field-group"><label class="field-label">Background Channel ID</label><input class="field-input" type="text" id="cfg-ch-bg"><div class="field-hint">Post an image in this channel → it becomes the site wallpaper automatically</div></div>
+        <button class="test-btn" id="btn-test-connection">Test the Courier</button>
         <div class="connection-result" id="connection-result"></div>
         <br><br>
-        <button class="settings-save" id="btn-save-config">Save to Discord</button>
+        <button class="settings-save" id="btn-save-config">Inscribe to Discord</button>
       </div>
       <div class="settings-section">
         <h3>Pro<span>file</span></h3>
         <div class="field-group"><label class="field-label">Display Name</label><input class="field-input" type="text" id="cfg-name" placeholder="Kira"></div>
         <div class="field-group"><label class="field-label">Tagline</label><input class="field-input" type="text" id="cfg-tagline" placeholder="Short-form content creator"></div>
-        <button class="settings-save" id="btn-save-profile">Save Profile</button>
+        <button class="settings-save" id="btn-save-profile">Seal Profile</button>
         <div class="connection-result" id="profile-result"></div>
       </div>
       <div class="settings-section">
-        <h3>Discord <span>Channels</span></h3>
+        <h3>Discord <span>Commands</span></h3>
+        <p>Use slash commands from any account to add items directly to the Vault:</p>
         <div class="step-guide">
-          <div class="step"><div class="step-num">A</div><div class="step-content"><code class="code-inline">#vault-auth</code> — two lines: username then password</div></div>
-          <div class="step"><div class="step-num">B</div><div class="step-content"><code class="code-inline">#vault-config</code> — auto-managed (ID in Cloudflare vars)</div></div>
-          <div class="step"><div class="step-num">C</div><div class="step-content"><code class="code-inline">#vault-links</code> <code class="code-inline">#vault-notes</code> <code class="code-inline">#vault-files</code> <code class="code-inline">#vault-ideas</code></div></div>
+          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add link [title] [url] [tags]</code></div></div>
+          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add note [title] [content] [tags]</code></div></div>
+          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add code [title] [language] [content]</code></div></div>
+          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add idea [title] [content]</code></div></div>
         </div>
+        <p style="margin-top:1rem">For slash commands to work, redeploy the Worker with the slash command support added.</p>
       </div>
     </div>
   </div>
 </div>
 
-</div><!-- end app -->
+</div>
 
 <!-- MODALS -->
 <div class="modal-backdrop" id="modal-short">
   <div class="modal">
-    <div class="modal-title">Add Short</div>
-    <div class="field-group"><label class="field-label">Title</label><input class="field-input" type="text" id="short-title" placeholder="Short title…"></div>
+    <div class="modal-title">Add Scroll</div>
+    <div class="field-group"><label class="field-label">Title</label><input class="field-input" type="text" id="short-title" placeholder="Name thy scroll…"></div>
     <div class="field-group"><label class="field-label">URL</label><input class="field-input" type="url" id="short-url" placeholder="https://…"></div>
-    <div class="field-group"><label class="field-label">Category</label><input class="field-input" type="text" id="short-cat" placeholder="e.g. Tech, Vlog…"></div>
-    <div class="field-group"><label class="field-label">Views (optional)</label><input class="field-input" type="text" id="short-views" placeholder="e.g. 12.4K"></div>
-    <div class="saving-indicator" id="short-saving">Saving to Discord…</div>
+    <div class="field-group"><label class="field-label">Category</label><input class="field-input" type="text" id="short-cat" placeholder="e.g. Battles, Wisdom…"></div>
+    <div class="field-group"><label class="field-label">Views (optional)</label><input class="field-input" type="text" id="short-views" placeholder="e.g. 12.4K Witnesses"></div>
+    <div class="saving-indicator" id="short-saving">Dispatching courier…</div>
     <div class="modal-footer">
       <button class="modal-cancel" data-close="modal-short">Cancel</button>
-      <button class="btn-primary" id="btn-confirm-short">Add Short</button>
+      <button class="btn-primary" id="btn-confirm-short">Add Scroll</button>
     </div>
   </div>
 </div>
 
 <div class="modal-backdrop" id="modal-vault">
   <div class="modal">
-    <div class="modal-title">New Vault Item</div>
+    <div class="modal-title">New Chronicle Entry</div>
     <div class="type-select">
       <button class="type-opt active" data-type="link">Link</button>
       <button class="type-opt" data-type="note">Note</button>
       <button class="type-opt" data-type="idea">Idea</button>
-      <button class="type-opt" data-type="file">File Ref</button>
+      <button class="type-opt" data-type="file">File</button>
+      <button class="type-opt" data-type="code">Code</button>
     </div>
     <div class="field-group"><label class="field-label">Title</label><input class="field-input" type="text" id="vault-title" placeholder="Title…"></div>
     <div class="field-group" id="vault-url-group"><label class="field-label">URL</label><input class="field-input" type="url" id="vault-url" placeholder="https://…"></div>
-    <div class="field-group"><label class="field-label">Content / Notes</label><textarea class="field-input" id="vault-content" rows="3" placeholder="Description, notes…"></textarea></div>
-    <div class="field-group"><label class="field-label">Tags (comma-separated)</label><input class="field-input" type="text" id="vault-tags" placeholder="e.g. dev, inspo"></div>
-    <div class="saving-indicator" id="vault-saving">Saving to Discord…</div>
+    <div class="field-group" id="vault-lang-group" style="display:none"><label class="field-label">Language</label><input class="field-input" type="text" id="vault-lang" placeholder="e.g. javascript, python, csharp…"></div>
+    <div class="field-group"><label class="field-label" id="vault-content-label">Content / Notes</label><textarea class="field-input" id="vault-content" rows="4" placeholder="Write thy chronicle…" style="font-family:var(--mono);font-size:0.8rem"></textarea></div>
+    <div class="field-group"><label class="field-label">Tags (comma-separated)</label><input class="field-input" type="text" id="vault-tags" placeholder="e.g. sorcery, battles"></div>
+    <div class="saving-indicator" id="vault-saving">Dispatching courier…</div>
     <div class="modal-footer">
       <button class="modal-cancel" data-close="modal-vault">Cancel</button>
-      <button class="btn-primary" id="btn-confirm-vault">Save to Vault</button>
+      <button class="btn-primary" id="btn-confirm-vault">Inscribe to Vault</button>
     </div>
   </div>
 </div>
 
 <script src="js/app.js"></script>
-<script>
-// ── CURSOR ────────────────────────────────────────────────────────────────────
-const cur=document.getElementById('cursor'),ring=document.getElementById('cursor-ring');
-let mx=0,my=0,rx=0,ry=0;
-document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cur.style.left=mx+'px';cur.style.top=my+'px';});
-(function anim(){rx+=(mx-rx)*0.1;ry+=(my-ry)*0.1;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(anim);})();
-document.querySelectorAll('button,a,input,textarea').forEach(el=>{
-  el.addEventListener('mouseenter',()=>{cur.classList.add('hover');ring.classList.add('hover');});
-  el.addEventListener('mouseleave',()=>{cur.classList.remove('hover');ring.classList.remove('hover');});
-});
-
-// ── PAGE BG — subtle warm particles ──────────────────────────────────────────
-const BC=document.getElementById('bg-canvas'),BX=BC.getContext('2d');
-let BW,BH;
-function bResize(){BW=BC.width=window.innerWidth;BH=BC.height=window.innerHeight;}
-bResize();window.addEventListener('resize',bResize);
-const bPts=Array.from({length:50},()=>({x:Math.random()*1920,y:Math.random()*1080,vx:(Math.random()-.5)*.2,vy:(Math.random()-.5)*.2,r:Math.random()*1+0.3,o:Math.random()*.12+.03}));
-function bDraw(){
-  BX.clearRect(0,0,BW,BH);
-  bPts.forEach(p=>{
-    p.x+=p.vx;p.y+=p.vy;
-    if(p.x<0)p.x=BW;if(p.x>BW)p.x=0;if(p.y<0)p.y=BH;if(p.y>BH)p.y=0;
-    BX.beginPath();BX.arc(p.x,p.y,p.r,0,Math.PI*2);
-    BX.fillStyle=`rgba(180,140,60,${p.o})`;BX.fill();
-  });
-  requestAnimationFrame(bDraw);
-}
-bDraw();
-
-// ── CARD CANVAS — dark animated scene ────────────────────────────────────────
-const CC=document.getElementById('card-canvas');
-if(CC){
-  const CX=CC.getContext('2d');
-  function cResize(){const r=CC.parentElement.getBoundingClientRect();CC.width=r.width||600;CC.height=r.height||400;}
-  cResize();window.addEventListener('resize',cResize);
-  const cPts=Array.from({length:60},()=>({x:Math.random(),y:Math.random(),vx:(Math.random()-.5)*.0015,vy:(Math.random()-.5)*.0015,r:Math.random()*.8+.2,o:Math.random()*.4+.1,tw:Math.random()*Math.PI*2}));
-  let ct=0;
-  function cDraw(){
-    const cw=CC.width,ch=CC.height;
-    CX.clearRect(0,0,cw,ch);
-    ct+=0.006;
-    // Deep dark gradient
-    const g=CX.createLinearGradient(0,0,cw,ch);
-    g.addColorStop(0,'#1a1208');g.addColorStop(0.5,'#0d0c0a');g.addColorStop(1,'#181410');
-    CX.fillStyle=g;CX.fillRect(0,0,cw,ch);
-    // Warm glow centre
-    const rg=CX.createRadialGradient(cw*.55,ch*.4,0,cw*.55,ch*.4,cw*.5);
-    rg.addColorStop(0,`rgba(201,168,76,${0.06+Math.sin(ct)*0.02})`);
-    rg.addColorStop(1,'transparent');
-    CX.fillStyle=rg;CX.fillRect(0,0,cw,ch);
-    // Horizon line
-    const hl=ch*.62+Math.sin(ct*.5)*ch*.01;
-    const hg=CX.createLinearGradient(0,hl-1,0,hl+1);
-    hg.addColorStop(0,'transparent');hg.addColorStop(0.5,`rgba(201,168,76,${0.3+Math.sin(ct*.8)*.1})`);hg.addColorStop(1,'transparent');
-    CX.fillStyle=hg;CX.fillRect(0,hl-4,cw,8);
-    // Mountain silhouette
-    CX.beginPath();CX.moveTo(0,ch);
-    CX.lineTo(0,ch*.5);CX.lineTo(cw*.15,ch*.3);CX.lineTo(cw*.35,ch*.55);
-    CX.lineTo(cw*.5,ch*.2);CX.lineTo(cw*.65,ch*.45);CX.lineTo(cw*.8,ch*.35);
-    CX.lineTo(cw,ch*.5);CX.lineTo(cw,ch);CX.closePath();
-    CX.fillStyle='rgba(8,6,4,0.95)';CX.fill();
-    // Stars / particles
-    cPts.forEach(p=>{
-      p.x+=p.vx;p.y+=p.vy;p.tw+=0.02;
-      if(p.x<0)p.x=1;if(p.x>1)p.x=0;if(p.y<0)p.y=0.6;if(p.y>0.6)p.y=0;
-      const a=p.o*(0.5+0.5*Math.sin(p.tw));
-      CX.beginPath();CX.arc(p.x*cw,p.y*ch,p.r,0,Math.PI*2);
-      CX.fillStyle=`rgba(232,204,122,${a})`;CX.fill();
-    });
-    // Gold vertical accent bar
-    const bx=cw*.88;
-    const bg2=CX.createLinearGradient(0,0,0,ch);
-    bg2.addColorStop(0,'transparent');bg2.addColorStop(0.3,`rgba(201,168,76,${0.4+Math.sin(ct*.6)*.1})`);bg2.addColorStop(0.7,`rgba(201,168,76,${0.3+Math.sin(ct*.6)*.1})`);bg2.addColorStop(1,'transparent');
-    CX.fillStyle=bg2;CX.fillRect(bx,0,1.5,ch);
-    requestAnimationFrame(cDraw);
-  }
-  cDraw();
-}
-</script>
 </body>
 </html>
