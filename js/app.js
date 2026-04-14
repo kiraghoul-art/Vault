@@ -146,10 +146,14 @@ async function fetchBgImage() {
 }
 
 function applyBgImage(url) {
-  // Apply directly to the .bg-img element
   const bgImg = document.querySelector('.bg-img');
-  if (bgImg) bgImg.style.backgroundImage = 'url(' + url + ')';
-  // Also set CSS var as fallback
+  if (bgImg) {
+    bgImg.style.backgroundImage = 'url(' + url + ')';
+    bgImg.style.backgroundSize = 'cover';
+    bgImg.style.backgroundPosition = 'center center';
+    bgImg.style.backgroundRepeat = 'no-repeat';
+    bgImg.style.backgroundAttachment = 'scroll';
+  }
   document.documentElement.style.setProperty('--bg-image', 'url(' + url + ')');
 }
 
