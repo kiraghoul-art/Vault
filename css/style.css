@@ -67,8 +67,6 @@ body {
   position: fixed; inset: 0;
   background: var(--bg-image, none) center center / cover no-repeat fixed;
   opacity: 0.45;
-  transition: opacity 1s ease;
-  will-change: transform;
 }
 .bg-overlay {
   position: absolute; inset: 0;
@@ -990,6 +988,12 @@ textarea.field-input { resize: vertical; min-height: 80px; }
 .saving-indicator::before { content: '⏳ '; }
 
 /* ── RESPONSIVE ─────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .bg-img {
+    background-attachment: scroll; /* ou simplesmente remove */
+  }
+}
+
 @media (max-width: 900px) {
   .home-layout { grid-template-columns: 1fr; }
   .home-right { display: none; }
