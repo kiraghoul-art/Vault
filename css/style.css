@@ -64,10 +64,11 @@ body {
   position: fixed; inset: 0; z-index: 0; pointer-events: none;
 }
 .bg-img {
-  position: absolute; inset: 0;
-  background: var(--bg-image, none) center/cover no-repeat;
+  position: fixed; inset: 0;
+  background: var(--bg-image, none) center center / cover no-repeat fixed;
   opacity: 0.45;
   transition: opacity 1s ease;
+  will-change: transform;
 }
 .bg-overlay {
   position: absolute; inset: 0;
