@@ -10,20 +10,20 @@
 <style>
 .vault-item-url a{font-family:var(--mono);font-size:.65rem;color:var(--gold-dark);text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:.35rem;transition:color .15s}
 .vault-item-url a:hover{color:var(--gold);text-decoration:underline}
-.theme-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.75rem;margin-top:1rem}
 .theme-field{display:flex;flex-direction:column;gap:.35rem}
 .theme-field label{font-family:var(--display);font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-dim)}
 .color-wrap{display:flex;align-items:center;gap:.5rem}
-.color-wrap input[type=color]{width:36px;height:28px;padding:2px;background:rgba(10,8,4,.8);border:1px solid rgba(201,168,76,.2);border-radius:3px;cursor:pointer;flex-shrink:0}
+.color-wrap input[type=color]{width:34px;height:28px;padding:2px;background:rgba(10,8,4,.8);border:1px solid rgba(201,168,76,.2);border-radius:3px;cursor:pointer;flex-shrink:0}
 .range-wrap{display:flex;align-items:center;gap:.75rem}
 .range-wrap input[type=range]{flex:1;accent-color:var(--gold)}
 .range-wrap span{font-family:var(--mono);font-size:.75rem;color:var(--gold-dim);min-width:2.5rem}
-.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border)}
-.toggle-row:last-child{border-bottom:none}
-.toggle-row label{font-family:var(--display);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);cursor:pointer}
+.page-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:.45rem .5rem;border-bottom:1px solid rgba(201,168,76,.08)}
+.page-toggle-row:last-child{border-bottom:none}
+.page-toggle-label{font-family:var(--display);font-size:.65rem;letter-spacing:.1em;color:var(--text-dim)}
 .toggle-switch{position:relative;width:36px;height:20px;flex-shrink:0}
 .toggle-switch input{opacity:0;width:0;height:0}
-.toggle-slider{position:absolute;inset:0;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.2);border-radius:10px;cursor:pointer;transition:.2s}
+.toggle-slider{position:absolute;inset:0;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.2);border-radius:20px;cursor:pointer;transition:.2s}
 .toggle-slider::before{content:'';position:absolute;width:14px;height:14px;left:2px;top:2px;background:var(--text-muted);border-radius:50%;transition:.2s}
 .toggle-switch input:checked+.toggle-slider{background:rgba(201,168,76,.3);border-color:var(--gold-dark)}
 .toggle-switch input:checked+.toggle-slider::before{transform:translateX(16px);background:var(--gold)}
@@ -62,7 +62,7 @@
         <input class="field-input" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
       </div>
       <div class="login-result" id="login-result" style="display:none"></div>
-      <button class="btn-primary" id="btn-login" style="width:100%;margin-top:1.5rem;text-align:center;">Enter the Keep</button>
+      <button class="btn-primary" id="btn-login" style="width:100%;margin-top:1.5rem;text-align:center">Enter the Keep</button>
       <p class="login-hint">Thy session fadeth when the tab is sealed</p>
     </div>
   </div>
@@ -74,13 +74,13 @@
   <div class="nav-logo" id="nav-logo">K<span>ira</span></div>
   <div class="nav-links">
     <button class="active" data-page="home">Home</button>
-    <button data-page="shorts" id="nav-shorts">Shorts</button>
-    <button data-page="vault" id="nav-vault">Vault</button>
-    <button data-page="socials" id="nav-socials">Socials</button>
-    <button data-page="curriculum" id="nav-curriculum">Curriculum</button>
+    <button data-page="shorts">Shorts</button>
+    <button data-page="vault">Vault</button>
+    <button data-page="socials">Socials</button>
+    <button data-page="curriculum">Curriculum</button>
     <button data-page="settings" class="owner-only" style="display:none">Setup</button>
   </div>
-  <div style="display:flex;align-items:center;gap:0.75rem;">
+  <div style="display:flex;align-items:center;gap:.75rem">
     <button class="nav-hamburger" id="nav-hamburger">&#9776;</button>
     <button class="btn-logout owner-only" id="btn-logout" title="Logout" style="display:none">&#x23FB;</button>
     <button class="btn-login-nav" id="btn-open-login" title="Enter the Keep">⚔</button>
@@ -113,7 +113,7 @@
 </div>
 
 <div class="page" id="page-shorts">
-  <div class="page-inner" style="display:flex;flex-direction:column;">
+  <div class="page-inner" style="display:flex;flex-direction:column">
     <div class="section-header"><div><h2>Short<span>s</span></h2></div><p>Thine Moving Scrolls</p></div>
     <div class="filter-bar" id="filter-bar"><button class="filter-btn active" data-filter="all">All</button></div>
     <div class="shorts-grid" id="shorts-grid"></div>
@@ -122,8 +122,8 @@
 </div>
 
 <div class="page" id="page-vault">
-  <div class="page-inner" style="overflow:hidden;display:flex;flex-direction:column;">
-    <div class="vault-layout" style="flex:1;overflow:hidden;">
+  <div class="page-inner" style="overflow:hidden;display:flex;flex-direction:column">
+    <div class="vault-layout" style="flex:1;overflow:hidden">
       <div class="vault-sidebar">
         <div class="vault-sidebar-title">Categories</div>
         <div class="vault-cat active" data-vault-filter="all"><span class="vault-cat-icon">▦</span> All</div>
@@ -155,11 +155,11 @@
   <div class="page-inner">
     <div class="section-header"><div><h2>So<span>cials</span></h2></div><p>Find me across the realm</p></div>
     <div class="socials-grid" id="socials-grid"><div class="socials-empty">Loading…</div></div>
-    <div class="owner-only" id="socials-edit-area" style="display:none">
+    <div class="owner-only socials-add-wrap" id="socials-edit-area" style="display:none">
       <div class="settings-section" style="margin-top:2rem">
         <h3>Add <span>Social</span></h3>
         <div class="socials-form-row">
-          <div class="field-group"><label class="field-label">Platform</label><input class="field-input" id="social-platform" placeholder="Instagram…"></div>
+          <div class="field-group"><label class="field-label">Platform</label><input class="field-input" id="social-platform" placeholder="Instagram, TikTok…"></div>
           <div class="field-group"><label class="field-label">URL</label><input class="field-input" id="social-url" placeholder="https://…"></div>
           <div class="field-group"><label class="field-label">Handle</label><input class="field-input" id="social-handle" placeholder="@kira"></div>
           <div class="field-group"><label class="field-label">Icon (emoji)</label><input class="field-input" id="social-icon" placeholder="📸"></div>
@@ -178,7 +178,7 @@
 <div class="page" id="page-curriculum">
   <div class="page-inner">
     <div class="section-header"><div><h2>Curri<span>culum</span></h2></div><p>Chronicles of Experience</p></div>
-    <div id="cv-content"><div class="cv-empty">No curriculum uploaded yet.</div></div>
+    <div id="cv-content"><div class="cv-empty">No curriculum yet.</div></div>
     <div class="owner-only" id="cv-edit-area" style="display:none;margin-top:2rem">
       <div class="settings-section">
         <h3>Upload <span>CV</span></h3>
@@ -202,81 +202,116 @@
         <h3>Pro<span>file</span></h3>
         <div class="field-group"><label class="field-label">Display Name</label><input class="field-input" type="text" id="cfg-name" placeholder="Kira"></div>
         <div class="field-group"><label class="field-label">Tagline</label><input class="field-input" type="text" id="cfg-tagline" placeholder="Short-form content creator"></div>
-        <div style="margin:1.25rem 0 1rem">
-          <div style="font-family:var(--display);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:.75rem">Page Visibility</div>
-          <div class="toggle-row">
-            <label for="toggle-shorts">Shorts</label>
-            <label class="toggle-switch"><input type="checkbox" id="toggle-shorts" checked><span class="toggle-slider"></span></label>
+        <div style="margin:1rem 0 .5rem">
+          <div class="field-label" style="margin-bottom:.75rem">Page Visibility</div>
+          <div class="page-toggle-row">
+            <span class="page-toggle-label">Shorts</span>
+            <label class="toggle-switch"><input type="checkbox" id="show-shorts" checked><span class="toggle-slider"></span></label>
           </div>
-          <div class="toggle-row">
-            <label for="toggle-vault">Vault</label>
-            <label class="toggle-switch"><input type="checkbox" id="toggle-vault" checked><span class="toggle-slider"></span></label>
+          <div class="page-toggle-row">
+            <span class="page-toggle-label">Vault</span>
+            <label class="toggle-switch"><input type="checkbox" id="show-vault" checked><span class="toggle-slider"></span></label>
           </div>
-          <div class="toggle-row">
-            <label for="toggle-socials">Socials</label>
-            <label class="toggle-switch"><input type="checkbox" id="toggle-socials" checked><span class="toggle-slider"></span></label>
+          <div class="page-toggle-row">
+            <span class="page-toggle-label">Socials</span>
+            <label class="toggle-switch"><input type="checkbox" id="show-socials" checked><span class="toggle-slider"></span></label>
           </div>
-          <div class="toggle-row">
-            <label for="toggle-curriculum">Curriculum</label>
-            <label class="toggle-switch"><input type="checkbox" id="toggle-curriculum" checked><span class="toggle-slider"></span></label>
+          <div class="page-toggle-row">
+            <span class="page-toggle-label">Curriculum</span>
+            <label class="toggle-switch"><input type="checkbox" id="show-curriculum" checked><span class="toggle-slider"></span></label>
           </div>
         </div>
-        <button class="test-btn" id="btn-test-connection" style="margin-bottom:.75rem">Test Connection</button>
-        <div class="connection-result" id="connection-result"></div>
-        <br>
-        <button class="settings-save" id="btn-save-profile">Save Profile</button>
+        <button class="settings-save" id="btn-save-profile" style="margin-top:1rem">Save Profile</button>
         <div class="connection-result" id="profile-result"></div>
       </div>
 
       <div class="settings-section">
+        <h3>Channel <span>IDs</span></h3>
+        <p>Discord channel IDs — used for backup logging.</p>
+        <div style="margin-top:.75rem;font-family:var(--mono);font-size:.7rem;color:var(--text-muted);line-height:2">
+          <div>links → <span style="color:var(--gold-dim)">1493193077765181550</span></div>
+          <div>notes → <span style="color:var(--gold-dim)">1493193123336028170</span></div>
+          <div>files → <span style="color:var(--gold-dim)">1493193181544845454</span></div>
+          <div>ideas → <span style="color:var(--gold-dim)">1493193239551934515</span></div>
+          <div>code &nbsp;→ <span style="color:var(--gold-dim)">1493995845048078358</span></div>
+          <div>shorts → <span style="color:var(--gold-dim)">1493995983078555678</span></div>
+          <div>bg &nbsp;&nbsp;&nbsp;→ <span style="color:var(--gold-dim)">1493580916055085147</span></div>
+          <div>profile→ <span style="color:var(--gold-dim)">1493563959423537314</span></div>
+          <div>socials→ <span style="color:var(--gold-dim)">1493640135642710127</span></div>
+          <div>cv &nbsp;&nbsp;&nbsp;→ <span style="color:var(--gold-dim)">1493640171722379264</span></div>
+        </div>
+        <button class="test-btn" id="btn-test-connection" style="margin-top:1rem">Test Connection</button>
+        <div class="connection-result" id="connection-result"></div>
+      </div>
+
+      <div class="settings-section" style="grid-column:1/-1">
         <h3>Theme <span>Editor</span></h3>
-        <p>Live preview as you change — save to apply permanently.</p>
-        <div style="margin-top:1.25rem">
-          <div class="theme-row">
-            <div class="theme-field">
-              <label>Primary Gold</label>
-              <div class="color-wrap"><input type="color" id="theme-gold-picker" value="#c9a84c"><input class="field-input" type="text" id="theme-gold" value="#c9a84c" placeholder="#c9a84c"></div>
-            </div>
-            <div class="theme-field">
-              <label>Gold Light</label>
-              <div class="color-wrap"><input type="color" id="theme-gold-light-picker" value="#e8d08a"><input class="field-input" type="text" id="theme-gold-light" value="#e8d08a" placeholder="#e8d08a"></div>
-            </div>
-            <div class="theme-field">
-              <label>Gold Dim</label>
-              <div class="color-wrap"><input type="color" id="theme-gold-dim-picker" value="#a07c30"><input class="field-input" type="text" id="theme-gold-dim" value="#a07c30" placeholder="#a07c30"></div>
-            </div>
-            <div class="theme-field">
-              <label>Background</label>
-              <div class="color-wrap"><input type="color" id="theme-bg-picker" value="#080604"><input class="field-input" type="text" id="theme-bg" value="#080604" placeholder="#080604"></div>
-            </div>
-            <div class="theme-field">
-              <label>Surface</label>
-              <div class="color-wrap"><input type="color" id="theme-surface-picker" value="#0f0c07"><input class="field-input" type="text" id="theme-surface" value="#0f0c07" placeholder="#0f0c07"></div>
-            </div>
-            <div class="theme-field">
-              <label>Text</label>
-              <div class="color-wrap"><input type="color" id="theme-text-picker" value="#e8dcc8"><input class="field-input" type="text" id="theme-text" value="#e8dcc8" placeholder="#e8dcc8"></div>
-            </div>
-            <div class="theme-field">
-              <label>Text Dim</label>
-              <div class="color-wrap"><input type="color" id="theme-text-dim-picker" value="#9a8860"><input class="field-input" type="text" id="theme-text-dim" value="#9a8860" placeholder="#9a8860"></div>
+        <p>Changes preview live — save to persist across all devices.</p>
+        <div class="theme-grid">
+          <div class="theme-field">
+            <label>Primary Gold</label>
+            <div class="color-wrap">
+              <input type="color" class="theme-color-picker" id="theme-gold-picker" data-target="theme-gold" value="#c9a84c">
+              <input class="field-input theme-color-input" type="text" id="theme-gold" value="#c9a84c" placeholder="#c9a84c">
             </div>
           </div>
-          <div class="theme-field" style="margin-top:1rem">
+          <div class="theme-field">
+            <label>Gold Light</label>
+            <div class="color-wrap">
+              <input type="color" class="theme-color-picker" id="theme-gold-light-picker" data-target="theme-gold-light" value="#e8d08a">
+              <input class="field-input theme-color-input" type="text" id="theme-gold-light" value="#e8d08a" placeholder="#e8d08a">
+            </div>
+          </div>
+          <div class="theme-field">
+            <label>Gold Dim</label>
+            <div class="color-wrap">
+              <input type="color" class="theme-color-picker" id="theme-gold-dim-picker" data-target="theme-gold-dim" value="#a07c30">
+              <input class="field-input theme-color-input" type="text" id="theme-gold-dim" value="#a07c30" placeholder="#a07c30">
+            </div>
+          </div>
+          <div class="theme-field">
+            <label>Background</label>
+            <div class="color-wrap">
+              <input type="color" class="theme-color-picker" id="theme-bg-picker" data-target="theme-bg" value="#080604">
+              <input class="field-input theme-color-input" type="text" id="theme-bg" value="#080604" placeholder="#080604">
+            </div>
+          </div>
+          <div class="theme-field">
+            <label>Surface</label>
+            <div class="color-wrap">
+              <input type="color" class="theme-color-picker" id="theme-surface-picker" data-target="theme-surface" value="#0f0c07">
+              <input class="field-input theme-color-input" type="text" id="theme-surface" value="#0f0c07" placeholder="#0f0c07">
+            </div>
+          </div>
+          <div class="theme-field">
+            <label>Text</label>
+            <div class="color-wrap">
+              <input type="color" class="theme-color-picker" id="theme-text-picker" data-target="theme-text" value="#e8dcc8">
+              <input class="field-input theme-color-input" type="text" id="theme-text" value="#e8dcc8" placeholder="#e8dcc8">
+            </div>
+          </div>
+          <div class="theme-field">
+            <label>Text Dim</label>
+            <div class="color-wrap">
+              <input type="color" class="theme-color-picker" id="theme-text-dim-picker" data-target="theme-text-dim" value="#9a8860">
+              <input class="field-input theme-color-input" type="text" id="theme-text-dim" value="#9a8860" placeholder="#9a8860">
+            </div>
+          </div>
+          <div class="theme-field">
             <label>Background Image URL</label>
-            <input class="field-input" type="url" id="theme-bg-url" placeholder="https://i.imgur.com/...">
+            <input class="field-input" type="url" id="theme-bg-url" placeholder="https://i.imgur.com/…">
           </div>
-          <div class="theme-field" style="margin-top:.75rem">
-            <label>Background Opacity</label>
-            <div class="range-wrap">
-              <input type="range" id="theme-bg-opacity" min="0" max="1" step="0.05" value="0.45">
-              <span id="theme-bg-opacity-val">0.45</span>
-            </div>
+        </div>
+        <div class="theme-field" style="margin-top:1rem">
+          <label>Background Image Opacity</label>
+          <div class="range-wrap">
+            <input type="range" id="theme-bg-opacity" min="0" max="1" step="0.05" value="0.45">
+            <span id="theme-bg-opacity-val">0.45</span>
           </div>
         </div>
         <div style="display:flex;gap:.75rem;margin-top:1.5rem;flex-wrap:wrap">
           <button class="settings-save" id="btn-save-theme">Seal the Theme</button>
-          <button class="test-btn" id="btn-reset-theme">Reset to Default</button>
+          <button class="test-btn" id="btn-reset-theme">Reset Default</button>
         </div>
         <div class="connection-result" id="theme-result"></div>
       </div>
@@ -292,7 +327,7 @@
     <div class="modal-title">Add Scroll</div>
     <div class="field-group"><label class="field-label">Title</label><input class="field-input" type="text" id="short-title" placeholder="Name thy scroll…"></div>
     <div class="field-group"><label class="field-label">URL</label><input class="field-input" type="url" id="short-url" placeholder="https://…"></div>
-    <div class="field-group"><label class="field-label">Category</label><input class="field-input" type="text" id="short-cat" placeholder="e.g. Battles, Wisdom…"></div>
+    <div class="field-group"><label class="field-label">Category</label><input class="field-input" type="text" id="short-cat" placeholder="e.g. Gaming, IRL…"></div>
     <div class="field-group"><label class="field-label">Views (optional)</label><input class="field-input" type="text" id="short-views" placeholder="e.g. 12.4K"></div>
     <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem">
       <input type="checkbox" id="short-public" checked style="accent-color:var(--gold);width:16px;height:16px">
