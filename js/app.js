@@ -7,9 +7,9 @@ const API = {
     if (this.token) h['X-Session-Token'] = this.token;
     return h;
   },
-  async get(path) { return (await fetch(WORKER + path, { headers: this.h() })).json(); },
-  async post(path, data) { return (await fetch(WORKER + path, { method: 'POST', headers: this.h(), body: JSON.stringify(data) })).json(); },
-  async patch(path, data) { return (await fetch(WORKER + path, { method: 'PATCH', headers: this.h(), body: JSON.stringify(data) })).json(); }
+  async get(path)        { return (await fetch(WORKER + path, { headers: this.h() })).json(); },
+  async post(path, data) { return (await fetch(WORKER + path, { method: 'POST',   headers: this.h(), body: JSON.stringify(data) })).json(); },
+  async del(path)        { return (await fetch(WORKER + path, { method: 'DELETE', headers: this.h() })).json(); }
 };
 
 let cfg = {};
@@ -38,18 +38,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadPublic() {
   setStatus('connecting');
   try {
-    const res = await API.get('/public');
-    if (!res.ok) { setStatus('error'); return; }
-    cfg = {};
-    applyProfile(res.profile);
-    applyBg(res.profile.bg);
-    vaultItems = res.items  || [];
-    shorts     = res.shorts || [];
-    socials    = res.socials || [];
-    renderVault();
-    renderShorts();
-    renderSocials();
-    updateStats();
+    const r = await API.get('/public');
+    if (!r.ok) { setStatus('error'); return; }
+    applyProfile(r.profile);
+    applyBg(r.profile.bg);
+    vaultItems = r.items   || [];
+    shorts     = r.shorts  || [];
+    socials    = r.socials || [];
+    renderVault(); renderShorts(); renderSocials(); updateStats();
     setStatus('connected');
   } catch(e) { setStatus('error'); }
 }
@@ -85,9 +81,7 @@ function goTo(page) {
 function setupLoginModal() {
   document.getElementById('btn-open-login')?.addEventListener('click', openLoginModal);
   document.getElementById('btn-close-login')?.addEventListener('click', closeLoginModal);
-  document.getElementById('login-screen')?.addEventListener('click', function(e) {
-    if (e.target === this) closeLoginModal();
-  });
+  document.getElementById('login-screen')?.addEventListener('click', function(e) { if (e.target === this) closeLoginModal(); });
   document.getElementById('btn-login')?.addEventListener('click', doLogin);
   document.getElementById('login-pass')?.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
   document.getElementById('login-user')?.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('login-pass')?.focus(); });
@@ -121,15 +115,14 @@ async function doLogin() {
   if (btn) btn.disabled = true;
   setLoginMsg('Verifying…');
   try {
-    const res = await fetch(WORKER + '/auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    const r = await (await fetch(WORKER + '/auth', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: user, password: pass })
-    }).then(r => r.json());
-    if (!res.ok) { setLoginMsg('Wrong credentials.'); return; }
-    API.token = res.token;
-    cfg = res.config || {};
-    sessionStorage.setItem('kira_token', res.token);
+    })).json();
+    if (!r.ok) { setLoginMsg('Wrong credentials.'); return; }
+    API.token = r.token;
+    cfg = r.config || {};
+    sessionStorage.setItem('kira_token', r.token);
     sessionStorage.setItem('kira_cfg', JSON.stringify(cfg));
     closeLoginModal();
     await enterOwner();
@@ -139,8 +132,7 @@ async function doLogin() {
 
 function doLogout() {
   API.token = null; isOwner = false; cfg = {}; vaultItems = []; shorts = []; socials = [];
-  sessionStorage.removeItem('kira_token');
-  sessionStorage.removeItem('kira_cfg');
+  sessionStorage.removeItem('kira_token'); sessionStorage.removeItem('kira_cfg');
   location.reload();
 }
 
@@ -149,19 +141,16 @@ async function enterOwner() {
   document.querySelectorAll('.owner-only').forEach(el => el.style.display = '');
   setStatus('connecting');
   try {
-    const res = await API.get('/data');
-    if (!res.ok) { setStatus('error'); return; }
-    cfg        = res.config  || cfg;
-    vaultItems = res.items   || [];
-    shorts     = res.shorts  || [];
-    socials    = res.socials || [];
-    applyProfile({ name: cfg.profileName, tagline: cfg.profileTagline, bg: cfg.bg });
-    applyBg(cfg.bg);
+    const r = await API.get('/data');
+    if (!r.ok) { setStatus('error'); return; }
+    cfg        = r.config  || cfg;
+    vaultItems = r.items   || [];
+    shorts     = r.shorts  || [];
+    socials    = r.socials || [];
+    applyProfile({ name: cfg.profileName, tagline: cfg.profileTagline, bg: cfg.bgUrl });
+    applyBg(cfg.bgUrl);
     populateSettings();
-    renderVault();
-    renderShorts();
-    renderSocials();
-    updateStats();
+    renderVault(); renderShorts(); renderSocials(); updateStats();
     setStatus('connected');
   } catch(e) { setStatus('error'); }
 }
@@ -175,29 +164,16 @@ function applyProfile(p) {
   if (tg) tg.textContent = tagline;
 }
 
-async function applyBg(bgChannelId) {
-  if (!bgChannelId) return;
-  try {
-    const r = await fetch(`${WORKER}/channel/${bgChannelId}?limit=3`, { headers: API.h() });
-    if (!r.ok) return;
-    const d = await r.json();
-    if (!d.messages?.length) return;
-    const url = d.messages[0].content?.trim();
-    if (url?.startsWith('http')) {
-      const el = document.querySelector('.bg-img');
-      if (el) el.style.backgroundImage = `url(${url})`;
-    }
-  } catch(e) {}
+function applyBg(bgUrl) {
+  if (!bgUrl) return;
+  const el = document.querySelector('.bg-img');
+  if (el) el.style.backgroundImage = `url(${bgUrl})`;
 }
 
 function setupSettings() {
   document.getElementById('btn-save-config')?.addEventListener('click', saveConfig);
   document.getElementById('btn-save-profile')?.addEventListener('click', saveProfile);
   document.getElementById('btn-test-connection')?.addEventListener('click', testConnection);
-  document.getElementById('btn-reregister-commands')?.addEventListener('click', async () => {
-    const el = document.getElementById('commands-result');
-    showResult(el, 'Not implemented via UI.', 'err');
-  });
   document.getElementById('btn-add-social')?.addEventListener('click', addSocial);
 }
 
@@ -212,6 +188,7 @@ function populateSettings() {
   });
   const cn = document.getElementById('cfg-name');    if (cn && cfg.profileName)    cn.value = cfg.profileName;
   const ct = document.getElementById('cfg-tagline'); if (ct && cfg.profileTagline) ct.value = cfg.profileTagline;
+  const cb = document.getElementById('cfg-bg-url');  if (cb && cfg.bgUrl)          cb.value = cfg.bgUrl;
   const sea = document.getElementById('socials-edit-area'); if (sea) sea.style.display = '';
   const cea = document.getElementById('cv-edit-area');      if (cea) cea.style.display = '';
 }
@@ -226,10 +203,12 @@ async function saveConfig() {
   const el = document.getElementById('connection-result');
   showResult(el, 'Saving…', '');
   try {
-    for (const [id, key] of Object.entries(map)) {
+    const channels = {};
+    Object.entries(map).forEach(([id, key]) => {
       const f = document.getElementById(id);
-      if (f?.value.trim()) { cfg[key] = f.value.trim(); await API.post('/config', { line: key + '=' + f.value.trim() }); }
-    }
+      if (f?.value.trim()) { channels[key] = f.value.trim(); cfg[key] = f.value.trim(); }
+    });
+    await API.post('/channels', channels);
     sessionStorage.setItem('kira_cfg', JSON.stringify(cfg));
     showResult(el, '✅ Saved.', 'ok');
   } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
@@ -243,9 +222,11 @@ async function saveProfile() {
   const el = document.getElementById('profile-result');
   showResult(el, 'Saving…', '');
   try {
-    if (name)    { cfg.profileName    = name;    await API.post('/config', { line: 'profileName='    + name }); }
-    if (tagline) { cfg.profileTagline = tagline; await API.post('/config', { line: 'profileTagline=' + tagline }); }
-    if (bgUrl)   { await API.post('/bg', { url: bgUrl }); }
+    const profile = {};
+    if (name)    { profile.profileName    = name;    cfg.profileName = name; }
+    if (tagline) { profile.profileTagline = tagline; cfg.profileTagline = tagline; }
+    if (bgUrl)   { await API.post('/bg', { url: bgUrl }); cfg.bgUrl = bgUrl; applyBg(bgUrl); }
+    if (name || tagline) await API.post('/profile', profile);
     applyProfile({ name: cfg.profileName, tagline: cfg.profileTagline });
     sessionStorage.setItem('kira_cfg', JSON.stringify(cfg));
     showResult(el, '✅ Saved.', 'ok');
@@ -309,10 +290,10 @@ function openVaultModal(type) {
 }
 
 function updateVaultFields(type) {
-  const ug = document.getElementById('vault-url-group');   if (ug) ug.style.display  = (type==='note'||type==='idea') ? 'none' : '';
-  const fg = document.getElementById('vault-file-group');  if (fg) fg.style.display  = type==='file' ? '' : 'none';
-  const lg = document.getElementById('vault-lang-group');  if (lg) lg.style.display  = type==='code' ? '' : 'none';
-  const cl = document.getElementById('vault-content-label'); if (cl) cl.textContent  = type==='code' ? 'Code' : 'Content / Notes';
+  const ug = document.getElementById('vault-url-group');    if (ug) ug.style.display  = (type==='note'||type==='idea') ? 'none' : '';
+  const fg = document.getElementById('vault-file-group');   if (fg) fg.style.display  = type==='file' ? '' : 'none';
+  const lg = document.getElementById('vault-lang-group');   if (lg) lg.style.display  = type==='code' ? '' : 'none';
+  const cl = document.getElementById('vault-content-label'); if (cl) cl.textContent   = type==='code' ? 'Code' : 'Content / Notes';
 }
 
 async function addVaultItem() {
@@ -325,21 +306,12 @@ async function addVaultItem() {
   const fileUrl  = document.getElementById('vault-file-url')?.value.trim() || '';
   const isPublic = document.getElementById('vault-public')?.checked ?? true;
   if (!titulo) { toast('Title is required.'); return; }
-  const chMap = { link: cfg.links, note: cfg.notes, file: cfg.files, idea: cfg.ideas, code: cfg.code };
-  const chId  = chMap[vaultType];
-  if (!chId) { toast('Channel not set for ' + vaultType + '. Go to Setup.'); return; }
   const sav = document.getElementById('vault-saving'); if (sav) sav.style.display = 'block';
   const effUrl = url || fileUrl;
-  let msg = titulo;
-  if (effUrl)  msg += '\n' + effUrl;
-  if (lang)    msg += '\nLang: ' + lang;
-  if (content) msg += '\n' + content;
-  if (tags)    msg += '\nTags: ' + tags;
-  if (!isPublic) msg += '\nPublic: false';
   try {
-    const r = await API.post('/channel/' + chId + '/message', { content: msg });
+    const r = await API.post('/items', { type: vaultType, titulo, url: effUrl, content, tags, lang, isPublic });
     if (r.ok) {
-      vaultItems.push({ id: r.id, channelId: chId, type: vaultType, titulo, url: effUrl, content, tags, isPublic });
+      vaultItems.unshift({ id: r.id, type: vaultType, titulo, url: effUrl, content, tags, lang, isPublic });
       renderVault(); updateStats(); closeModal('modal-vault'); toast('✦ Added.');
     } else { toast('Error: ' + (r.error || 'failed')); }
   } catch(e) { toast('Error: ' + e.message); }
@@ -363,7 +335,7 @@ function renderVault() {
         <span class="vault-item-type">${ic[i.type]||'▦'} ${i.type}</span>
         <span style="display:flex;align-items:center;gap:.4rem">
           ${!i.isPublic ? '<span style="font-size:.6rem;color:var(--text-muted)">🔒</span>' : ''}
-          ${isOwner ? `<button class="vdel" data-id="${i.id}" data-ch="${i.channelId||''}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.75rem;padding:.1rem .3rem;transition:color .15s">✕</button>` : ''}
+          ${isOwner ? `<button class="vdel" data-id="${i.id}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.75rem;padding:.1rem .3rem;transition:color .15s">✕</button>` : ''}
         </span>
       </div>
       <div class="vault-item-title">${esc(i.titulo)}</div>
@@ -377,9 +349,9 @@ function renderVault() {
     btn.addEventListener('click', async function(e) {
       e.stopPropagation();
       if (!confirm('Delete this entry?')) return;
-      const id = this.dataset.id, ch = this.dataset.ch;
+      const id = this.dataset.id;
       try {
-        await API.post('/channel/' + ch + '/delete/' + id, {});
+        await API.del('/items/' + id);
         vaultItems = vaultItems.filter(x => x.id !== id);
         renderVault(); updateStats(); toast('Deleted.');
       } catch(err) { toast('Delete failed.'); }
@@ -426,17 +398,11 @@ async function addShort() {
   const views    = document.getElementById('short-views')?.value.trim() || '';
   const isPublic = document.getElementById('short-public')?.checked ?? true;
   if (!titulo || !url) { toast('Title and URL required.'); return; }
-  const chId = cfg.shorts || cfg.notes;
-  if (!chId) { toast('No channel set for shorts. Go to Setup.'); return; }
   const sav = document.getElementById('short-saving'); if (sav) sav.style.display = 'block';
-  let msg = 'SHORT: ' + titulo + '\n' + url;
-  if (cat)   msg += '\nCat: ' + cat;
-  if (views) msg += '\nViews: ' + views;
-  if (!isPublic) msg += '\nPublic: false';
   try {
-    const r = await API.post('/channel/' + chId + '/message', { content: msg });
+    const r = await API.post('/shorts', { titulo, url, cat, views, isPublic });
     if (r.ok) {
-      shorts.push({ id: r.id, channelId: chId, titulo, url, cat, views, isPublic });
+      shorts.unshift({ id: r.id, titulo, url, cat, views, isPublic });
       renderShorts(); updateStats(); closeModal('modal-short'); toast('✦ Scroll added.');
     } else { toast('Error: ' + (r.error || 'failed')); }
   } catch(e) { toast('Error: ' + e.message); }
@@ -469,18 +435,33 @@ function renderShorts() {
     <div class="short-card" data-scat="${esc(s.cat||'')}">
       <div class="short-thumb">
         <div class="thumb-gradient"></div>
-        <div class="play-icon"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        <div class="play-icon"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg></div>
         ${s.cat ? `<div class="thumb-tag">${esc(s.cat)}</div>` : ''}
       </div>
       <div class="short-info">
         <div class="short-title">${esc(s.titulo)}</div>
         <div class="short-meta">
           ${s.views ? `<span class="short-views">${esc(s.views)} views</span>` : ''}
+          ${isOwner ? `<button class="sdel" data-id="${s.id}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.7rem;margin-left:auto;transition:color .15s">✕</button>` : ''}
         </div>
       </div>
     </div>`).join('');
   grid.querySelectorAll('.short-card').forEach((card, i) => {
-    card.addEventListener('click', () => { if (visible[i]?.url) window.open(visible[i].url, '_blank'); });
+    card.addEventListener('click', e => { if (!e.target.classList.contains('sdel') && visible[i]?.url) window.open(visible[i].url, '_blank'); });
+  });
+  grid.querySelectorAll('.sdel').forEach(btn => {
+    btn.addEventListener('mouseenter', function() { this.style.color = '#cc6644'; });
+    btn.addEventListener('mouseleave', function() { this.style.color = 'var(--text-muted)'; });
+    btn.addEventListener('click', async function(e) {
+      e.stopPropagation();
+      if (!confirm('Delete this scroll?')) return;
+      const id = this.dataset.id;
+      try {
+        await API.del('/shorts/' + id);
+        shorts = shorts.filter(x => x.id !== id);
+        renderShorts(); updateStats(); toast('Deleted.');
+      } catch(err) { toast('Delete failed.'); }
+    });
   });
 }
 
@@ -492,19 +473,14 @@ async function addSocial() {
   const icon     = document.getElementById('social-icon')?.value.trim()     || '';
   const isPublic = document.getElementById('social-public')?.checked ?? true;
   if (!platform || !url) { toast('Platform and URL required.'); return; }
-  if (!cfg.socials) { toast('Socials channel not configured. Go to Setup.'); return; }
-  let msg = 'SOCIAL: ' + platform + '\n' + url;
-  if (handle) msg += '\nHandle: ' + handle;
-  if (icon)   msg += '\nIcon: '   + icon;
-  if (!isPublic) msg += '\nPublic: false';
   try {
-    const r = await API.post('/channel/' + cfg.socials + '/message', { content: msg });
+    const r = await API.post('/socials', { platform, url, handle, icon, isPublic });
     if (r.ok) {
-      socials.push({ id: r.id, channelId: cfg.socials, platform, url, handle, icon, isPublic });
+      socials.push({ id: r.id, platform, url, handle, icon, isPublic });
       renderSocials();
-      const el = document.getElementById('social-result');
-      showResult(el, '✅ Added.', 'ok');
       ['social-platform','social-url','social-handle','social-icon'].forEach(id => { const f = document.getElementById(id); if (f) f.value = ''; });
+      const el = document.getElementById('social-result'); showResult(el, '✅ Added.', 'ok');
+      toast('✦ Social added.');
     } else { toast('Error: ' + (r.error || 'failed')); }
   } catch(e) { toast('Error: ' + e.message); }
 }
@@ -521,15 +497,15 @@ function renderSocials() {
         <div class="social-name">${esc(s.platform)}</div>
         ${s.handle ? `<div class="social-handle">${esc(s.handle)}</div>` : ''}
       </div>
-      ${isOwner ? `<button class="social-del" data-id="${s.id}" data-ch="${s.channelId||''}">✕</button>` : ''}
+      ${isOwner ? `<button class="social-del" data-id="${s.id}">✕</button>` : ''}
     </a>`).join('');
   grid.querySelectorAll('.social-del').forEach(btn =>
     btn.addEventListener('click', async function(e) {
       e.preventDefault(); e.stopPropagation();
       if (!confirm('Delete this social?')) return;
-      const id = this.dataset.id, ch = this.dataset.ch;
+      const id = this.dataset.id;
       try {
-        await API.post('/channel/' + ch + '/delete/' + id, {});
+        await API.del('/socials/' + id);
         socials = socials.filter(x => x.id !== id);
         renderSocials(); toast('Deleted.');
       } catch(err) { toast('Delete failed.'); }
@@ -552,7 +528,7 @@ function setStatus(state) {
   const dot = document.getElementById('discord-dot');
   const lbl = document.getElementById('discord-label');
   const c = { connected:'#98c379', connecting:'#c9a84c', error:'#e06c75' };
-  const l = { connected:'Discord: connected', connecting:'Discord: connecting…', error:'Discord: error' };
+  const l = { connected:'Discord: connected', connecting:'Connecting…', error:'Connection error' };
   if (dot) dot.style.background = c[state] || '#666';
   if (lbl) lbl.textContent = l[state] || '';
 }
