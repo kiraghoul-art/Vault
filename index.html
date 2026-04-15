@@ -5,31 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KIRA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <style>
-.vault-item-url a {
-  font-family: var(--mono);
-  font-size: .65rem;
-  color: var(--gold-dark);
-  text-decoration: none;
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-bottom: .35rem;
-  transition: color .15s;
-}
-.vault-item-url a:hover { color: var(--gold); text-decoration: underline; }
-.theme-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
-.theme-field { display: flex; flex-direction: column; gap: .35rem; }
-.theme-field label { font-family: var(--display); font-size: .58rem; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-dim); }
-.theme-color-wrap { display: flex; align-items: center; gap: .5rem; }
-.theme-color-wrap input[type=color] { width: 36px; height: 28px; padding: 2px; background: rgba(10,8,4,.8); border: 1px solid rgba(201,168,76,.2); border-radius: 3px; cursor: pointer; }
-.theme-color-wrap input[type=text] { flex: 1; }
-.theme-range-wrap { display: flex; align-items: center; gap: .75rem; }
-.theme-range-wrap input[type=range] { flex: 1; accent-color: var(--gold); }
-.theme-range-wrap span { font-family: var(--mono); font-size: .75rem; color: var(--gold-dim); min-width: 2.5rem; }
+.vault-item-url a{font-family:var(--mono);font-size:.65rem;color:var(--gold-dark);text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:.35rem;transition:color .15s}
+.vault-item-url a:hover{color:var(--gold);text-decoration:underline}
+.theme-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.theme-field{display:flex;flex-direction:column;gap:.35rem}
+.theme-field label{font-family:var(--display);font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-dim)}
+.color-wrap{display:flex;align-items:center;gap:.5rem}
+.color-wrap input[type=color]{width:36px;height:28px;padding:2px;background:rgba(10,8,4,.8);border:1px solid rgba(201,168,76,.2);border-radius:3px;cursor:pointer;flex-shrink:0}
+.range-wrap{display:flex;align-items:center;gap:.75rem}
+.range-wrap input[type=range]{flex:1;accent-color:var(--gold)}
+.range-wrap span{font-family:var(--mono);font-size:.75rem;color:var(--gold-dim);min-width:2.5rem}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid var(--border)}
+.toggle-row:last-child{border-bottom:none}
+.toggle-row label{font-family:var(--display);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);cursor:pointer}
+.toggle-switch{position:relative;width:36px;height:20px;flex-shrink:0}
+.toggle-switch input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.2);border-radius:10px;cursor:pointer;transition:.2s}
+.toggle-slider::before{content:'';position:absolute;width:14px;height:14px;left:2px;top:2px;background:var(--text-muted);border-radius:50%;transition:.2s}
+.toggle-switch input:checked+.toggle-slider{background:rgba(201,168,76,.3);border-color:var(--gold-dark)}
+.toggle-switch input:checked+.toggle-slider::before{transform:translateX(16px);background:var(--gold)}
 </style>
 </head>
 <body>
@@ -77,10 +74,10 @@
   <div class="nav-logo" id="nav-logo">K<span>ira</span></div>
   <div class="nav-links">
     <button class="active" data-page="home">Home</button>
-    <button data-page="shorts">Shorts</button>
-    <button data-page="vault">Vault</button>
-    <button data-page="socials">Socials</button>
-    <button data-page="curriculum">Curriculum</button>
+    <button data-page="shorts" id="nav-shorts">Shorts</button>
+    <button data-page="vault" id="nav-vault">Vault</button>
+    <button data-page="socials" id="nav-socials">Socials</button>
+    <button data-page="curriculum" id="nav-curriculum">Curriculum</button>
     <button data-page="settings" class="owner-only" style="display:none">Setup</button>
   </div>
   <div style="display:flex;align-items:center;gap:0.75rem;">
@@ -117,10 +114,7 @@
 
 <div class="page" id="page-shorts">
   <div class="page-inner" style="display:flex;flex-direction:column;">
-    <div class="section-header">
-      <div><h2>Short<span>s</span></h2></div>
-      <p>Thine Moving Scrolls</p>
-    </div>
+    <div class="section-header"><div><h2>Short<span>s</span></h2></div><p>Thine Moving Scrolls</p></div>
     <div class="filter-bar" id="filter-bar"><button class="filter-btn active" data-filter="all">All</button></div>
     <div class="shorts-grid" id="shorts-grid"></div>
     <button class="add-short-btn owner-only" id="btn-add-short" style="display:none">✦ Add Scroll</button>
@@ -159,21 +153,18 @@
 
 <div class="page" id="page-socials">
   <div class="page-inner">
-    <div class="section-header">
-      <div><h2>So<span>cials</span></h2></div>
-      <p>Find me across the realm</p>
-    </div>
+    <div class="section-header"><div><h2>So<span>cials</span></h2></div><p>Find me across the realm</p></div>
     <div class="socials-grid" id="socials-grid"><div class="socials-empty">Loading…</div></div>
-    <div class="owner-only socials-add-wrap" id="socials-edit-area" style="display:none">
+    <div class="owner-only" id="socials-edit-area" style="display:none">
       <div class="settings-section" style="margin-top:2rem">
         <h3>Add <span>Social</span></h3>
         <div class="socials-form-row">
-          <div class="field-group"><label class="field-label">Platform</label><input class="field-input" id="social-platform" placeholder="Instagram, TikTok…"></div>
+          <div class="field-group"><label class="field-label">Platform</label><input class="field-input" id="social-platform" placeholder="Instagram…"></div>
           <div class="field-group"><label class="field-label">URL</label><input class="field-input" id="social-url" placeholder="https://…"></div>
           <div class="field-group"><label class="field-label">Handle</label><input class="field-input" id="social-handle" placeholder="@kira"></div>
           <div class="field-group"><label class="field-label">Icon (emoji)</label><input class="field-input" id="social-icon" placeholder="📸"></div>
         </div>
-        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem">
           <input type="checkbox" id="social-public" checked style="accent-color:var(--gold);width:16px;height:16px">
           <label class="field-label" style="margin:0;cursor:pointer" for="social-public">Visible to public</label>
         </div>
@@ -186,10 +177,7 @@
 
 <div class="page" id="page-curriculum">
   <div class="page-inner">
-    <div class="section-header">
-      <div><h2>Curri<span>culum</span></h2></div>
-      <p>Chronicles of Experience</p>
-    </div>
+    <div class="section-header"><div><h2>Curri<span>culum</span></h2></div><p>Chronicles of Experience</p></div>
     <div id="cv-content"><div class="cv-empty">No curriculum uploaded yet.</div></div>
     <div class="owner-only" id="cv-edit-area" style="display:none;margin-top:2rem">
       <div class="settings-section">
@@ -211,93 +199,77 @@
     <div class="settings-inner">
 
       <div class="settings-section">
-        <h3>Channel <span>Config</span></h3>
-        <p>Your Discord channel IDs for backup storage.</p>
-        <div class="field-group"><label class="field-label">Links</label><input class="field-input" type="text" id="cfg-ch-links"></div>
-        <div class="field-group"><label class="field-label">Notes</label><input class="field-input" type="text" id="cfg-ch-notes"></div>
-        <div class="field-group"><label class="field-label">Files</label><input class="field-input" type="text" id="cfg-ch-files"></div>
-        <div class="field-group"><label class="field-label">Ideas</label><input class="field-input" type="text" id="cfg-ch-ideas"></div>
-        <div class="field-group"><label class="field-label">Code</label><input class="field-input" type="text" id="cfg-ch-code"></div>
-        <div class="field-group"><label class="field-label">Background</label><input class="field-input" type="text" id="cfg-ch-bg"></div>
-        <div class="field-group"><label class="field-label">Socials</label><input class="field-input" type="text" id="cfg-ch-socials"></div>
-        <div class="field-group"><label class="field-label">Curriculum</label><input class="field-input" type="text" id="cfg-ch-cv"></div>
-        <button class="test-btn" id="btn-test-connection">Test Connection</button>
-        <div class="connection-result" id="connection-result"></div>
-        <br>
-        <button class="settings-save" id="btn-save-config">Save Channels</button>
-      </div>
-
-      <div class="settings-section">
         <h3>Pro<span>file</span></h3>
         <div class="field-group"><label class="field-label">Display Name</label><input class="field-input" type="text" id="cfg-name" placeholder="Kira"></div>
         <div class="field-group"><label class="field-label">Tagline</label><input class="field-input" type="text" id="cfg-tagline" placeholder="Short-form content creator"></div>
-        <div class="field-group">
-          <label class="field-label">Background Image URL</label>
-          <input class="field-input" type="url" id="cfg-bg-url" placeholder="https://i.imgur.com/...">
+        <div style="margin:1.25rem 0 1rem">
+          <div style="font-family:var(--display);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:.75rem">Page Visibility</div>
+          <div class="toggle-row">
+            <label for="toggle-shorts">Shorts</label>
+            <label class="toggle-switch"><input type="checkbox" id="toggle-shorts" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <label for="toggle-vault">Vault</label>
+            <label class="toggle-switch"><input type="checkbox" id="toggle-vault" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <label for="toggle-socials">Socials</label>
+            <label class="toggle-switch"><input type="checkbox" id="toggle-socials" checked><span class="toggle-slider"></span></label>
+          </div>
+          <div class="toggle-row">
+            <label for="toggle-curriculum">Curriculum</label>
+            <label class="toggle-switch"><input type="checkbox" id="toggle-curriculum" checked><span class="toggle-slider"></span></label>
+          </div>
         </div>
+        <button class="test-btn" id="btn-test-connection" style="margin-bottom:.75rem">Test Connection</button>
+        <div class="connection-result" id="connection-result"></div>
+        <br>
         <button class="settings-save" id="btn-save-profile">Save Profile</button>
         <div class="connection-result" id="profile-result"></div>
       </div>
 
-      <div class="settings-section" style="grid-column:1/-1">
+      <div class="settings-section">
         <h3>Theme <span>Editor</span></h3>
-        <p>Customise colours in real time — changes preview instantly, save to apply permanently.</p>
+        <p>Live preview as you change — save to apply permanently.</p>
         <div style="margin-top:1.25rem">
           <div class="theme-row">
             <div class="theme-field">
               <label>Primary Gold</label>
-              <div class="theme-color-wrap">
-                <input type="color" id="theme-gold-picker" value="#c9a84c" oninput="document.getElementById('theme-gold').value=this.value;livePreviewTheme()">
-                <input class="field-input" type="text" id="theme-gold" value="#c9a84c" placeholder="#c9a84c" oninput="document.getElementById('theme-gold-picker').value=this.value;livePreviewTheme()">
-              </div>
+              <div class="color-wrap"><input type="color" id="theme-gold-picker" value="#c9a84c"><input class="field-input" type="text" id="theme-gold" value="#c9a84c" placeholder="#c9a84c"></div>
             </div>
             <div class="theme-field">
               <label>Gold Light</label>
-              <div class="theme-color-wrap">
-                <input type="color" id="theme-gold-light-picker" value="#e8d08a" oninput="document.getElementById('theme-gold-light').value=this.value;livePreviewTheme()">
-                <input class="field-input" type="text" id="theme-gold-light" value="#e8d08a" placeholder="#e8d08a" oninput="document.getElementById('theme-gold-light-picker').value=this.value;livePreviewTheme()">
-              </div>
+              <div class="color-wrap"><input type="color" id="theme-gold-light-picker" value="#e8d08a"><input class="field-input" type="text" id="theme-gold-light" value="#e8d08a" placeholder="#e8d08a"></div>
             </div>
             <div class="theme-field">
               <label>Gold Dim</label>
-              <div class="theme-color-wrap">
-                <input type="color" id="theme-gold-dim-picker" value="#a07c30" oninput="document.getElementById('theme-gold-dim').value=this.value;livePreviewTheme()">
-                <input class="field-input" type="text" id="theme-gold-dim" value="#a07c30" placeholder="#a07c30" oninput="document.getElementById('theme-gold-dim-picker').value=this.value;livePreviewTheme()">
-              </div>
+              <div class="color-wrap"><input type="color" id="theme-gold-dim-picker" value="#a07c30"><input class="field-input" type="text" id="theme-gold-dim" value="#a07c30" placeholder="#a07c30"></div>
             </div>
             <div class="theme-field">
               <label>Background</label>
-              <div class="theme-color-wrap">
-                <input type="color" id="theme-bg-picker" value="#080604" oninput="document.getElementById('theme-bg').value=this.value;livePreviewTheme()">
-                <input class="field-input" type="text" id="theme-bg" value="#080604" placeholder="#080604" oninput="document.getElementById('theme-bg-picker').value=this.value;livePreviewTheme()">
-              </div>
+              <div class="color-wrap"><input type="color" id="theme-bg-picker" value="#080604"><input class="field-input" type="text" id="theme-bg" value="#080604" placeholder="#080604"></div>
             </div>
             <div class="theme-field">
               <label>Surface</label>
-              <div class="theme-color-wrap">
-                <input type="color" id="theme-surface-picker" value="#0f0c07" oninput="document.getElementById('theme-surface').value=this.value;livePreviewTheme()">
-                <input class="field-input" type="text" id="theme-surface" value="#0f0c07" placeholder="#0f0c07" oninput="document.getElementById('theme-surface-picker').value=this.value;livePreviewTheme()">
-              </div>
+              <div class="color-wrap"><input type="color" id="theme-surface-picker" value="#0f0c07"><input class="field-input" type="text" id="theme-surface" value="#0f0c07" placeholder="#0f0c07"></div>
             </div>
             <div class="theme-field">
               <label>Text</label>
-              <div class="theme-color-wrap">
-                <input type="color" id="theme-text-picker" value="#e8dcc8" oninput="document.getElementById('theme-text').value=this.value;livePreviewTheme()">
-                <input class="field-input" type="text" id="theme-text" value="#e8dcc8" placeholder="#e8dcc8" oninput="document.getElementById('theme-text-picker').value=this.value;livePreviewTheme()">
-              </div>
+              <div class="color-wrap"><input type="color" id="theme-text-picker" value="#e8dcc8"><input class="field-input" type="text" id="theme-text" value="#e8dcc8" placeholder="#e8dcc8"></div>
             </div>
             <div class="theme-field">
               <label>Text Dim</label>
-              <div class="theme-color-wrap">
-                <input type="color" id="theme-text-dim-picker" value="#9a8860" oninput="document.getElementById('theme-text-dim').value=this.value;livePreviewTheme()">
-                <input class="field-input" type="text" id="theme-text-dim" value="#9a8860" placeholder="#9a8860" oninput="document.getElementById('theme-text-dim-picker').value=this.value;livePreviewTheme()">
-              </div>
+              <div class="color-wrap"><input type="color" id="theme-text-dim-picker" value="#9a8860"><input class="field-input" type="text" id="theme-text-dim" value="#9a8860" placeholder="#9a8860"></div>
             </div>
           </div>
           <div class="theme-field" style="margin-top:1rem">
-            <label>Background Image Opacity</label>
-            <div class="theme-range-wrap">
-              <input type="range" id="theme-bg-opacity" min="0" max="1" step="0.05" value="0.45" oninput="document.getElementById('theme-bg-opacity-val').textContent=parseFloat(this.value).toFixed(2);livePreviewTheme()">
+            <label>Background Image URL</label>
+            <input class="field-input" type="url" id="theme-bg-url" placeholder="https://i.imgur.com/...">
+          </div>
+          <div class="theme-field" style="margin-top:.75rem">
+            <label>Background Opacity</label>
+            <div class="range-wrap">
+              <input type="range" id="theme-bg-opacity" min="0" max="1" step="0.05" value="0.45">
               <span id="theme-bg-opacity-val">0.45</span>
             </div>
           </div>
@@ -322,7 +294,7 @@
     <div class="field-group"><label class="field-label">URL</label><input class="field-input" type="url" id="short-url" placeholder="https://…"></div>
     <div class="field-group"><label class="field-label">Category</label><input class="field-input" type="text" id="short-cat" placeholder="e.g. Battles, Wisdom…"></div>
     <div class="field-group"><label class="field-label">Views (optional)</label><input class="field-input" type="text" id="short-views" placeholder="e.g. 12.4K"></div>
-    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem">
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem">
       <input type="checkbox" id="short-public" checked style="accent-color:var(--gold);width:16px;height:16px">
       <label class="field-label" style="margin:0;cursor:pointer" for="short-public">Visible to public</label>
     </div>
@@ -347,19 +319,19 @@
     <div class="field-group"><label class="field-label">Title</label><input class="field-input" type="text" id="vault-title" placeholder="Title…"></div>
     <div class="field-group" id="vault-url-group"><label class="field-label">URL</label><input class="field-input" type="url" id="vault-url" placeholder="https://…"></div>
     <div class="field-group" id="vault-file-group" style="display:none">
-      <label class="field-label">Upload File</label>
+      <label class="field-label">File</label>
       <div class="file-drop-zone" id="vault-file-drop">
         <span class="file-drop-icon">📂</span>
         <span id="vault-file-label">Drag & drop or click to browse</span>
         <input type="file" id="vault-file-input" accept=".txt,.js,.ts,.py,.cs,.java,.html,.css,.json,.md,.xml,.csv,.sh,.sql" style="display:none">
       </div>
       <div class="field-hint">Or paste a direct URL below</div>
-      <input class="field-input" type="url" id="vault-file-url" placeholder="https://…" style="margin-top:0.5rem">
+      <input class="field-input" type="url" id="vault-file-url" placeholder="https://…" style="margin-top:.5rem">
     </div>
     <div class="field-group" id="vault-lang-group" style="display:none"><label class="field-label">Language</label><input class="field-input" type="text" id="vault-lang" placeholder="e.g. javascript, python…"></div>
-    <div class="field-group"><label class="field-label" id="vault-content-label">Content / Notes</label><textarea class="field-input" id="vault-content" rows="4" placeholder="Write thy chronicle…" style="font-family:var(--mono);font-size:0.8rem"></textarea></div>
+    <div class="field-group"><label class="field-label" id="vault-content-label">Content / Notes</label><textarea class="field-input" id="vault-content" rows="4" placeholder="Write thy chronicle…" style="font-family:var(--mono);font-size:.8rem"></textarea></div>
     <div class="field-group"><label class="field-label">Tags (comma-separated)</label><input class="field-input" type="text" id="vault-tags" placeholder="e.g. sorcery, battles"></div>
-    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem">
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem">
       <input type="checkbox" id="vault-public" checked style="accent-color:var(--gold);width:16px;height:16px">
       <label class="field-label" style="margin:0;cursor:pointer" for="vault-public">Visible to public</label>
     </div>
