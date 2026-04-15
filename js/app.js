@@ -7,41 +7,31 @@ const API = {
     if (this.token) h['X-Session-Token'] = this.token;
     return h;
   },
-  async get(path) {
-    return (await fetch(WORKER + path, { headers: this.h() })).json();
-  },
-  async post(path, data) {
-    return (await fetch(WORKER + path, { method: 'POST', headers: this.h(), body: JSON.stringify(data) })).json();
-  },
-  async patch(path, data) {
-    return (await fetch(WORKER + path, { method: 'PATCH', headers: this.h(), body: JSON.stringify(data) })).json();
-  }
+  async get(path) { return (await fetch(WORKER + path, { headers: this.h() })).json(); },
+  async post(path, data) { return (await fetch(WORKER + path, { method: 'POST', headers: this.h(), body: JSON.stringify(data) })).json(); },
+  async patch(path, data) { return (await fetch(WORKER + path, { method: 'PATCH', headers: this.h(), body: JSON.stringify(data) })).json(); }
 };
 
 let cfg = {};
 let isOwner = false;
 let vaultItems = [];
+let shorts = [];
+let socials = [];
 let vaultFilter = 'all';
 let vaultType = 'link';
 
 document.addEventListener('DOMContentLoaded', async () => {
   setupNav();
-  setupVaultEvents();
-  setupShortEvents();
-  setupSettingsEvents();
+  setupLoginModal();
+  setupVaultModal();
+  setupShortModal();
+  setupSettings();
 
-  const savedToken = sessionStorage.getItem('kira_token');
-  const savedCfg   = sessionStorage.getItem('kira_cfg');
-
-  if (savedToken && savedCfg) {
-    try {
-      API.token = savedToken;
-      cfg = JSON.parse(savedCfg);
-      await enterOwner();
-      return;
-    } catch(e) {}
+  const tok = sessionStorage.getItem('kira_token');
+  const sc  = sessionStorage.getItem('kira_cfg');
+  if (tok && sc) {
+    try { API.token = tok; cfg = JSON.parse(sc); await enterOwner(); return; } catch(e) {}
   }
-
   await loadPublic();
 });
 
@@ -50,15 +40,18 @@ async function loadPublic() {
   try {
     const res = await API.get('/public');
     if (!res.ok) { setStatus('error'); return; }
+    cfg = {};
     applyProfile(res.profile);
     applyBg(res.profile.bg);
-    vaultItems = res.items || [];
+    vaultItems = res.items  || [];
+    shorts     = res.shorts || [];
+    socials    = res.socials || [];
     renderVault();
+    renderShorts();
+    renderSocials();
     updateStats();
     setStatus('connected');
-  } catch(e) {
-    setStatus('error');
-  }
+  } catch(e) { setStatus('error'); }
 }
 
 function setupNav() {
@@ -75,10 +68,8 @@ function setupNav() {
     document.addEventListener('click', () => nl.classList.remove('open'));
   }
   document.getElementById('nav-logo')?.addEventListener('click', () => goTo('home'));
-  document.getElementById('btn-logout')?.addEventListener('click', doLogout);
-  document.getElementById('btn-open-login')?.addEventListener('click', () => { window.location.href = 'login.html'; });
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal('modal-vault'); closeModal('modal-short'); }
+    if (e.key === 'Escape') { closeModal('modal-vault'); closeModal('modal-short'); closeLoginModal(); }
   });
 }
 
@@ -91,6 +82,68 @@ function goTo(page) {
   document.querySelector('.nav-links')?.classList.remove('open');
 }
 
+function setupLoginModal() {
+  document.getElementById('btn-open-login')?.addEventListener('click', openLoginModal);
+  document.getElementById('btn-close-login')?.addEventListener('click', closeLoginModal);
+  document.getElementById('login-screen')?.addEventListener('click', function(e) {
+    if (e.target === this) closeLoginModal();
+  });
+  document.getElementById('btn-login')?.addEventListener('click', doLogin);
+  document.getElementById('login-pass')?.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  document.getElementById('login-user')?.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('login-pass')?.focus(); });
+  document.getElementById('btn-logout')?.addEventListener('click', doLogout);
+}
+
+function openLoginModal() {
+  const s = document.getElementById('login-screen');
+  if (s) { s.style.display = 'flex'; document.getElementById('login-user')?.focus(); }
+}
+
+function closeLoginModal() {
+  const s = document.getElementById('login-screen');
+  if (s) s.style.display = 'none';
+  setLoginMsg('');
+}
+
+function setLoginMsg(msg, ok) {
+  const el = document.getElementById('login-result');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = 'login-result' + (ok ? ' ok' : msg ? ' err' : '');
+  el.style.display = msg ? 'block' : 'none';
+}
+
+async function doLogin() {
+  const user = document.getElementById('login-user')?.value.trim() || '';
+  const pass = document.getElementById('login-pass')?.value || '';
+  if (!user || !pass) { setLoginMsg('Fill both fields.'); return; }
+  const btn = document.getElementById('btn-login');
+  if (btn) btn.disabled = true;
+  setLoginMsg('Verifying…');
+  try {
+    const res = await fetch(WORKER + '/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: pass })
+    }).then(r => r.json());
+    if (!res.ok) { setLoginMsg('Wrong credentials.'); return; }
+    API.token = res.token;
+    cfg = res.config || {};
+    sessionStorage.setItem('kira_token', res.token);
+    sessionStorage.setItem('kira_cfg', JSON.stringify(cfg));
+    closeLoginModal();
+    await enterOwner();
+  } catch(e) { setLoginMsg('Connection error.'); }
+  finally { if (btn) btn.disabled = false; }
+}
+
+function doLogout() {
+  API.token = null; isOwner = false; cfg = {}; vaultItems = []; shorts = []; socials = [];
+  sessionStorage.removeItem('kira_token');
+  sessionStorage.removeItem('kira_cfg');
+  location.reload();
+}
+
 async function enterOwner() {
   isOwner = true;
   document.querySelectorAll('.owner-only').forEach(el => el.style.display = '');
@@ -98,28 +151,24 @@ async function enterOwner() {
   try {
     const res = await API.get('/data');
     if (!res.ok) { setStatus('error'); return; }
-    cfg = res.config || cfg;
-    vaultItems = res.items || [];
+    cfg        = res.config  || cfg;
+    vaultItems = res.items   || [];
+    shorts     = res.shorts  || [];
+    socials    = res.socials || [];
     applyProfile({ name: cfg.profileName, tagline: cfg.profileTagline, bg: cfg.bg });
     applyBg(cfg.bg);
     populateSettings();
     renderVault();
+    renderShorts();
+    renderSocials();
     updateStats();
     setStatus('connected');
   } catch(e) { setStatus('error'); }
 }
 
-function doLogout() {
-  API.token = null; isOwner = false; cfg = {}; vaultItems = [];
-  sessionStorage.removeItem('kira_token');
-  sessionStorage.removeItem('kira_cfg');
-  location.reload();
-}
-
 function applyProfile(p) {
-  if (!p) return;
-  const name    = p.name    || 'Kira';
-  const tagline = p.tagline || 'Short-form content, ideas, and a private vault.';
+  const name    = (p && p.name)    || 'Kira';
+  const tagline = (p && p.tagline) || 'Short-form content, ideas, and a private vault.';
   const h1 = document.getElementById('hero-title');
   if (h1) h1.innerHTML = name + '<em>creates.</em>';
   const tg = document.getElementById('hero-tagline');
@@ -130,8 +179,9 @@ async function applyBg(bgChannelId) {
   if (!bgChannelId) return;
   try {
     const r = await fetch(`${WORKER}/channel/${bgChannelId}?limit=3`, { headers: API.h() });
+    if (!r.ok) return;
     const d = await r.json();
-    if (!d.ok || !d.messages?.length) return;
+    if (!d.messages?.length) return;
     const url = d.messages[0].content?.trim();
     if (url?.startsWith('http')) {
       const el = document.querySelector('.bg-img');
@@ -140,31 +190,37 @@ async function applyBg(bgChannelId) {
   } catch(e) {}
 }
 
-function setupSettingsEvents() {
+function setupSettings() {
   document.getElementById('btn-save-config')?.addEventListener('click', saveConfig);
   document.getElementById('btn-save-profile')?.addEventListener('click', saveProfile);
   document.getElementById('btn-test-connection')?.addEventListener('click', testConnection);
+  document.getElementById('btn-reregister-commands')?.addEventListener('click', async () => {
+    const el = document.getElementById('commands-result');
+    showResult(el, 'Not implemented via UI.', 'err');
+  });
+  document.getElementById('btn-add-social')?.addEventListener('click', addSocial);
 }
 
 function populateSettings() {
   const map = {
     'cfg-ch-links': 'links', 'cfg-ch-notes': 'notes', 'cfg-ch-files': 'files',
-    'cfg-ch-ideas': 'ideas', 'cfg-ch-code': 'code',   'cfg-ch-bg': 'bg',
+    'cfg-ch-ideas': 'ideas', 'cfg-ch-code': 'code', 'cfg-ch-bg': 'bg',
     'cfg-ch-socials': 'socials', 'cfg-ch-cv': 'cv'
   };
   Object.entries(map).forEach(([id, key]) => {
-    const el = document.getElementById(id);
-    if (el && cfg[key]) el.value = cfg[key];
+    const el = document.getElementById(id); if (el && cfg[key]) el.value = cfg[key];
   });
-  const cn = document.getElementById('cfg-name');    if (cn) cn.value = cfg.profileName    || '';
-  const ct = document.getElementById('cfg-tagline'); if (ct) ct.value = cfg.profileTagline || '';
+  const cn = document.getElementById('cfg-name');    if (cn && cfg.profileName)    cn.value = cfg.profileName;
+  const ct = document.getElementById('cfg-tagline'); if (ct && cfg.profileTagline) ct.value = cfg.profileTagline;
+  const sea = document.getElementById('socials-edit-area'); if (sea) sea.style.display = '';
+  const cea = document.getElementById('cv-edit-area');      if (cea) cea.style.display = '';
 }
 
 async function saveConfig() {
   if (!isOwner) return;
   const map = {
     'cfg-ch-links': 'links', 'cfg-ch-notes': 'notes', 'cfg-ch-files': 'files',
-    'cfg-ch-ideas': 'ideas', 'cfg-ch-code': 'code',   'cfg-ch-bg': 'bg',
+    'cfg-ch-ideas': 'ideas', 'cfg-ch-code': 'code', 'cfg-ch-bg': 'bg',
     'cfg-ch-socials': 'socials', 'cfg-ch-cv': 'cv'
   };
   const el = document.getElementById('connection-result');
@@ -181,17 +237,16 @@ async function saveConfig() {
 
 async function saveProfile() {
   if (!isOwner) return;
-  const name   = document.getElementById('cfg-name')?.value.trim()    || '';
-  const tagline= document.getElementById('cfg-tagline')?.value.trim() || '';
-  const bgUrl  = document.getElementById('cfg-bg-url')?.value.trim()  || '';
+  const name    = document.getElementById('cfg-name')?.value.trim()    || '';
+  const tagline = document.getElementById('cfg-tagline')?.value.trim() || '';
+  const bgUrl   = document.getElementById('cfg-bg-url')?.value.trim()  || '';
   const el = document.getElementById('profile-result');
   showResult(el, 'Saving…', '');
   try {
-    if (name)    { cfg.profileName    = name;    await API.post('/config', { line: 'profileName=' + name }); }
+    if (name)    { cfg.profileName    = name;    await API.post('/config', { line: 'profileName='    + name }); }
     if (tagline) { cfg.profileTagline = tagline; await API.post('/config', { line: 'profileTagline=' + tagline }); }
     if (bgUrl)   { await API.post('/bg', { url: bgUrl }); }
     applyProfile({ name: cfg.profileName, tagline: cfg.profileTagline });
-    if (bgUrl) applyBg(cfg.bg);
     sessionStorage.setItem('kira_cfg', JSON.stringify(cfg));
     showResult(el, '✅ Saved.', 'ok');
   } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
@@ -207,7 +262,7 @@ async function testConnection() {
   } catch(e) { showResult(el, '❌ ' + e.message, 'err'); setStatus('error'); }
 }
 
-function setupVaultEvents() {
+function setupVaultModal() {
   document.querySelectorAll('.vault-cat').forEach(c =>
     c.addEventListener('click', function() {
       document.querySelectorAll('.vault-cat').forEach(x => x.classList.remove('active'));
@@ -248,27 +303,27 @@ function openVaultModal(type) {
     const el = document.getElementById(id); if (el) el.value = '';
   });
   const lbl = document.getElementById('vault-file-label'); if (lbl) lbl.textContent = 'Drag & drop or click to browse';
-  const pub = document.getElementById('vault-public');    if (pub) pub.checked = true;
-  const sav = document.getElementById('vault-saving');   if (sav) sav.style.display = 'none';
+  const pub = document.getElementById('vault-public');     if (pub) pub.checked = true;
+  const sav = document.getElementById('vault-saving');     if (sav) sav.style.display = 'none';
   openModal('modal-vault');
 }
 
 function updateVaultFields(type) {
-  const ug = document.getElementById('vault-url-group');  if (ug) ug.style.display  = (type==='note'||type==='idea') ? 'none' : '';
-  const fg = document.getElementById('vault-file-group'); if (fg) fg.style.display  = type==='file' ? '' : 'none';
-  const lg = document.getElementById('vault-lang-group'); if (lg) lg.style.display  = type==='code' ? '' : 'none';
-  const cl = document.getElementById('vault-content-label'); if (cl) cl.textContent = type==='code' ? 'Code' : 'Content / Notes';
+  const ug = document.getElementById('vault-url-group');   if (ug) ug.style.display  = (type==='note'||type==='idea') ? 'none' : '';
+  const fg = document.getElementById('vault-file-group');  if (fg) fg.style.display  = type==='file' ? '' : 'none';
+  const lg = document.getElementById('vault-lang-group');  if (lg) lg.style.display  = type==='code' ? '' : 'none';
+  const cl = document.getElementById('vault-content-label'); if (cl) cl.textContent  = type==='code' ? 'Code' : 'Content / Notes';
 }
 
 async function addVaultItem() {
   if (!isOwner) return;
-  const titulo  = document.getElementById('vault-title')?.value.trim()    || '';
-  const url     = document.getElementById('vault-url')?.value.trim()      || '';
-  const content = document.getElementById('vault-content')?.value.trim()  || '';
-  const tags    = document.getElementById('vault-tags')?.value.trim()     || '';
-  const lang    = document.getElementById('vault-lang')?.value.trim()     || '';
-  const fileUrl = document.getElementById('vault-file-url')?.value.trim() || '';
-  const isPublic= document.getElementById('vault-public')?.checked ?? true;
+  const titulo   = document.getElementById('vault-title')?.value.trim()    || '';
+  const url      = document.getElementById('vault-url')?.value.trim()      || '';
+  const content  = document.getElementById('vault-content')?.value.trim()  || '';
+  const tags     = document.getElementById('vault-tags')?.value.trim()     || '';
+  const lang     = document.getElementById('vault-lang')?.value.trim()     || '';
+  const fileUrl  = document.getElementById('vault-file-url')?.value.trim() || '';
+  const isPublic = document.getElementById('vault-public')?.checked ?? true;
   if (!titulo) { toast('Title is required.'); return; }
   const chMap = { link: cfg.links, note: cfg.notes, file: cfg.files, idea: cfg.ideas, code: cfg.code };
   const chId  = chMap[vaultType];
@@ -306,15 +361,19 @@ function renderVault() {
     <div class="vault-item" data-type="${i.type}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
         <span class="vault-item-type">${ic[i.type]||'▦'} ${i.type}</span>
-        ${!i.isPublic ? '<span style="font-size:.6rem;color:var(--text-muted)">🔒</span>' : ''}
-        ${isOwner ? `<button class="vault-del-btn" data-id="${i.id}" data-ch="${i.channelId||''}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.7rem;padding:.1rem .3rem;transition:color .2s" onmouseover="this.style.color='#cc6644'" onmouseout="this.style.color='var(--text-muted)'">✕</button>` : ''}
+        <span style="display:flex;align-items:center;gap:.4rem">
+          ${!i.isPublic ? '<span style="font-size:.6rem;color:var(--text-muted)">🔒</span>' : ''}
+          ${isOwner ? `<button class="vdel" data-id="${i.id}" data-ch="${i.channelId||''}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.75rem;padding:.1rem .3rem;transition:color .15s">✕</button>` : ''}
+        </span>
       </div>
       <div class="vault-item-title">${esc(i.titulo)}</div>
-      ${i.url     ? `<div class="vault-item-url"><a href="${esc(i.url)}" target="_blank" rel="noopener" style="color:var(--gold-dark);text-decoration:none">${esc(i.url)}</a></div>` : ''}
+      ${i.url     ? `<div class="vault-item-url"><a href="${esc(i.url)}" target="_blank" rel="noopener" style="color:var(--gold-dark);text-decoration:none;font-family:var(--mono);font-size:.65rem">${esc(i.url)}</a></div>` : ''}
       ${i.content ? `<div class="vault-item-preview">${esc(i.content)}</div>` : ''}
       ${i.tags    ? `<div class="vault-item-footer"><div style="display:flex;gap:.3rem;flex-wrap:wrap">${i.tags.split(',').map(t=>`<span class="vault-tag">${esc(t.trim())}</span>`).join('')}</div></div>` : ''}
     </div>`).join('');
-  c.querySelectorAll('.vault-del-btn').forEach(btn =>
+  c.querySelectorAll('.vdel').forEach(btn => {
+    btn.addEventListener('mouseenter', function() { this.style.color = '#cc6644'; });
+    btn.addEventListener('mouseleave', function() { this.style.color = 'var(--text-muted)'; });
     btn.addEventListener('click', async function(e) {
       e.stopPropagation();
       if (!confirm('Delete this entry?')) return;
@@ -324,8 +383,8 @@ function renderVault() {
         vaultItems = vaultItems.filter(x => x.id !== id);
         renderVault(); updateStats(); toast('Deleted.');
       } catch(err) { toast('Delete failed.'); }
-    })
-  );
+    });
+  });
   renderTagSidebar();
 }
 
@@ -335,17 +394,17 @@ function renderTagSidebar() {
   const tags = new Set();
   vaultItems.forEach(i => { if (i.tags) i.tags.split(',').forEach(t => tags.add(t.trim())); });
   sb.innerHTML = [...tags].map(t =>
-    `<div class="vault-cat vault-tag-item" data-tag="${esc(t)}"># ${esc(t)}</div>`
+    `<div class="vault-cat" style="cursor:pointer" data-stag="${esc(t)}"># ${esc(t)}</div>`
   ).join('');
-  sb.querySelectorAll('.vault-tag-item').forEach(el =>
+  sb.querySelectorAll('[data-stag]').forEach(el =>
     el.addEventListener('click', function() {
       const inp = document.getElementById('vault-search-input');
-      if (inp) { inp.value = this.dataset.tag; renderVault(); }
+      if (inp) { inp.value = this.dataset.stag; renderVault(); }
     })
   );
 }
 
-function setupShortEvents() {
+function setupShortModal() {
   document.getElementById('btn-add-short')?.addEventListener('click', openShortModal);
   document.getElementById('btn-confirm-short')?.addEventListener('click', addShort);
   document.querySelector('[data-close="modal-short"]')?.addEventListener('click', () => closeModal('modal-short'));
@@ -368,7 +427,7 @@ async function addShort() {
   const isPublic = document.getElementById('short-public')?.checked ?? true;
   if (!titulo || !url) { toast('Title and URL required.'); return; }
   const chId = cfg.shorts || cfg.notes;
-  if (!chId) { toast('No channel for shorts. Set in Setup.'); return; }
+  if (!chId) { toast('No channel set for shorts. Go to Setup.'); return; }
   const sav = document.getElementById('short-saving'); if (sav) sav.style.display = 'block';
   let msg = 'SHORT: ' + titulo + '\n' + url;
   if (cat)   msg += '\nCat: ' + cat;
@@ -376,10 +435,106 @@ async function addShort() {
   if (!isPublic) msg += '\nPublic: false';
   try {
     const r = await API.post('/channel/' + chId + '/message', { content: msg });
-    if (r.ok) { closeModal('modal-short'); toast('✦ Scroll added.'); }
-    else toast('Error: ' + (r.error || 'failed'));
+    if (r.ok) {
+      shorts.push({ id: r.id, channelId: chId, titulo, url, cat, views, isPublic });
+      renderShorts(); updateStats(); closeModal('modal-short'); toast('✦ Scroll added.');
+    } else { toast('Error: ' + (r.error || 'failed')); }
   } catch(e) { toast('Error: ' + e.message); }
   finally { if (sav) sav.style.display = 'none'; }
+}
+
+function renderShorts() {
+  const grid = document.getElementById('shorts-grid');
+  if (!grid) return;
+  const visible = shorts.filter(s => isOwner || s.isPublic !== false);
+  if (!visible.length) { grid.innerHTML = '<div class="short-empty">No scrolls yet.</div>'; return; }
+  const cats = ['all', ...new Set(visible.map(s => s.cat).filter(Boolean))];
+  const fb = document.getElementById('filter-bar');
+  if (fb) {
+    fb.innerHTML = cats.map(c =>
+      `<button class="filter-btn${c==='all'?' active':''}" data-fcat="${esc(c)}">${c==='all'?'All':esc(c)}</button>`
+    ).join('');
+    fb.querySelectorAll('.filter-btn').forEach(btn =>
+      btn.addEventListener('click', function() {
+        fb.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        const f = this.dataset.fcat;
+        grid.querySelectorAll('.short-card').forEach(card =>
+          card.style.display = (f === 'all' || card.dataset.scat === f) ? '' : 'none'
+        );
+      })
+    );
+  }
+  grid.innerHTML = visible.map(s => `
+    <div class="short-card" data-scat="${esc(s.cat||'')}">
+      <div class="short-thumb">
+        <div class="thumb-gradient"></div>
+        <div class="play-icon"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        ${s.cat ? `<div class="thumb-tag">${esc(s.cat)}</div>` : ''}
+      </div>
+      <div class="short-info">
+        <div class="short-title">${esc(s.titulo)}</div>
+        <div class="short-meta">
+          ${s.views ? `<span class="short-views">${esc(s.views)} views</span>` : ''}
+        </div>
+      </div>
+    </div>`).join('');
+  grid.querySelectorAll('.short-card').forEach((card, i) => {
+    card.addEventListener('click', () => { if (visible[i]?.url) window.open(visible[i].url, '_blank'); });
+  });
+}
+
+async function addSocial() {
+  if (!isOwner) return;
+  const platform = document.getElementById('social-platform')?.value.trim() || '';
+  const url      = document.getElementById('social-url')?.value.trim()      || '';
+  const handle   = document.getElementById('social-handle')?.value.trim()   || '';
+  const icon     = document.getElementById('social-icon')?.value.trim()     || '';
+  const isPublic = document.getElementById('social-public')?.checked ?? true;
+  if (!platform || !url) { toast('Platform and URL required.'); return; }
+  if (!cfg.socials) { toast('Socials channel not configured. Go to Setup.'); return; }
+  let msg = 'SOCIAL: ' + platform + '\n' + url;
+  if (handle) msg += '\nHandle: ' + handle;
+  if (icon)   msg += '\nIcon: '   + icon;
+  if (!isPublic) msg += '\nPublic: false';
+  try {
+    const r = await API.post('/channel/' + cfg.socials + '/message', { content: msg });
+    if (r.ok) {
+      socials.push({ id: r.id, channelId: cfg.socials, platform, url, handle, icon, isPublic });
+      renderSocials();
+      const el = document.getElementById('social-result');
+      showResult(el, '✅ Added.', 'ok');
+      ['social-platform','social-url','social-handle','social-icon'].forEach(id => { const f = document.getElementById(id); if (f) f.value = ''; });
+    } else { toast('Error: ' + (r.error || 'failed')); }
+  } catch(e) { toast('Error: ' + e.message); }
+}
+
+function renderSocials() {
+  const grid = document.getElementById('socials-grid');
+  if (!grid) return;
+  const visible = socials.filter(s => isOwner || s.isPublic !== false);
+  if (!visible.length) { grid.innerHTML = '<div class="socials-empty">No socials yet.</div>'; return; }
+  grid.innerHTML = visible.map(s => `
+    <a class="social-card" href="${esc(s.url)}" target="_blank" rel="noopener">
+      <div class="social-icon-wrap">${s.icon || '🔗'}</div>
+      <div class="social-info">
+        <div class="social-name">${esc(s.platform)}</div>
+        ${s.handle ? `<div class="social-handle">${esc(s.handle)}</div>` : ''}
+      </div>
+      ${isOwner ? `<button class="social-del" data-id="${s.id}" data-ch="${s.channelId||''}">✕</button>` : ''}
+    </a>`).join('');
+  grid.querySelectorAll('.social-del').forEach(btn =>
+    btn.addEventListener('click', async function(e) {
+      e.preventDefault(); e.stopPropagation();
+      if (!confirm('Delete this social?')) return;
+      const id = this.dataset.id, ch = this.dataset.ch;
+      try {
+        await API.post('/channel/' + ch + '/delete/' + id, {});
+        socials = socials.filter(x => x.id !== id);
+        renderSocials(); toast('Deleted.');
+      } catch(err) { toast('Delete failed.'); }
+    })
+  );
 }
 
 function openModal(id)  { const m = document.getElementById(id); if (m) m.style.display = 'flex'; }
@@ -388,8 +543,9 @@ function closeModal(id) { const m = document.getElementById(id); if (m) m.style.
 function updateStats() {
   const tags = new Set();
   vaultItems.forEach(i => { if (i.tags) i.tags.split(',').forEach(t => tags.add(t.trim())); });
-  const si = document.getElementById('stat-items'); if (si) si.textContent = vaultItems.length;
-  const st = document.getElementById('stat-tags');  if (st) st.textContent = tags.size;
+  const si = document.getElementById('stat-items');  if (si) si.textContent = vaultItems.length;
+  const ss = document.getElementById('stat-shorts'); if (ss) ss.textContent = shorts.length;
+  const st = document.getElementById('stat-tags');   if (st) st.textContent = tags.size;
 }
 
 function setStatus(state) {
@@ -398,7 +554,7 @@ function setStatus(state) {
   const c = { connected:'#98c379', connecting:'#c9a84c', error:'#e06c75' };
   const l = { connected:'Discord: connected', connecting:'Discord: connecting…', error:'Discord: error' };
   if (dot) dot.style.background = c[state] || '#666';
-  if (lbl) lbl.textContent = l[state] || 'Discord: unknown';
+  if (lbl) lbl.textContent = l[state] || '';
 }
 
 function showResult(el, msg, type) {
@@ -409,10 +565,10 @@ function showResult(el, msg, type) {
 }
 
 function toast(msg) {
-  let t = document.getElementById('toast');
+  let t = document.getElementById('kira-toast');
   if (!t) {
-    t = document.createElement('div'); t.id = 'toast';
-    t.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:rgba(20,16,10,.95);color:#c9a84c;border:1px solid rgba(201,168,76,.3);padding:.75rem 1.5rem;border-radius:4px;font-size:.8rem;letter-spacing:.05em;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none';
+    t = document.createElement('div'); t.id = 'kira-toast';
+    t.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:rgba(20,16,10,.95);color:#c9a84c;border:1px solid rgba(201,168,76,.3);padding:.75rem 1.5rem;border-radius:4px;font-size:.8rem;letter-spacing:.05em;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;font-family:var(--display,serif)';
     document.body.appendChild(t);
   }
   t.textContent = msg; t.style.opacity = '1';
