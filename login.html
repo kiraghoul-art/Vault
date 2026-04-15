@@ -7,82 +7,29 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html, body {
-  height: 100%; background: #080604; color: #e8dcc8;
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  -webkit-font-smoothing: antialiased;
-}
-body {
-  display: flex; align-items: center; justify-content: center;
-  padding: 1.5rem;
-  background: radial-gradient(ellipse at center, #120d05 0%, #080604 70%);
-}
-.box {
-  width: 100%; max-width: 400px;
-  background: linear-gradient(160deg, rgba(22,16,8,0.98), rgba(10,8,4,0.99));
-  border: 1px solid rgba(201,168,76,0.3);
-  border-radius: 3px;
-  padding: 2.5rem 2rem;
-  position: relative;
-  box-shadow: 0 0 60px rgba(0,0,0,0.8);
-}
-.box::before {
-  content: '';
-  display: block; height: 1px;
-  background: linear-gradient(90deg, transparent, #7a5c1e, #c9a84c, #7a5c1e, transparent);
-  margin-bottom: 2rem;
-}
-.corner { position: absolute; width: 14px; height: 14px; border-color: #7a5c1e; border-style: solid; }
-.tl { top:8px; left:8px; border-width:1px 0 0 1px; }
-.tr { top:8px; right:8px; border-width:1px 1px 0 0; }
-.bl { bottom:8px; left:8px; border-width:0 0 1px 1px; }
-.br { bottom:8px; right:8px; border-width:0 1px 1px 0; }
-.logo {
-  font-family: 'Cinzel', serif; font-size: 2rem; font-weight: 700;
-  text-align: center; color: #e8d08a;
-  letter-spacing: 0.06em; margin-bottom: 0.3rem;
-  text-shadow: 0 0 20px rgba(201,168,76,0.4);
-}
-.logo span { color: #c9a84c; font-weight: 400; }
-.sub {
-  text-align: center; font-style: italic; font-size: 0.82rem;
-  color: #5c4e30; margin-bottom: 2rem; letter-spacing: 0.06em;
-}
-.label {
-  font-family: 'Cinzel', serif; font-size: 0.62rem;
-  letter-spacing: 0.14em; text-transform: uppercase;
-  color: #a07c30; display: block; margin-bottom: 0.4rem;
-}
-input {
-  width: 100%; padding: 0.65rem 0.85rem;
-  background: rgba(10,8,4,0.8); color: #f0e6cc;
-  border: 1px solid rgba(201,168,76,0.2); border-radius: 2px;
-  font-family: 'Cormorant Garamond', serif; font-size: 0.95rem;
-  margin-bottom: 1rem; caret-color: #c9a84c;
-  -webkit-appearance: none;
-}
-input:focus { outline: none; border-color: #a07c30; box-shadow: 0 0 0 2px rgba(201,168,76,0.1); }
-input::placeholder { color: #3a2a10; font-style: italic; }
-.btn {
-  width: 100%; padding: 0.75rem;
-  font-family: 'Cinzel', serif; font-size: 0.72rem;
-  font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
-  color: #fdf5e0; cursor: pointer;
-  background: linear-gradient(135deg, #3a2508 0%, #6b4e1a 35%, #c9a84c 55%, #6b4e1a 75%, #3a2508 100%);
-  border: 1px solid #6b4e1a; border-radius: 2px;
-  box-shadow: 0 0 0 1px rgba(201,168,76,0.2), inset 0 1px 0 rgba(232,208,138,0.3);
-  clip-path: polygon(7px 0%, calc(100% - 7px) 0%, 100% 7px, 100% calc(100% - 7px), calc(100% - 7px) 100%, 7px 100%, 0% calc(100% - 7px), 0% 7px);
-  transition: all 0.2s; margin-top: 0.5rem;
-}
-.btn:hover { background: linear-gradient(135deg, #4a3010 0%, #8a6820 35%, #e8d08a 55%, #8a6820 75%, #4a3010 100%); }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.msg { min-height: 1.5rem; text-align: center; font-style: italic; font-size: 0.82rem; margin-top: 0.75rem; padding: 0.3rem; }
-.msg.err { color: #cc6644; }
-.msg.ok  { color: #7aad5a; }
-.hint { text-align: center; font-style: italic; font-size: 0.72rem; color: #3a2a10; margin-top: 1rem; }
-.back { display: block; text-align: center; margin-top: 1.25rem; font-family: 'Cinzel', serif; font-size: 0.62rem; letter-spacing: 0.1em; color: #5c4e30; text-decoration: none; text-transform: uppercase; transition: color 0.2s; }
-.back:hover { color: #a07c30; }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#080604;color:#e8dcc8;font-family:'Cormorant Garamond',Georgia,serif;-webkit-font-smoothing:antialiased}
+body{display:flex;align-items:center;justify-content:center;padding:1.5rem;background:radial-gradient(ellipse at center,#120d05 0%,#080604 70%)}
+.box{width:100%;max-width:400px;background:linear-gradient(160deg,rgba(22,16,8,.98),rgba(10,8,4,.99));border:1px solid rgba(201,168,76,.3);border-radius:3px;padding:2.5rem 2rem;position:relative;box-shadow:0 0 60px rgba(0,0,0,.8)}
+.box::before{content:'';display:block;height:1px;background:linear-gradient(90deg,transparent,#7a5c1e,#c9a84c,#7a5c1e,transparent);margin-bottom:2rem}
+.corner{position:absolute;width:14px;height:14px;border-color:#7a5c1e;border-style:solid}
+.tl{top:8px;left:8px;border-width:1px 0 0 1px}.tr{top:8px;right:8px;border-width:1px 1px 0 0}
+.bl{bottom:8px;left:8px;border-width:0 0 1px 1px}.br{bottom:8px;right:8px;border-width:0 1px 1px 0}
+.logo{font-family:'Cinzel',serif;font-size:2rem;font-weight:700;text-align:center;color:#e8d08a;letter-spacing:.06em;margin-bottom:.3rem;text-shadow:0 0 20px rgba(201,168,76,.4)}
+.logo span{color:#c9a84c;font-weight:400}
+.sub{text-align:center;font-style:italic;font-size:.82rem;color:#5c4e30;margin-bottom:2rem;letter-spacing:.06em}
+.label{font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:#a07c30;display:block;margin-bottom:.4rem}
+input{width:100%;padding:.65rem .85rem;background:rgba(10,8,4,.8);color:#f0e6cc;border:1px solid rgba(201,168,76,.2);border-radius:2px;font-family:'Cormorant Garamond',serif;font-size:.95rem;margin-bottom:1rem;caret-color:#c9a84c;-webkit-appearance:none}
+input:focus{outline:none;border-color:#a07c30;box-shadow:0 0 0 2px rgba(201,168,76,.1)}
+input::placeholder{color:#3a2a10;font-style:italic}
+.btn{width:100%;padding:.75rem;font-family:'Cinzel',serif;font-size:.72rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#fdf5e0;cursor:pointer;background:linear-gradient(135deg,#3a2508 0%,#6b4e1a 35%,#c9a84c 55%,#6b4e1a 75%,#3a2508 100%);border:1px solid #6b4e1a;border-radius:2px;box-shadow:0 0 0 1px rgba(201,168,76,.2),inset 0 1px 0 rgba(232,208,138,.3);clip-path:polygon(7px 0%,calc(100% - 7px) 0%,100% 7px,100% calc(100% - 7px),calc(100% - 7px) 100%,7px 100%,0% calc(100% - 7px),0% 7px);transition:all .2s;margin-top:.5rem}
+.btn:hover{background:linear-gradient(135deg,#4a3010 0%,#8a6820 35%,#e8d08a 55%,#8a6820 75%,#4a3010 100%)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.msg{min-height:1.5rem;text-align:center;font-style:italic;font-size:.82rem;margin-top:.75rem;padding:.3rem}
+.err{color:#cc6644}.ok{color:#7aad5a}
+.hint{text-align:center;font-style:italic;font-size:.72rem;color:#3a2a10;margin-top:1rem}
+.back{display:block;text-align:center;margin-top:1.25rem;font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.1em;color:#5c4e30;text-decoration:none;text-transform:uppercase;transition:color .2s}
+.back:hover{color:#a07c30}
 </style>
 </head>
 <body>
@@ -105,46 +52,41 @@ const WORKER = 'https://kira-discord-proxy.ghoullkira.workers.dev';
 const btn = document.getElementById('btn');
 const msg = document.getElementById('msg');
 
-function showMsg(ok, text) {
+function show(ok, text) {
   msg.textContent = text;
   msg.className = 'msg ' + (ok ? 'ok' : 'err');
 }
 
 async function doLogin() {
   const u = document.getElementById('u').value.trim();
-  const p = document.getElementById('p').value.trim();
-  if (!u || !p) { showMsg(false, 'Thou must provide thy name and seal.'); return; }
-  btn.disabled = true; btn.textContent = 'Verifying…';
+  const p = document.getElementById('p').value;
+  if (!u || !p) { show(false, 'Provide thy name and seal.'); return; }
+  btn.disabled = true;
+  btn.textContent = 'Verifying…';
   try {
     const r = await fetch(WORKER + '/auth', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: u, password: p })
     });
-    const res = await r.json();
-    btn.disabled = false; btn.textContent = 'Enter the Keep';
-    if (!res.ok) { showMsg(false, 'Thy identity is unknown to the Keep.'); return; }
-    if (res.firstTime || !res.config) {
-      showMsg(true, 'First time setup — redirecting…');
-      // Store flag and redirect
-      sessionStorage.setItem('kira_first_time', '1');
-      setTimeout(function(){ window.location.href = 'index.html?setup=1'; }, 800);
-      return;
-    }
-    // Store config in sessionStorage and redirect
-    sessionStorage.setItem('kira_cfg', JSON.stringify(res.config));
-    sessionStorage.setItem('kira_owner', '1');
-    showMsg(true, 'Welcome back. Entering the Keep…');
-    setTimeout(function(){ window.location.href = 'index.html'; }, 600);
+    const d = await r.json();
+    btn.disabled = false;
+    btn.textContent = 'Enter the Keep';
+    if (!d.ok) { show(false, 'Identity unknown to the Keep.'); return; }
+    sessionStorage.setItem('kira_token', d.token);
+    sessionStorage.setItem('kira_cfg', JSON.stringify(d.config || {}));
+    show(true, 'Welcome. Entering…');
+    setTimeout(() => { window.location.href = d.firstTime ? 'index.html?setup=1' : 'index.html'; }, 600);
   } catch(e) {
-    btn.disabled = false; btn.textContent = 'Enter the Keep';
-    showMsg(false, 'The courier cannot be reached.');
+    btn.disabled = false;
+    btn.textContent = 'Enter the Keep';
+    show(false, 'The courier cannot be reached.');
   }
 }
 
 btn.addEventListener('click', doLogin);
-document.getElementById('p').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
-document.getElementById('u').addEventListener('keydown', function(e){ if(e.key==='Enter') document.getElementById('p').focus(); });
+document.getElementById('p').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('u').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('p').focus(); });
 </script>
 </body>
 </html>
