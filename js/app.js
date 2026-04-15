@@ -2,34 +2,38 @@ const WORKER = 'https://kira-discord-proxy.ghoullkira.workers.dev';
 
 const API = {
   token: null,
-  h() { const h = { 'Content-Type': 'application/json' }; if (this.token) h['X-Session-Token'] = this.token; return h; },
-  async get(path)        { return (await fetch(WORKER + path, { headers: this.h() })).json(); },
-  async post(path, data) { return (await fetch(WORKER + path, { method: 'POST',   headers: this.h(), body: JSON.stringify(data) })).json(); },
-  async del(path)        { return (await fetch(WORKER + path, { method: 'DELETE', headers: this.h() })).json(); }
+  h() { return { 'Content-Type': 'application/json', ...(this.token ? { 'X-Session-Token': this.token } : {}) }; },
+  async get(p)    { return (await fetch(WORKER + p, { headers: this.h() })).json(); },
+  async post(p,d) { return (await fetch(WORKER + p, { method:'POST',   headers: this.h(), body: JSON.stringify(d) })).json(); },
+  async del(p)    { return (await fetch(WORKER + p, { method:'DELETE', headers: this.h() })).json(); }
 };
 
 let profile = {};
-let theme = {};
-let pages = { shorts: true, vault: true, socials: true, curriculum: true };
+let theme   = {};
 let isOwner = false;
 let vaultItems = [];
-let shorts = [];
+let shorts  = [];
 let socials = [];
 let vaultFilter = 'all';
-let vaultType = 'link';
+let vaultType   = 'link';
 
 document.addEventListener('DOMContentLoaded', async () => {
-  applyStoredTheme();
   setupNav();
   setupLoginModal();
   setupVaultModal();
   setupShortModal();
-  setupSettings();
+  setupSettingsListeners();
+  applyStoredTheme();
 
   const tok = sessionStorage.getItem('kira_token');
   if (tok) {
     API.token = tok;
-    try { await enterOwner(); return; } catch(e) {}
+    const saved = sessionStorage.getItem('kira_profile');
+    const savedTheme = sessionStorage.getItem('kira_theme');
+    if (saved) profile = JSON.parse(saved);
+    if (savedTheme) theme = JSON.parse(savedTheme);
+    await enterOwner(false);
+    return;
   }
   await loadPublic();
 });
@@ -40,15 +44,14 @@ async function loadPublic() {
     const r = await API.get('/public');
     if (!r.ok) { setStatus('error'); return; }
     profile = r.profile || {};
-    theme   = r.profile.theme || {};
-    pages   = r.pages || pages;
+    theme   = r.theme   || {};
     vaultItems = r.items   || [];
     shorts     = r.shorts  || [];
     socials    = r.socials || [];
     applyProfile();
     applyTheme(theme);
-    applyPages();
-    renderVault(); renderShorts(); renderSocials(); updateStats();
+    applyPageVisibility();
+    renderAll();
     setStatus('connected');
   } catch(e) { setStatus('error'); }
 }
@@ -81,11 +84,13 @@ function goTo(page) {
   document.querySelector('.nav-links')?.classList.remove('open');
 }
 
-function applyPages() {
-  const map = { shorts: 'nav-shorts', vault: 'nav-vault', socials: 'nav-socials', curriculum: 'nav-curriculum' };
-  Object.entries(map).forEach(([key, id]) => {
-    const btn = document.getElementById(id);
-    if (btn) btn.style.display = (isOwner || pages[key] !== false) ? '' : 'none';
+function applyPageVisibility() {
+  const pages = ['shorts','vault','socials','curriculum'];
+  pages.forEach(p => {
+    const key = 'show' + p.charAt(0).toUpperCase() + p.slice(1);
+    const show = isOwner || profile[key] !== false;
+    const navBtn = document.querySelector(`.nav-links button[data-page="${p}"]`);
+    if (navBtn) navBtn.style.display = show ? '' : 'none';
   });
 }
 
@@ -132,9 +137,13 @@ async function doLogin() {
     })).json();
     if (!r.ok) { setLoginMsg('Wrong credentials.'); return; }
     API.token = r.token;
+    profile = r.profile || {};
+    theme   = r.theme   || {};
     sessionStorage.setItem('kira_token', r.token);
+    sessionStorage.setItem('kira_profile', JSON.stringify(profile));
+    sessionStorage.setItem('kira_theme', JSON.stringify(theme));
     closeLoginModal();
-    await enterOwner();
+    await enterOwner(true);
   } catch(e) { setLoginMsg('Connection error.'); }
   finally { if (btn) btn.disabled = false; }
 }
@@ -142,38 +151,60 @@ async function doLogin() {
 function doLogout() {
   API.token = null; isOwner = false;
   profile = {}; theme = {}; vaultItems = []; shorts = []; socials = [];
-  sessionStorage.removeItem('kira_token');
+  sessionStorage.clear();
   location.reload();
 }
 
-async function enterOwner() {
+async function enterOwner(fetchData) {
   isOwner = true;
   document.querySelectorAll('.owner-only').forEach(el => el.style.display = '');
-  setStatus('connecting');
-  try {
+  applyProfile();
+  applyTheme(theme);
+
+  if (fetchData) {
+    setStatus('connecting');
+    try {
+      const r = await API.get('/data');
+      if (!r.ok) { setStatus('error'); return; }
+      profile    = r.profile || {};
+      theme      = r.theme   || {};
+      vaultItems = r.items   || [];
+      shorts     = r.shorts  || [];
+      socials    = r.socials || [];
+      sessionStorage.setItem('kira_profile', JSON.stringify(profile));
+      sessionStorage.setItem('kira_theme', JSON.stringify(theme));
+    } catch(e) { setStatus('error'); return; }
+  } else {
     const r = await API.get('/data');
-    if (!r.ok) { setStatus('error'); return; }
-    profile    = r.profile  || {};
-    theme      = r.theme    || {};
-    vaultItems = r.items    || [];
-    shorts     = r.shorts   || [];
-    socials    = r.socials  || [];
-    pages = {
-      shorts:     profile.showShorts     !== false,
-      vault:      profile.showVault      !== false,
-      socials:    profile.showSocials    !== false,
-      curriculum: profile.showCurriculum !== false
-    };
-    applyProfile();
-    applyTheme(theme);
-    applyPages();
-    populateSettings();
-    renderVault(); renderShorts(); renderSocials(); updateStats();
-    setStatus('connected');
-  } catch(e) { setStatus('error'); }
+    if (r.ok) {
+      profile    = r.profile || {};
+      theme      = r.theme   || {};
+      vaultItems = r.items   || [];
+      shorts     = r.shorts  || [];
+      socials    = r.socials || [];
+      sessionStorage.setItem('kira_profile', JSON.stringify(profile));
+      sessionStorage.setItem('kira_theme', JSON.stringify(theme));
+    }
+  }
+
+  applyProfile();
+  applyTheme(theme);
+  applyPageVisibility();
+  populateSettings();
+  renderAll();
+  setStatus('connected');
+}
+
+function renderAll() {
+  renderVault();
+  renderShorts();
+  renderSocials();
+  updateStats();
 }
 
 function applyProfile() {
+  const bgEl = document.querySelector('.bg-img');
+  if (bgEl && profile.bgUrl) bgEl.style.backgroundImage = 'url(' + profile.bgUrl + ')';
   const h1 = document.getElementById('hero-title');
   if (h1) h1.innerHTML = (profile.name || 'Kira') + '<em>creates.</em>';
   const tg = document.getElementById('hero-tagline');
@@ -190,116 +221,113 @@ function applyTheme(t) {
   if (t.surface)    r.style.setProperty('--surface',    t.surface);
   if (t.text)       r.style.setProperty('--text',       t.text);
   if (t.textDim)    r.style.setProperty('--text-dim',   t.textDim);
-  const bgEl = document.querySelector('.bg-img');
-  if (bgEl) {
-    if (t.bgUrl) bgEl.style.backgroundImage = 'url(' + t.bgUrl + ')';
-    if (t.bgOpacity !== undefined) bgEl.style.opacity = t.bgOpacity;
+  if (t.bgOpacity !== undefined) {
+    const bgEl = document.querySelector('.bg-img');
+    if (bgEl) bgEl.style.opacity = t.bgOpacity;
   }
+  localStorage.setItem('kira_theme', JSON.stringify(t));
 }
 
 function applyStoredTheme() {
   try { const t = localStorage.getItem('kira_theme'); if (t) applyTheme(JSON.parse(t)); } catch(e) {}
 }
 
-function setupSettings() {
+function setupSettingsListeners() {
   document.getElementById('btn-save-profile')?.addEventListener('click', saveProfile);
   document.getElementById('btn-save-theme')?.addEventListener('click', saveTheme);
   document.getElementById('btn-reset-theme')?.addEventListener('click', resetTheme);
   document.getElementById('btn-test-connection')?.addEventListener('click', testConnection);
   document.getElementById('btn-add-social')?.addEventListener('click', addSocial);
 
-  const colorFields = ['theme-gold','theme-gold-light','theme-gold-dim','theme-bg','theme-surface','theme-text','theme-text-dim'];
-  colorFields.forEach(id => {
-    const txt = document.getElementById(id);
-    const picker = document.getElementById(id + '-picker');
-    if (txt && picker) {
-      txt.addEventListener('input', function() { picker.value = this.value; livePreviewTheme(); });
-      picker.addEventListener('input', function() { txt.value = this.value; livePreviewTheme(); });
-    } else if (txt) {
-      txt.addEventListener('input', livePreviewTheme);
-    }
+  document.querySelectorAll('.theme-color-input').forEach(inp => {
+    inp.addEventListener('input', function() {
+      const picker = document.getElementById(this.id + '-picker');
+      if (picker) picker.value = this.value;
+      livePreviewTheme();
+    });
+  });
+  document.querySelectorAll('.theme-color-picker').forEach(p => {
+    p.addEventListener('input', function() {
+      const txt = document.getElementById(this.dataset.target);
+      if (txt) txt.value = this.value;
+      livePreviewTheme();
+    });
   });
   const opSlider = document.getElementById('theme-bg-opacity');
   if (opSlider) opSlider.addEventListener('input', function() {
-    const v = document.getElementById('theme-bg-opacity-val');
-    if (v) v.textContent = parseFloat(this.value).toFixed(2);
+    const lbl = document.getElementById('theme-bg-opacity-val');
+    if (lbl) lbl.textContent = parseFloat(this.value).toFixed(2);
     livePreviewTheme();
   });
 }
 
+function livePreviewTheme() { applyTheme(readThemeForm()); }
+
+function readThemeForm() {
+  const g = id => document.getElementById(id)?.value || '';
+  return {
+    gold:      g('theme-gold')      || '#c9a84c',
+    goldLight: g('theme-gold-light')|| '#e8d08a',
+    goldDim:   g('theme-gold-dim')  || '#a07c30',
+    bg:        g('theme-bg')        || '#080604',
+    surface:   g('theme-surface')   || '#0f0c07',
+    text:      g('theme-text')      || '#e8dcc8',
+    textDim:   g('theme-text-dim')  || '#9a8860',
+    bgUrl:     g('theme-bg-url'),
+    bgOpacity: parseFloat(document.getElementById('theme-bg-opacity')?.value || '0.45')
+  };
+}
+
 function populateSettings() {
-  const pn = document.getElementById('cfg-name');    if (pn) pn.value = profile.name    || '';
-  const pt = document.getElementById('cfg-tagline'); if (pt) pt.value = profile.tagline || '';
+  const sv = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined) el.value = v; };
+  sv('cfg-name',    profile.name);
+  sv('cfg-tagline', profile.tagline);
 
-  const pageToggles = { 'toggle-shorts': 'showShorts', 'toggle-vault': 'showVault', 'toggle-socials': 'showSocials', 'toggle-curriculum': 'showCurriculum' };
-  Object.entries(pageToggles).forEach(([id, key]) => {
-    const el = document.getElementById(id);
-    if (el) el.checked = profile[key] !== false;
+  const pages = ['Shorts','Vault','Socials','Curriculum'];
+  pages.forEach(p => {
+    const cb = document.getElementById('show-' + p.toLowerCase());
+    if (cb) cb.checked = profile['show' + p] !== false;
   });
 
-  const setVal = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined) el.value = v; };
-  setVal('theme-gold',        theme.gold       || '#c9a84c');
-  setVal('theme-gold-light',  theme.goldLight  || '#e8d08a');
-  setVal('theme-gold-dim',    theme.goldDim    || '#a07c30');
-  setVal('theme-bg',          theme.bg         || '#080604');
-  setVal('theme-surface',     theme.surface    || '#0f0c07');
-  setVal('theme-text',        theme.text       || '#e8dcc8');
-  setVal('theme-text-dim',    theme.textDim    || '#9a8860');
-  setVal('theme-bg-url',      theme.bgUrl      || '');
-
-  const op = document.getElementById('theme-bg-opacity');
-  const opv = document.getElementById('theme-bg-opacity-val');
-  const opVal = theme.bgOpacity !== undefined ? theme.bgOpacity : 0.45;
-  if (op)  op.value = opVal;
-  if (opv) opv.textContent = parseFloat(opVal).toFixed(2);
-
-  const colorFields = ['theme-gold','theme-gold-light','theme-gold-dim','theme-bg','theme-surface','theme-text','theme-text-dim'];
-  colorFields.forEach(id => {
-    const txt = document.getElementById(id);
-    const picker = document.getElementById(id + '-picker');
-    if (txt && picker) picker.value = txt.value;
-  });
+  if (theme.gold)       { sv('theme-gold',       theme.gold);       const pk = document.getElementById('theme-gold-picker');       if (pk) pk.value = theme.gold; }
+  if (theme.goldLight)  { sv('theme-gold-light',  theme.goldLight);  const pk = document.getElementById('theme-gold-light-picker'); if (pk) pk.value = theme.goldLight; }
+  if (theme.goldDim)    { sv('theme-gold-dim',    theme.goldDim);    const pk = document.getElementById('theme-gold-dim-picker');   if (pk) pk.value = theme.goldDim; }
+  if (theme.bg)         { sv('theme-bg',          theme.bg);         const pk = document.getElementById('theme-bg-picker');         if (pk) pk.value = theme.bg; }
+  if (theme.surface)    { sv('theme-surface',     theme.surface);    const pk = document.getElementById('theme-surface-picker');    if (pk) pk.value = theme.surface; }
+  if (theme.text)       { sv('theme-text',        theme.text);       const pk = document.getElementById('theme-text-picker');       if (pk) pk.value = theme.text; }
+  if (theme.textDim)    { sv('theme-text-dim',    theme.textDim);    const pk = document.getElementById('theme-text-dim-picker');   if (pk) pk.value = theme.textDim; }
+  if (theme.bgUrl)      sv('theme-bg-url',     theme.bgUrl);
+  if (theme.bgOpacity !== undefined) {
+    sv('theme-bg-opacity', theme.bgOpacity);
+    const lbl = document.getElementById('theme-bg-opacity-val');
+    if (lbl) lbl.textContent = parseFloat(theme.bgOpacity).toFixed(2);
+  }
 
   const sea = document.getElementById('socials-edit-area'); if (sea) sea.style.display = '';
   const cea = document.getElementById('cv-edit-area');      if (cea) cea.style.display = '';
-}
-
-function livePreviewTheme() {
-  applyTheme(readThemeForm());
-}
-
-function readThemeForm() {
-  return {
-    gold:       document.getElementById('theme-gold')?.value       || '',
-    goldLight:  document.getElementById('theme-gold-light')?.value || '',
-    goldDim:    document.getElementById('theme-gold-dim')?.value   || '',
-    bg:         document.getElementById('theme-bg')?.value         || '',
-    surface:    document.getElementById('theme-surface')?.value    || '',
-    text:       document.getElementById('theme-text')?.value       || '',
-    textDim:    document.getElementById('theme-text-dim')?.value   || '',
-    bgUrl:      document.getElementById('theme-bg-url')?.value.trim() || theme.bgUrl || '',
-    bgOpacity:  parseFloat(document.getElementById('theme-bg-opacity')?.value || '0.45')
-  };
 }
 
 async function saveProfile() {
   if (!isOwner) return;
   const el = document.getElementById('profile-result');
   showResult(el, 'Saving…', '');
+  const pages = ['Shorts','Vault','Socials','Curriculum'];
+  const updated = {
+    name:    document.getElementById('cfg-name')?.value.trim()    || profile.name    || 'Kira',
+    tagline: document.getElementById('cfg-tagline')?.value.trim() || profile.tagline || ''
+  };
+  pages.forEach(p => {
+    const cb = document.getElementById('show-' + p.toLowerCase());
+    if (cb) updated['show' + p] = cb.checked;
+  });
+  if (profile.bgUrl) updated.bgUrl = profile.bgUrl;
   try {
-    const data = {
-      name:            document.getElementById('cfg-name')?.value.trim()    || '',
-      tagline:         document.getElementById('cfg-tagline')?.value.trim() || '',
-      showShorts:      document.getElementById('toggle-shorts')?.checked     ?? true,
-      showVault:       document.getElementById('toggle-vault')?.checked      ?? true,
-      showSocials:     document.getElementById('toggle-socials')?.checked    ?? true,
-      showCurriculum:  document.getElementById('toggle-curriculum')?.checked ?? true
-    };
-    await API.post('/profile', data);
-    profile = { ...profile, ...data };
+    const r = await API.post('/profile', updated);
+    if (!r.ok) { showResult(el, '❌ Failed.', 'err'); return; }
+    profile = r.profile || { ...profile, ...updated };
+    sessionStorage.setItem('kira_profile', JSON.stringify(profile));
     applyProfile();
-    pages = { shorts: data.showShorts, vault: data.showVault, socials: data.showSocials, curriculum: data.showCurriculum };
-    applyPages();
+    applyPageVisibility();
     showResult(el, '✅ Saved.', 'ok');
   } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
 }
@@ -308,25 +336,36 @@ async function saveTheme() {
   if (!isOwner) return;
   const el = document.getElementById('theme-result');
   showResult(el, 'Saving…', '');
+  const t = readThemeForm();
   try {
-    const t = readThemeForm();
-    await API.post('/theme', t);
-    theme = t;
-    applyTheme(t);
-    localStorage.setItem('kira_theme', JSON.stringify(t));
+    const r = await API.post('/theme', t);
+    if (!r.ok) { showResult(el, '❌ Failed.', 'err'); return; }
+    theme = r.theme || t;
+    applyTheme(theme);
+    sessionStorage.setItem('kira_theme', JSON.stringify(theme));
+    if (t.bgUrl) {
+      const cur = await API.get('/data').then(d => d.profile || {});
+      await API.post('/profile', { ...cur, bgUrl: t.bgUrl });
+      profile.bgUrl = t.bgUrl;
+      sessionStorage.setItem('kira_profile', JSON.stringify(profile));
+      applyProfile();
+    }
     showResult(el, '✅ Theme saved.', 'ok');
   } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
 }
 
 function resetTheme() {
-  const d = { gold:'#c9a84c', goldLight:'#e8d08a', goldDim:'#a07c30', bg:'#080604', surface:'#0f0c07', text:'#e8dcc8', textDim:'#9a8860', bgOpacity: 0.45 };
-  const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
-  setVal('theme-gold', d.gold); setVal('theme-gold-light', d.goldLight); setVal('theme-gold-dim', d.goldDim);
-  setVal('theme-bg', d.bg); setVal('theme-surface', d.surface); setVal('theme-text', d.text); setVal('theme-text-dim', d.textDim);
-  setVal('theme-bg-opacity', d.bgOpacity);
-  const opv = document.getElementById('theme-bg-opacity-val'); if (opv) opv.textContent = '0.45';
-  const colorFields = ['theme-gold','theme-gold-light','theme-gold-dim','theme-bg','theme-surface','theme-text','theme-text-dim'];
-  colorFields.forEach(id => { const txt = document.getElementById(id); const p = document.getElementById(id+'-picker'); if (txt && p) p.value = txt.value; });
+  const d = { gold:'#c9a84c', goldLight:'#e8d08a', goldDim:'#a07c30', bg:'#080604', surface:'#0f0c07', text:'#e8dcc8', textDim:'#9a8860', bgOpacity:0.45 };
+  const sv = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  sv('theme-gold',       d.gold);       const pk1 = document.getElementById('theme-gold-picker');       if (pk1) pk1.value = d.gold;
+  sv('theme-gold-light', d.goldLight);  const pk2 = document.getElementById('theme-gold-light-picker'); if (pk2) pk2.value = d.goldLight;
+  sv('theme-gold-dim',   d.goldDim);    const pk3 = document.getElementById('theme-gold-dim-picker');   if (pk3) pk3.value = d.goldDim;
+  sv('theme-bg',         d.bg);         const pk4 = document.getElementById('theme-bg-picker');         if (pk4) pk4.value = d.bg;
+  sv('theme-surface',    d.surface);    const pk5 = document.getElementById('theme-surface-picker');    if (pk5) pk5.value = d.surface;
+  sv('theme-text',       d.text);       const pk6 = document.getElementById('theme-text-picker');       if (pk6) pk6.value = d.text;
+  sv('theme-text-dim',   d.textDim);    const pk7 = document.getElementById('theme-text-dim-picker');   if (pk7) pk7.value = d.textDim;
+  sv('theme-bg-opacity', d.bgOpacity);
+  const lbl = document.getElementById('theme-bg-opacity-val'); if (lbl) lbl.textContent = '0.45';
   applyTheme(d);
 }
 
@@ -367,7 +406,8 @@ function setupVaultModal() {
   if (dz && fi) {
     dz.addEventListener('click', () => fi.click());
     fi.addEventListener('change', function() {
-      const lbl = document.getElementById('vault-file-label'); if (lbl && this.files[0]) lbl.textContent = this.files[0].name;
+      const lbl = document.getElementById('vault-file-label');
+      if (lbl && this.files[0]) lbl.textContent = this.files[0].name;
     });
   }
 }
@@ -376,7 +416,9 @@ function openVaultModal(type) {
   vaultType = type || 'link';
   document.querySelectorAll('.type-opt').forEach(b => b.classList.toggle('active', b.dataset.type === vaultType));
   updateVaultFields(vaultType);
-  ['vault-title','vault-url','vault-content','vault-tags','vault-lang','vault-file-url'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['vault-title','vault-url','vault-content','vault-tags','vault-lang','vault-file-url'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
   const lbl = document.getElementById('vault-file-label'); if (lbl) lbl.textContent = 'Drag & drop or click to browse';
   const pub = document.getElementById('vault-public');     if (pub) pub.checked = true;
   const sav = document.getElementById('vault-saving');     if (sav) sav.style.display = 'none';
@@ -406,7 +448,7 @@ async function addVaultItem() {
     if (r.ok) {
       vaultItems.unshift({ id: r.id, type: vaultType, titulo, url: url || fileUrl, content, tags, lang, isPublic });
       renderVault(); updateStats(); closeModal('modal-vault'); toast('✦ Added.');
-    } else { toast('Error: ' + (r.error || 'failed')); }
+    } else toast('Error: ' + (r.error || 'failed'));
   } catch(e) { toast('Error: ' + e.message); }
   finally { if (sav) sav.style.display = 'none'; }
 }
@@ -425,21 +467,19 @@ function renderVault() {
   const ic = { link:'⊞', note:'≡', file:'◫', idea:'◇', code:'</>' };
   c.innerHTML = items.map(i => {
     const pub = i.isPublic !== false;
-    return `<div class="vault-item" data-type="${i.type}" style="${!pub && isOwner ? 'opacity:.6;border-style:dashed' : ''}">
+    return `<div class="vault-item" data-type="${i.type}" style="${!pub&&isOwner?'opacity:.6;border-style:dashed':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
         <span class="vault-item-type">${ic[i.type]||'▦'} ${i.type}</span>
         <span style="display:flex;align-items:center;gap:.35rem">
-          <span style="font-size:.65rem">${pub?'👁':'🔒'}</span>
-          ${isOwner ? `
-            <button class="vtoggle" data-id="${i.id}" data-pub="${pub}" style="background:none;border:1px solid rgba(201,168,76,.2);color:var(--text-muted);cursor:pointer;font-size:.52rem;padding:.1rem .35rem;border-radius:2px;font-family:var(--display);letter-spacing:.06em">${pub?'Hide':'Show'}</button>
-            <button class="vdel" data-id="${i.id}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.75rem;padding:.1rem .3rem">✕</button>
-          ` : ''}
+          <span style="font-size:.65rem;color:${pub?'var(--gold-dark)':'var(--text-muted)'}">${pub?'👁':'🔒'}</span>
+          ${isOwner?`<button class="vtoggle" data-id="${i.id}" data-pub="${pub}" style="background:none;border:1px solid rgba(201,168,76,.2);color:var(--text-muted);cursor:pointer;font-size:.52rem;padding:.1rem .35rem;border-radius:2px;font-family:var(--display);letter-spacing:.06em">${pub?'Hide':'Show'}</button>
+          <button class="vdel" data-id="${i.id}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.75rem;padding:.1rem .3rem">✕</button>`:''}
         </span>
       </div>
       <div class="vault-item-title">${esc(i.titulo)}</div>
-      ${i.url ? `<div class="vault-item-url"><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.url)}</a></div>` : ''}
-      ${i.content ? `<div class="vault-item-preview">${esc(i.content)}</div>` : ''}
-      ${i.tags ? `<div class="vault-item-footer"><div style="display:flex;gap:.3rem;flex-wrap:wrap">${i.tags.split(',').map(t=>`<span class="vault-tag">${esc(t.trim())}</span>`).join('')}</div></div>` : ''}
+      ${i.url?`<div class="vault-item-url"><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.url)}</a></div>`:''}
+      ${i.content?`<div class="vault-item-preview">${esc(i.content)}</div>`:''}
+      ${i.tags?`<div class="vault-item-footer"><div style="display:flex;gap:.3rem;flex-wrap:wrap">${i.tags.split(',').map(t=>`<span class="vault-tag">${esc(t.trim())}</span>`).join('')}</div></div>`:''}
     </div>`;
   }).join('');
   c.querySelectorAll('.vtoggle').forEach(btn => btn.addEventListener('click', async function(e) {
@@ -448,13 +488,13 @@ function renderVault() {
     try {
       await API.post('/items/update', { id, isPublic: newPub });
       const idx = vaultItems.findIndex(x => x.id === id);
-      if (idx > -1) vaultItems[idx] = { ...vaultItems[idx], isPublic: newPub };
+      if (idx > -1) vaultItems[idx].isPublic = newPub;
       renderVault(); toast(newPub ? '👁 Public.' : '🔒 Hidden.');
     } catch(err) { toast('Failed.'); }
   }));
   c.querySelectorAll('.vdel').forEach(btn => btn.addEventListener('click', async function(e) {
     e.stopPropagation();
-    if (!confirm('Delete this entry?')) return;
+    if (!confirm('Delete?')) return;
     try {
       await API.del('/items/' + this.dataset.id);
       vaultItems = vaultItems.filter(x => x.id !== this.dataset.id);
@@ -469,7 +509,7 @@ function renderTagSidebar() {
   if (!sb) return;
   const tags = new Set();
   vaultItems.forEach(i => { if (i.tags) i.tags.split(',').forEach(t => tags.add(t.trim())); });
-  sb.innerHTML = [...tags].map(t => `<div class="vault-cat" style="cursor:pointer" data-stag="${esc(t)}"># ${esc(t)}</div>`).join('');
+  sb.innerHTML = [...tags].map(t => `<div class="vault-cat" data-stag="${esc(t)}"># ${esc(t)}</div>`).join('');
   sb.querySelectorAll('[data-stag]').forEach(el => el.addEventListener('click', function() {
     const inp = document.getElementById('vault-search-input');
     if (inp) { inp.value = this.dataset.stag; renderVault(); }
@@ -503,8 +543,8 @@ async function addShort() {
     const r = await API.post('/shorts', { titulo, url, cat, views, isPublic });
     if (r.ok) {
       shorts.unshift({ id: r.id, titulo, url, cat, views, isPublic });
-      renderShorts(); updateStats(); closeModal('modal-short'); toast('✦ Added.');
-    } else { toast('Error: ' + (r.error || 'failed')); }
+      renderShorts(); updateStats(); closeModal('modal-short'); toast('✦ Scroll added.');
+    } else toast('Error: ' + (r.error || 'failed'));
   } catch(e) { toast('Error: ' + e.message); }
   finally { if (sav) sav.style.display = 'none'; }
 }
@@ -527,14 +567,14 @@ function renderShorts() {
   }
   grid.innerHTML = visible.map(s => {
     const pub = s.isPublic !== false;
-    return `<div class="short-card" data-scat="${esc(s.cat||'')}" style="${!pub&&isOwner?'opacity:.6;border-style:dashed':''}">
+    return `<div class="short-card" data-scat="${esc(s.cat||'')}" data-sid="${s.id}" style="${!pub&&isOwner?'opacity:.6;border-style:dashed':''}">
       <div class="short-thumb">
         <div class="thumb-gradient"></div>
         <div class="play-icon"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg></div>
         ${s.cat?`<div class="thumb-tag">${esc(s.cat)}</div>`:''}
-        ${isOwner?`<div style="position:absolute;top:.4rem;right:.4rem;display:flex;gap:.25rem">
-          <button class="stoggle" data-id="${s.id}" data-pub="${pub}" style="background:rgba(10,8,4,.85);border:1px solid rgba(201,168,76,.2);color:var(--text-muted);cursor:pointer;font-size:.5rem;padding:.1rem .3rem;border-radius:2px;font-family:var(--display)">${pub?'Hide':'Show'}</button>
-          <button class="sdel" data-id="${s.id}" style="background:rgba(10,8,4,.85);border:none;color:var(--text-muted);cursor:pointer;font-size:.7rem;padding:.1rem .4rem">✕</button>
+        ${isOwner?`<div style="position:absolute;top:.4rem;right:.4rem;display:flex;gap:.25rem;z-index:2">
+          <button class="stoggle" data-id="${s.id}" data-pub="${pub}" style="background:rgba(8,6,4,.85);border:1px solid rgba(201,168,76,.25);color:var(--text-muted);cursor:pointer;font-size:.5rem;padding:.15rem .35rem;border-radius:2px;font-family:var(--display)">${pub?'Hide':'Show'}</button>
+          <button class="sdel" data-id="${s.id}" style="background:rgba(8,6,4,.85);border:none;color:var(--text-muted);cursor:pointer;font-size:.7rem;padding:.15rem .35rem">✕</button>
         </div>`:''}
       </div>
       <div class="short-info">
@@ -547,7 +587,10 @@ function renderShorts() {
     </div>`;
   }).join('');
   grid.querySelectorAll('.short-card').forEach((card, i) => {
-    card.addEventListener('click', e => { if (!e.target.classList.contains('sdel')&&!e.target.classList.contains('stoggle')&&visible[i]?.url) window.open(visible[i].url,'_blank'); });
+    card.addEventListener('click', e => {
+      if (['stoggle','sdel'].some(c => e.target.classList.contains(c))) return;
+      if (visible[i]?.url) window.open(visible[i].url, '_blank');
+    });
   });
   grid.querySelectorAll('.stoggle').forEach(btn => btn.addEventListener('click', async function(e) {
     e.stopPropagation();
@@ -555,7 +598,7 @@ function renderShorts() {
     try {
       await API.post('/shorts/update', { id, isPublic: newPub });
       const idx = shorts.findIndex(x => x.id === id);
-      if (idx > -1) shorts[idx] = { ...shorts[idx], isPublic: newPub };
+      if (idx > -1) shorts[idx].isPublic = newPub;
       renderShorts(); toast(newPub ? '👁 Public.' : '🔒 Hidden.');
     } catch(err) { toast('Failed.'); }
   }));
@@ -584,9 +627,8 @@ async function addSocial() {
       socials.push({ id: r.id, platform, url, handle, icon, isPublic });
       renderSocials();
       ['social-platform','social-url','social-handle','social-icon'].forEach(id => { const f = document.getElementById(id); if (f) f.value = ''; });
-      showResult(document.getElementById('social-result'), '✅ Added.', 'ok');
-      toast('✦ Social added.');
-    }
+      const el = document.getElementById('social-result'); showResult(el, '✅ Added.', 'ok');
+    } else toast('Error: ' + (r.error || 'failed'));
   } catch(e) { toast('Error: ' + e.message); }
 }
 
@@ -603,7 +645,7 @@ function renderSocials() {
         <div class="social-name">${esc(s.platform)}</div>
         ${s.handle?`<div class="social-handle">${esc(s.handle)}</div>`:''}
       </div>
-      ${isOwner?`<div style="display:flex;flex-direction:column;gap:.25rem;margin-left:.5rem">
+      ${isOwner?`<div style="display:flex;flex-direction:column;gap:.25rem;align-items:flex-end;margin-left:.5rem">
         <button class="soctoggle" data-id="${s.id}" data-pub="${pub}" style="background:none;border:1px solid rgba(201,168,76,.2);color:var(--text-muted);cursor:pointer;font-size:.5rem;padding:.1rem .3rem;border-radius:2px;font-family:var(--display)">${pub?'Hide':'Show'}</button>
         <button class="socdel" data-id="${s.id}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.7rem">✕</button>
       </div>`:''}
@@ -615,7 +657,7 @@ function renderSocials() {
     try {
       await API.post('/socials/update', { id, isPublic: newPub });
       const idx = socials.findIndex(x => x.id === id);
-      if (idx > -1) socials[idx] = { ...socials[idx], isPublic: newPub };
+      if (idx > -1) socials[idx].isPublic = newPub;
       renderSocials(); toast(newPub ? '👁 Public.' : '🔒 Hidden.');
     } catch(err) { toast('Failed.'); }
   }));
@@ -652,7 +694,8 @@ function setStatus(state) {
 
 function showResult(el, msg, type) {
   if (!el) return;
-  el.textContent = msg; el.style.display = msg ? 'block' : 'none';
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
   el.className = 'connection-result' + (type ? ' ' + type : '');
 }
 
@@ -664,7 +707,8 @@ function toast(msg) {
     document.body.appendChild(t);
   }
   t.textContent = msg; t.style.opacity = '1';
-  clearTimeout(t._h); t._h = setTimeout(() => t.style.opacity = '0', 3000);
+  clearTimeout(t._h);
+  t._h = setTimeout(() => t.style.opacity = '0', 3000);
 }
 
 function esc(s) {
