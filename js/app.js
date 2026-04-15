@@ -3,7 +3,7 @@
 // O valor de APP_SECRET tem de ser IGUAL ao que meteste no Cloudflare Variables.
 
 const WORKER     = 'https://kira-discord-proxy.ghoullkira.workers.dev';
-const APP_SECRET = 'SUBSTITUI_ISTO_PELO_TEU_SECRET'; // <- mesmo valor que no Cloudflare
+const APP_SECRET = 'Trip_in_Tazer13377!#2026#!77331rezaT_ni_pirT'; // <- mesmo valor que no Cloudflare
 
 // Todas as chamadas ao worker passam por aqui — nunca fazer fetch directo
 const API = {
