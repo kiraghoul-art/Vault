@@ -42,7 +42,7 @@ async function loadPublic() {
     const r = await API.get('/public');
     if (!r.ok) { setStatus('error'); return; }
     applyProfile(r.profile);
-    if (r.profile.bg) applyBg(r.profile.bg);
+    if (r.profile.bgUrl) applyBg(r.profile.bgUrl);
     if (r.profile.theme) applyTheme(r.profile.theme);
     vaultItems = r.items   || [];
     shorts     = r.shorts  || [];
@@ -427,6 +427,7 @@ function renderVault() {
   if (!c) return;
   const q = (document.getElementById('vault-search-input')?.value || '').toLowerCase();
   const items = vaultItems.filter(i => {
+    if (!isOwner && i.isPublic === false) return false;
     if (vaultFilter !== 'all' && i.type !== vaultFilter) return false;
     if (q && !(i.titulo + i.content + i.tags + i.url).toLowerCase().includes(q)) return false;
     return true;
