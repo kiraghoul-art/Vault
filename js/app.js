@@ -76,6 +76,7 @@ function setupNav() {
   }
   document.getElementById('nav-logo')?.addEventListener('click', () => goTo('home'));
   document.getElementById('btn-logout')?.addEventListener('click', doLogout);
+  document.getElementById('btn-open-login')?.addEventListener('click', () => { window.location.href = 'login.html'; });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') { closeModal('modal-vault'); closeModal('modal-short'); }
   });
