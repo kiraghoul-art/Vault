@@ -2,17 +2,15 @@ const WORKER = 'https://kira-discord-proxy.ghoullkira.workers.dev';
 
 const API = {
   token: null,
-  h() {
-    const h = { 'Content-Type': 'application/json' };
-    if (this.token) h['X-Session-Token'] = this.token;
-    return h;
-  },
+  h() { const h = { 'Content-Type': 'application/json' }; if (this.token) h['X-Session-Token'] = this.token; return h; },
   async get(path)        { return (await fetch(WORKER + path, { headers: this.h() })).json(); },
   async post(path, data) { return (await fetch(WORKER + path, { method: 'POST',   headers: this.h(), body: JSON.stringify(data) })).json(); },
   async del(path)        { return (await fetch(WORKER + path, { method: 'DELETE', headers: this.h() })).json(); }
 };
 
-let cfg = {};
+let profile = {};
+let theme = {};
+let pages = { shorts: true, vault: true, socials: true, curriculum: true };
 let isOwner = false;
 let vaultItems = [];
 let shorts = [];
@@ -21,17 +19,17 @@ let vaultFilter = 'all';
 let vaultType = 'link';
 
 document.addEventListener('DOMContentLoaded', async () => {
+  applyStoredTheme();
   setupNav();
   setupLoginModal();
   setupVaultModal();
   setupShortModal();
   setupSettings();
-  applyStoredTheme();
 
   const tok = sessionStorage.getItem('kira_token');
-  const sc  = sessionStorage.getItem('kira_cfg');
-  if (tok && sc) {
-    try { API.token = tok; cfg = JSON.parse(sc); await enterOwner(); return; } catch(e) {}
+  if (tok) {
+    API.token = tok;
+    try { await enterOwner(); return; } catch(e) {}
   }
   await loadPublic();
 });
@@ -41,12 +39,15 @@ async function loadPublic() {
   try {
     const r = await API.get('/public');
     if (!r.ok) { setStatus('error'); return; }
-    applyProfile(r.profile);
-    if (r.profile.bgUrl) applyBg(r.profile.bgUrl);
-    if (r.profile.theme) applyTheme(r.profile.theme);
+    profile = r.profile || {};
+    theme   = r.profile.theme || {};
+    pages   = r.pages || pages;
     vaultItems = r.items   || [];
     shorts     = r.shorts  || [];
     socials    = r.socials || [];
+    applyProfile();
+    applyTheme(theme);
+    applyPages();
     renderVault(); renderShorts(); renderSocials(); updateStats();
     setStatus('connected');
   } catch(e) { setStatus('error'); }
@@ -78,6 +79,14 @@ function goTo(page) {
   );
   document.getElementById('page-' + page)?.classList.add('active');
   document.querySelector('.nav-links')?.classList.remove('open');
+}
+
+function applyPages() {
+  const map = { shorts: 'nav-shorts', vault: 'nav-vault', socials: 'nav-socials', curriculum: 'nav-curriculum' };
+  Object.entries(map).forEach(([key, id]) => {
+    const btn = document.getElementById(id);
+    if (btn) btn.style.display = (isOwner || pages[key] !== false) ? '' : 'none';
+  });
 }
 
 function setupLoginModal() {
@@ -123,9 +132,7 @@ async function doLogin() {
     })).json();
     if (!r.ok) { setLoginMsg('Wrong credentials.'); return; }
     API.token = r.token;
-    cfg = r.config || {};
     sessionStorage.setItem('kira_token', r.token);
-    sessionStorage.setItem('kira_cfg', JSON.stringify(cfg));
     closeLoginModal();
     await enterOwner();
   } catch(e) { setLoginMsg('Connection error.'); }
@@ -133,8 +140,9 @@ async function doLogin() {
 }
 
 function doLogout() {
-  API.token = null; isOwner = false; cfg = {}; vaultItems = []; shorts = []; socials = [];
-  sessionStorage.removeItem('kira_token'); sessionStorage.removeItem('kira_cfg');
+  API.token = null; isOwner = false;
+  profile = {}; theme = {}; vaultItems = []; shorts = []; socials = [];
+  sessionStorage.removeItem('kira_token');
   location.reload();
 }
 
@@ -145,76 +153,119 @@ async function enterOwner() {
   try {
     const r = await API.get('/data');
     if (!r.ok) { setStatus('error'); return; }
-    cfg        = r.config  || cfg;
-    vaultItems = r.items   || [];
-    shorts     = r.shorts  || [];
-    socials    = r.socials || [];
-    applyProfile({ name: cfg.profileName, tagline: cfg.profileTagline, bg: cfg.bgUrl });
-    if (cfg.bgUrl)   applyBg(cfg.bgUrl);
-    if (cfg.theme)   applyTheme(cfg.theme);
+    profile    = r.profile  || {};
+    theme      = r.theme    || {};
+    vaultItems = r.items    || [];
+    shorts     = r.shorts   || [];
+    socials    = r.socials  || [];
+    pages = {
+      shorts:     profile.showShorts     !== false,
+      vault:      profile.showVault      !== false,
+      socials:    profile.showSocials    !== false,
+      curriculum: profile.showCurriculum !== false
+    };
+    applyProfile();
+    applyTheme(theme);
+    applyPages();
     populateSettings();
     renderVault(); renderShorts(); renderSocials(); updateStats();
     setStatus('connected');
   } catch(e) { setStatus('error'); }
 }
 
-function applyProfile(p) {
-  const name    = (p && p.name)    || 'Kira';
-  const tagline = (p && p.tagline) || 'Short-form content, ideas, and a private vault.';
+function applyProfile() {
   const h1 = document.getElementById('hero-title');
-  if (h1) h1.innerHTML = name + '<em>creates.</em>';
+  if (h1) h1.innerHTML = (profile.name || 'Kira') + '<em>creates.</em>';
   const tg = document.getElementById('hero-tagline');
-  if (tg) tg.textContent = tagline;
+  if (tg) tg.textContent = profile.tagline || 'Short-form content, ideas, and a private vault.';
 }
 
-function applyBg(bgUrl) {
-  if (!bgUrl) return;
-  const el = document.querySelector('.bg-img');
-  if (el) el.style.backgroundImage = 'url(' + bgUrl + ')';
-}
-
-function applyTheme(theme) {
-  if (!theme) return;
-  const root = document.documentElement;
-  if (theme.gold)       root.style.setProperty('--gold',       theme.gold);
-  if (theme.goldLight)  root.style.setProperty('--gold-light', theme.goldLight);
-  if (theme.goldDim)    root.style.setProperty('--gold-dim',   theme.goldDim);
-  if (theme.bg)         root.style.setProperty('--bg',         theme.bg);
-  if (theme.surface)    root.style.setProperty('--surface',    theme.surface);
-  if (theme.text)       root.style.setProperty('--text',       theme.text);
-  if (theme.textDim)    root.style.setProperty('--text-dim',   theme.textDim);
-  if (theme.bgOpacity !== undefined) {
-    const bgEl = document.querySelector('.bg-img');
-    if (bgEl) bgEl.style.opacity = theme.bgOpacity;
+function applyTheme(t) {
+  if (!t) return;
+  const r = document.documentElement;
+  if (t.gold)       r.style.setProperty('--gold',       t.gold);
+  if (t.goldLight)  r.style.setProperty('--gold-light', t.goldLight);
+  if (t.goldDim)    r.style.setProperty('--gold-dim',   t.goldDim);
+  if (t.bg)         r.style.setProperty('--bg',         t.bg);
+  if (t.surface)    r.style.setProperty('--surface',    t.surface);
+  if (t.text)       r.style.setProperty('--text',       t.text);
+  if (t.textDim)    r.style.setProperty('--text-dim',   t.textDim);
+  const bgEl = document.querySelector('.bg-img');
+  if (bgEl) {
+    if (t.bgUrl) bgEl.style.backgroundImage = 'url(' + t.bgUrl + ')';
+    if (t.bgOpacity !== undefined) bgEl.style.opacity = t.bgOpacity;
   }
 }
 
 function applyStoredTheme() {
-  try {
-    const t = localStorage.getItem('kira_theme');
-    if (t) applyTheme(JSON.parse(t));
-  } catch(e) {}
+  try { const t = localStorage.getItem('kira_theme'); if (t) applyTheme(JSON.parse(t)); } catch(e) {}
 }
 
 function setupSettings() {
-  document.getElementById('btn-save-config')?.addEventListener('click', saveConfig);
   document.getElementById('btn-save-profile')?.addEventListener('click', saveProfile);
-  document.getElementById('btn-test-connection')?.addEventListener('click', testConnection);
-  document.getElementById('btn-add-social')?.addEventListener('click', addSocial);
   document.getElementById('btn-save-theme')?.addEventListener('click', saveTheme);
   document.getElementById('btn-reset-theme')?.addEventListener('click', resetTheme);
+  document.getElementById('btn-test-connection')?.addEventListener('click', testConnection);
+  document.getElementById('btn-add-social')?.addEventListener('click', addSocial);
 
-  const themeInputs = ['theme-gold','theme-gold-light','theme-gold-dim','theme-bg','theme-surface','theme-text','theme-text-dim','theme-bg-opacity'];
-  themeInputs.forEach(id => {
-    document.getElementById(id)?.addEventListener('input', function() {
-      livePreviewTheme();
-    });
+  const colorFields = ['theme-gold','theme-gold-light','theme-gold-dim','theme-bg','theme-surface','theme-text','theme-text-dim'];
+  colorFields.forEach(id => {
+    const txt = document.getElementById(id);
+    const picker = document.getElementById(id + '-picker');
+    if (txt && picker) {
+      txt.addEventListener('input', function() { picker.value = this.value; livePreviewTheme(); });
+      picker.addEventListener('input', function() { txt.value = this.value; livePreviewTheme(); });
+    } else if (txt) {
+      txt.addEventListener('input', livePreviewTheme);
+    }
+  });
+  const opSlider = document.getElementById('theme-bg-opacity');
+  if (opSlider) opSlider.addEventListener('input', function() {
+    const v = document.getElementById('theme-bg-opacity-val');
+    if (v) v.textContent = parseFloat(this.value).toFixed(2);
+    livePreviewTheme();
   });
 }
 
+function populateSettings() {
+  const pn = document.getElementById('cfg-name');    if (pn) pn.value = profile.name    || '';
+  const pt = document.getElementById('cfg-tagline'); if (pt) pt.value = profile.tagline || '';
+
+  const pageToggles = { 'toggle-shorts': 'showShorts', 'toggle-vault': 'showVault', 'toggle-socials': 'showSocials', 'toggle-curriculum': 'showCurriculum' };
+  Object.entries(pageToggles).forEach(([id, key]) => {
+    const el = document.getElementById(id);
+    if (el) el.checked = profile[key] !== false;
+  });
+
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined) el.value = v; };
+  setVal('theme-gold',        theme.gold       || '#c9a84c');
+  setVal('theme-gold-light',  theme.goldLight  || '#e8d08a');
+  setVal('theme-gold-dim',    theme.goldDim    || '#a07c30');
+  setVal('theme-bg',          theme.bg         || '#080604');
+  setVal('theme-surface',     theme.surface    || '#0f0c07');
+  setVal('theme-text',        theme.text       || '#e8dcc8');
+  setVal('theme-text-dim',    theme.textDim    || '#9a8860');
+  setVal('theme-bg-url',      theme.bgUrl      || '');
+
+  const op = document.getElementById('theme-bg-opacity');
+  const opv = document.getElementById('theme-bg-opacity-val');
+  const opVal = theme.bgOpacity !== undefined ? theme.bgOpacity : 0.45;
+  if (op)  op.value = opVal;
+  if (opv) opv.textContent = parseFloat(opVal).toFixed(2);
+
+  const colorFields = ['theme-gold','theme-gold-light','theme-gold-dim','theme-bg','theme-surface','theme-text','theme-text-dim'];
+  colorFields.forEach(id => {
+    const txt = document.getElementById(id);
+    const picker = document.getElementById(id + '-picker');
+    if (txt && picker) picker.value = txt.value;
+  });
+
+  const sea = document.getElementById('socials-edit-area'); if (sea) sea.style.display = '';
+  const cea = document.getElementById('cv-edit-area');      if (cea) cea.style.display = '';
+}
+
 function livePreviewTheme() {
-  const theme = readThemeForm();
-  applyTheme(theme);
+  applyTheme(readThemeForm());
 }
 
 function readThemeForm() {
@@ -226,115 +277,57 @@ function readThemeForm() {
     surface:    document.getElementById('theme-surface')?.value    || '',
     text:       document.getElementById('theme-text')?.value       || '',
     textDim:    document.getElementById('theme-text-dim')?.value   || '',
+    bgUrl:      document.getElementById('theme-bg-url')?.value.trim() || theme.bgUrl || '',
     bgOpacity:  parseFloat(document.getElementById('theme-bg-opacity')?.value || '0.45')
   };
 }
 
-function populateSettings() {
-  const map = {
-    'cfg-ch-links': 'links', 'cfg-ch-notes': 'notes', 'cfg-ch-files': 'files',
-    'cfg-ch-ideas': 'ideas', 'cfg-ch-code': 'code', 'cfg-ch-bg': 'bg',
-    'cfg-ch-socials': 'socials', 'cfg-ch-cv': 'cv'
-  };
-  Object.entries(map).forEach(([id, key]) => {
-    const el = document.getElementById(id); if (el && cfg[key]) el.value = cfg[key];
-  });
-  const cn = document.getElementById('cfg-name');    if (cn && cfg.profileName)    cn.value = cfg.profileName;
-  const ct = document.getElementById('cfg-tagline'); if (ct && cfg.profileTagline) ct.value = cfg.profileTagline;
-  const cb = document.getElementById('cfg-bg-url');  if (cb && cfg.bgUrl)          cb.value = cfg.bgUrl;
-  const sea = document.getElementById('socials-edit-area'); if (sea) sea.style.display = '';
-  const cea = document.getElementById('cv-edit-area');      if (cea) cea.style.display = '';
-
-  if (cfg.theme) {
-    const t = cfg.theme;
-    const setVal = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
-    setVal('theme-gold',         t.gold);
-    setVal('theme-gold-light',   t.goldLight);
-    setVal('theme-gold-dim',     t.goldDim);
-    setVal('theme-bg',           t.bg);
-    setVal('theme-surface',      t.surface);
-    setVal('theme-text',         t.text);
-    setVal('theme-text-dim',     t.textDim);
-    const op = document.getElementById('theme-bg-opacity');
-    if (op && t.bgOpacity !== undefined) { op.value = t.bgOpacity; document.getElementById('theme-bg-opacity-val') && (document.getElementById('theme-bg-opacity-val').textContent = t.bgOpacity); }
-  }
-}
-
-async function saveConfig() {
-  if (!isOwner) return;
-  const map = {
-    'cfg-ch-links': 'links', 'cfg-ch-notes': 'notes', 'cfg-ch-files': 'files',
-    'cfg-ch-ideas': 'ideas', 'cfg-ch-code': 'code', 'cfg-ch-bg': 'bg',
-    'cfg-ch-socials': 'socials', 'cfg-ch-cv': 'cv'
-  };
-  const el = document.getElementById('connection-result');
-  showResult(el, 'Saving…', '');
-  try {
-    const channels = {};
-    Object.entries(map).forEach(([id, key]) => {
-      const f = document.getElementById(id);
-      if (f?.value.trim()) { channels[key] = f.value.trim(); cfg[key] = f.value.trim(); }
-    });
-    await API.post('/channels', channels);
-    sessionStorage.setItem('kira_cfg', JSON.stringify(cfg));
-    showResult(el, '✅ Saved.', 'ok');
-  } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
-}
-
 async function saveProfile() {
   if (!isOwner) return;
-  const name    = document.getElementById('cfg-name')?.value.trim()    || '';
-  const tagline = document.getElementById('cfg-tagline')?.value.trim() || '';
-  const bgUrl   = document.getElementById('cfg-bg-url')?.value.trim()  || '';
   const el = document.getElementById('profile-result');
   showResult(el, 'Saving…', '');
   try {
-    const profile = {};
-    if (name)    { profile.profileName    = name;    cfg.profileName = name; }
-    if (tagline) { profile.profileTagline = tagline; cfg.profileTagline = tagline; }
-    if (bgUrl)   { profile.bgUrl = bgUrl; cfg.bgUrl = bgUrl; applyBg(bgUrl); }
-    await API.post('/profile', profile);
-    if (bgUrl && cfg.bg) {
-      await API.post('/bg', { url: bgUrl });
-    }
-    applyProfile({ name: cfg.profileName, tagline: cfg.profileTagline });
-    sessionStorage.setItem('kira_cfg', JSON.stringify(cfg));
+    const data = {
+      name:            document.getElementById('cfg-name')?.value.trim()    || '',
+      tagline:         document.getElementById('cfg-tagline')?.value.trim() || '',
+      showShorts:      document.getElementById('toggle-shorts')?.checked     ?? true,
+      showVault:       document.getElementById('toggle-vault')?.checked      ?? true,
+      showSocials:     document.getElementById('toggle-socials')?.checked    ?? true,
+      showCurriculum:  document.getElementById('toggle-curriculum')?.checked ?? true
+    };
+    await API.post('/profile', data);
+    profile = { ...profile, ...data };
+    applyProfile();
+    pages = { shorts: data.showShorts, vault: data.showVault, socials: data.showSocials, curriculum: data.showCurriculum };
+    applyPages();
     showResult(el, '✅ Saved.', 'ok');
   } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
 }
 
 async function saveTheme() {
   if (!isOwner) return;
-  const theme = readThemeForm();
   const el = document.getElementById('theme-result');
   showResult(el, 'Saving…', '');
   try {
-    cfg.theme = theme;
-    await API.post('/profile', { theme });
-    localStorage.setItem('kira_theme', JSON.stringify(theme));
-    sessionStorage.setItem('kira_cfg', JSON.stringify(cfg));
-    applyTheme(theme);
+    const t = readThemeForm();
+    await API.post('/theme', t);
+    theme = t;
+    applyTheme(t);
+    localStorage.setItem('kira_theme', JSON.stringify(t));
     showResult(el, '✅ Theme saved.', 'ok');
   } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
 }
 
 function resetTheme() {
-  const defaults = {
-    gold: '#c9a84c', goldLight: '#e8d08a', goldDim: '#a07c30',
-    bg: '#080604', surface: '#0f0c07', text: '#e8dcc8', textDim: '#9a8860', bgOpacity: 0.45
-  };
+  const d = { gold:'#c9a84c', goldLight:'#e8d08a', goldDim:'#a07c30', bg:'#080604', surface:'#0f0c07', text:'#e8dcc8', textDim:'#9a8860', bgOpacity: 0.45 };
   const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
-  setVal('theme-gold',        defaults.gold);
-  setVal('theme-gold-light',  defaults.goldLight);
-  setVal('theme-gold-dim',    defaults.goldDim);
-  setVal('theme-bg',          defaults.bg);
-  setVal('theme-surface',     defaults.surface);
-  setVal('theme-text',        defaults.text);
-  setVal('theme-text-dim',    defaults.textDim);
-  setVal('theme-bg-opacity',  defaults.bgOpacity);
-  const opVal = document.getElementById('theme-bg-opacity-val');
-  if (opVal) opVal.textContent = defaults.bgOpacity;
-  applyTheme(defaults);
+  setVal('theme-gold', d.gold); setVal('theme-gold-light', d.goldLight); setVal('theme-gold-dim', d.goldDim);
+  setVal('theme-bg', d.bg); setVal('theme-surface', d.surface); setVal('theme-text', d.text); setVal('theme-text-dim', d.textDim);
+  setVal('theme-bg-opacity', d.bgOpacity);
+  const opv = document.getElementById('theme-bg-opacity-val'); if (opv) opv.textContent = '0.45';
+  const colorFields = ['theme-gold','theme-gold-light','theme-gold-dim','theme-bg','theme-surface','theme-text','theme-text-dim'];
+  colorFields.forEach(id => { const txt = document.getElementById(id); const p = document.getElementById(id+'-picker'); if (txt && p) p.value = txt.value; });
+  applyTheme(d);
 }
 
 async function testConnection() {
@@ -374,8 +367,7 @@ function setupVaultModal() {
   if (dz && fi) {
     dz.addEventListener('click', () => fi.click());
     fi.addEventListener('change', function() {
-      const lbl = document.getElementById('vault-file-label');
-      if (lbl && this.files[0]) lbl.textContent = this.files[0].name;
+      const lbl = document.getElementById('vault-file-label'); if (lbl && this.files[0]) lbl.textContent = this.files[0].name;
     });
   }
 }
@@ -384,9 +376,7 @@ function openVaultModal(type) {
   vaultType = type || 'link';
   document.querySelectorAll('.type-opt').forEach(b => b.classList.toggle('active', b.dataset.type === vaultType));
   updateVaultFields(vaultType);
-  ['vault-title','vault-url','vault-content','vault-tags','vault-lang','vault-file-url'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
+  ['vault-title','vault-url','vault-content','vault-tags','vault-lang','vault-file-url'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const lbl = document.getElementById('vault-file-label'); if (lbl) lbl.textContent = 'Drag & drop or click to browse';
   const pub = document.getElementById('vault-public');     if (pub) pub.checked = true;
   const sav = document.getElementById('vault-saving');     if (sav) sav.style.display = 'none';
@@ -411,11 +401,10 @@ async function addVaultItem() {
   const isPublic = document.getElementById('vault-public')?.checked ?? true;
   if (!titulo) { toast('Title is required.'); return; }
   const sav = document.getElementById('vault-saving'); if (sav) sav.style.display = 'block';
-  const effUrl = url || fileUrl;
   try {
-    const r = await API.post('/items', { type: vaultType, titulo, url: effUrl, content, tags, lang, isPublic });
+    const r = await API.post('/items', { type: vaultType, titulo, url: url || fileUrl, content, tags, lang, isPublic });
     if (r.ok) {
-      vaultItems.unshift({ id: r.id, type: vaultType, titulo, url: effUrl, content, tags, lang, isPublic });
+      vaultItems.unshift({ id: r.id, type: vaultType, titulo, url: url || fileUrl, content, tags, lang, isPublic });
       renderVault(); updateStats(); closeModal('modal-vault'); toast('✦ Added.');
     } else { toast('Error: ' + (r.error || 'failed')); }
   } catch(e) { toast('Error: ' + e.message); }
@@ -436,15 +425,14 @@ function renderVault() {
   const ic = { link:'⊞', note:'≡', file:'◫', idea:'◇', code:'</>' };
   c.innerHTML = items.map(i => {
     const pub = i.isPublic !== false;
-    return `
-    <div class="vault-item" data-type="${i.type}" style="${!pub && isOwner ? 'opacity:.65;border-style:dashed' : ''}">
+    return `<div class="vault-item" data-type="${i.type}" style="${!pub && isOwner ? 'opacity:.6;border-style:dashed' : ''}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
         <span class="vault-item-type">${ic[i.type]||'▦'} ${i.type}</span>
         <span style="display:flex;align-items:center;gap:.35rem">
-          <span style="font-size:.65rem;color:${pub?'var(--gold-dark)':'var(--text-muted)'}">${pub?'👁':'🔒'}</span>
+          <span style="font-size:.65rem">${pub?'👁':'🔒'}</span>
           ${isOwner ? `
-            <button class="vtoggle" data-id="${i.id}" data-pub="${pub}" style="background:none;border:1px solid rgba(201,168,76,.2);color:var(--text-muted);cursor:pointer;font-size:.52rem;padding:.1rem .35rem;border-radius:2px;font-family:var(--display);letter-spacing:.06em;transition:all .15s">${pub?'Hide':'Show'}</button>
-            <button class="vdel" data-id="${i.id}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.75rem;padding:.1rem .3rem;transition:color .15s">✕</button>
+            <button class="vtoggle" data-id="${i.id}" data-pub="${pub}" style="background:none;border:1px solid rgba(201,168,76,.2);color:var(--text-muted);cursor:pointer;font-size:.52rem;padding:.1rem .35rem;border-radius:2px;font-family:var(--display);letter-spacing:.06em">${pub?'Hide':'Show'}</button>
+            <button class="vdel" data-id="${i.id}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.75rem;padding:.1rem .3rem">✕</button>
           ` : ''}
         </span>
       </div>
@@ -454,41 +442,25 @@ function renderVault() {
       ${i.tags ? `<div class="vault-item-footer"><div style="display:flex;gap:.3rem;flex-wrap:wrap">${i.tags.split(',').map(t=>`<span class="vault-tag">${esc(t.trim())}</span>`).join('')}</div></div>` : ''}
     </div>`;
   }).join('');
-
-  c.querySelectorAll('.vtoggle').forEach(btn => {
-    btn.addEventListener('click', async function(e) {
-      e.stopPropagation();
-      const id  = this.dataset.id;
-      const pub = this.dataset.pub === 'true';
-      const newPub = !pub;
-      const item = vaultItems.find(x => x.id === id);
-      if (!item) return;
-      try {
-        const all = [...vaultItems];
-        const idx = all.findIndex(x => x.id === id);
-        all[idx] = { ...all[idx], isPublic: newPub };
-        await API.post('/items/update', { id, isPublic: newPub });
-        vaultItems = all;
-        renderVault();
-        toast(newPub ? '👁 Now public.' : '🔒 Now hidden.');
-      } catch(err) { toast('Failed to update.'); }
-    });
-  });
-
-  c.querySelectorAll('.vdel').forEach(btn => {
-    btn.addEventListener('mouseenter', function() { this.style.color = '#cc6644'; });
-    btn.addEventListener('mouseleave', function() { this.style.color = 'var(--text-muted)'; });
-    btn.addEventListener('click', async function(e) {
-      e.stopPropagation();
-      if (!confirm('Delete this entry?')) return;
-      const id = this.dataset.id;
-      try {
-        await API.del('/items/' + id);
-        vaultItems = vaultItems.filter(x => x.id !== id);
-        renderVault(); updateStats(); toast('Deleted.');
-      } catch(err) { toast('Delete failed.'); }
-    });
-  });
+  c.querySelectorAll('.vtoggle').forEach(btn => btn.addEventListener('click', async function(e) {
+    e.stopPropagation();
+    const id = this.dataset.id, newPub = this.dataset.pub !== 'true';
+    try {
+      await API.post('/items/update', { id, isPublic: newPub });
+      const idx = vaultItems.findIndex(x => x.id === id);
+      if (idx > -1) vaultItems[idx] = { ...vaultItems[idx], isPublic: newPub };
+      renderVault(); toast(newPub ? '👁 Public.' : '🔒 Hidden.');
+    } catch(err) { toast('Failed.'); }
+  }));
+  c.querySelectorAll('.vdel').forEach(btn => btn.addEventListener('click', async function(e) {
+    e.stopPropagation();
+    if (!confirm('Delete this entry?')) return;
+    try {
+      await API.del('/items/' + this.dataset.id);
+      vaultItems = vaultItems.filter(x => x.id !== this.dataset.id);
+      renderVault(); updateStats(); toast('Deleted.');
+    } catch(err) { toast('Delete failed.'); }
+  }));
   renderTagSidebar();
 }
 
@@ -497,15 +469,11 @@ function renderTagSidebar() {
   if (!sb) return;
   const tags = new Set();
   vaultItems.forEach(i => { if (i.tags) i.tags.split(',').forEach(t => tags.add(t.trim())); });
-  sb.innerHTML = [...tags].map(t =>
-    `<div class="vault-cat" style="cursor:pointer" data-stag="${esc(t)}"># ${esc(t)}</div>`
-  ).join('');
-  sb.querySelectorAll('[data-stag]').forEach(el =>
-    el.addEventListener('click', function() {
-      const inp = document.getElementById('vault-search-input');
-      if (inp) { inp.value = this.dataset.stag; renderVault(); }
-    })
-  );
+  sb.innerHTML = [...tags].map(t => `<div class="vault-cat" style="cursor:pointer" data-stag="${esc(t)}"># ${esc(t)}</div>`).join('');
+  sb.querySelectorAll('[data-stag]').forEach(el => el.addEventListener('click', function() {
+    const inp = document.getElementById('vault-search-input');
+    if (inp) { inp.value = this.dataset.stag; renderVault(); }
+  }));
 }
 
 function setupShortModal() {
@@ -535,7 +503,7 @@ async function addShort() {
     const r = await API.post('/shorts', { titulo, url, cat, views, isPublic });
     if (r.ok) {
       shorts.unshift({ id: r.id, titulo, url, cat, views, isPublic });
-      renderShorts(); updateStats(); closeModal('modal-short'); toast('✦ Scroll added.');
+      renderShorts(); updateStats(); closeModal('modal-short'); toast('✦ Added.');
     } else { toast('Error: ' + (r.error || 'failed')); }
   } catch(e) { toast('Error: ' + e.message); }
   finally { if (sav) sav.style.display = 'none'; }
@@ -549,77 +517,57 @@ function renderShorts() {
   const cats = ['all', ...new Set(visible.map(s => s.cat).filter(Boolean))];
   const fb = document.getElementById('filter-bar');
   if (fb) {
-    fb.innerHTML = cats.map(c =>
-      `<button class="filter-btn${c==='all'?' active':''}" data-fcat="${esc(c)}">${c==='all'?'All':esc(c)}</button>`
-    ).join('');
-    fb.querySelectorAll('.filter-btn').forEach(btn =>
-      btn.addEventListener('click', function() {
-        fb.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
-        const f = this.dataset.fcat;
-        grid.querySelectorAll('.short-card').forEach(card =>
-          card.style.display = (f === 'all' || card.dataset.scat === f) ? '' : 'none'
-        );
-      })
-    );
+    fb.innerHTML = cats.map(c => `<button class="filter-btn${c==='all'?' active':''}" data-fcat="${esc(c)}">${c==='all'?'All':esc(c)}</button>`).join('');
+    fb.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', function() {
+      fb.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      const f = this.dataset.fcat;
+      grid.querySelectorAll('.short-card').forEach(card => card.style.display = (f==='all'||card.dataset.scat===f)?'':'none');
+    }));
   }
   grid.innerHTML = visible.map(s => {
     const pub = s.isPublic !== false;
-    return `
-    <div class="short-card" data-scat="${esc(s.cat||'')}" style="${!pub && isOwner ? 'opacity:.65;border-style:dashed' : ''}">
+    return `<div class="short-card" data-scat="${esc(s.cat||'')}" style="${!pub&&isOwner?'opacity:.6;border-style:dashed':''}">
       <div class="short-thumb">
         <div class="thumb-gradient"></div>
         <div class="play-icon"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg></div>
-        ${s.cat ? `<div class="thumb-tag">${esc(s.cat)}</div>` : ''}
-        ${isOwner ? `<div style="position:absolute;top:.4rem;right:.4rem;display:flex;gap:.25rem">
-          <button class="stoggle" data-id="${s.id}" data-pub="${pub}" style="background:rgba(10,8,4,.8);border:1px solid rgba(201,168,76,.2);color:var(--text-muted);cursor:pointer;font-size:.5rem;padding:.1rem .3rem;border-radius:2px;font-family:var(--display);letter-spacing:.06em">${pub?'Hide':'Show'}</button>
-          <button class="sdel" data-id="${s.id}" style="background:rgba(10,8,4,.8);border:none;color:var(--text-muted);cursor:pointer;font-size:.7rem;padding:.1rem .35rem">✕</button>
-        </div>` : ''}
+        ${s.cat?`<div class="thumb-tag">${esc(s.cat)}</div>`:''}
+        ${isOwner?`<div style="position:absolute;top:.4rem;right:.4rem;display:flex;gap:.25rem">
+          <button class="stoggle" data-id="${s.id}" data-pub="${pub}" style="background:rgba(10,8,4,.85);border:1px solid rgba(201,168,76,.2);color:var(--text-muted);cursor:pointer;font-size:.5rem;padding:.1rem .3rem;border-radius:2px;font-family:var(--display)">${pub?'Hide':'Show'}</button>
+          <button class="sdel" data-id="${s.id}" style="background:rgba(10,8,4,.85);border:none;color:var(--text-muted);cursor:pointer;font-size:.7rem;padding:.1rem .4rem">✕</button>
+        </div>`:''}
       </div>
       <div class="short-info">
         <div class="short-title">${esc(s.titulo)}</div>
         <div class="short-meta">
-          ${s.views ? `<span class="short-views">${esc(s.views)} views</span>` : ''}
+          ${s.views?`<span class="short-views">${esc(s.views)} views</span>`:''}
           <span style="font-size:.6rem;color:${pub?'var(--gold-dark)':'var(--text-muted)'};margin-left:auto">${pub?'👁':'🔒'}</span>
         </div>
       </div>
     </div>`;
   }).join('');
   grid.querySelectorAll('.short-card').forEach((card, i) => {
-    card.addEventListener('click', e => {
-      if (e.target.classList.contains('sdel') || e.target.classList.contains('stoggle')) return;
-      if (visible[i]?.url) window.open(visible[i].url, '_blank');
-    });
+    card.addEventListener('click', e => { if (!e.target.classList.contains('sdel')&&!e.target.classList.contains('stoggle')&&visible[i]?.url) window.open(visible[i].url,'_blank'); });
   });
-  grid.querySelectorAll('.stoggle').forEach(btn => {
-    btn.addEventListener('click', async function(e) {
-      e.stopPropagation();
-      const id = this.dataset.id;
-      const pub = this.dataset.pub === 'true';
-      const newPub = !pub;
-      try {
-        await API.post('/shorts/update', { id, isPublic: newPub });
-        const idx = shorts.findIndex(x => x.id === id);
-        if (idx > -1) shorts[idx] = { ...shorts[idx], isPublic: newPub };
-        renderShorts();
-        toast(newPub ? '👁 Now public.' : '🔒 Now hidden.');
-      } catch(err) { toast('Failed to update.'); }
-    });
-  });
-  grid.querySelectorAll('.sdel').forEach(btn => {
-    btn.addEventListener('mouseenter', function() { this.style.color = '#cc6644'; });
-    btn.addEventListener('mouseleave', function() { this.style.color = 'var(--text-muted)'; });
-    btn.addEventListener('click', async function(e) {
-      e.stopPropagation();
-      if (!confirm('Delete this scroll?')) return;
-      const id = this.dataset.id;
-      try {
-        await API.del('/shorts/' + id);
-        shorts = shorts.filter(x => x.id !== id);
-        renderShorts(); updateStats(); toast('Deleted.');
-      } catch(err) { toast('Delete failed.'); }
-    });
-  });
+  grid.querySelectorAll('.stoggle').forEach(btn => btn.addEventListener('click', async function(e) {
+    e.stopPropagation();
+    const id = this.dataset.id, newPub = this.dataset.pub !== 'true';
+    try {
+      await API.post('/shorts/update', { id, isPublic: newPub });
+      const idx = shorts.findIndex(x => x.id === id);
+      if (idx > -1) shorts[idx] = { ...shorts[idx], isPublic: newPub };
+      renderShorts(); toast(newPub ? '👁 Public.' : '🔒 Hidden.');
+    } catch(err) { toast('Failed.'); }
+  }));
+  grid.querySelectorAll('.sdel').forEach(btn => btn.addEventListener('click', async function(e) {
+    e.stopPropagation();
+    if (!confirm('Delete?')) return;
+    try {
+      await API.del('/shorts/' + this.dataset.id);
+      shorts = shorts.filter(x => x.id !== this.dataset.id);
+      renderShorts(); updateStats(); toast('Deleted.');
+    } catch(err) { toast('Delete failed.'); }
+  }));
 }
 
 async function addSocial() {
@@ -636,9 +584,9 @@ async function addSocial() {
       socials.push({ id: r.id, platform, url, handle, icon, isPublic });
       renderSocials();
       ['social-platform','social-url','social-handle','social-icon'].forEach(id => { const f = document.getElementById(id); if (f) f.value = ''; });
-      const el = document.getElementById('social-result'); showResult(el, '✅ Added.', 'ok');
+      showResult(document.getElementById('social-result'), '✅ Added.', 'ok');
       toast('✦ Social added.');
-    } else { toast('Error: ' + (r.error || 'failed')); }
+    }
   } catch(e) { toast('Error: ' + e.message); }
 }
 
@@ -649,46 +597,37 @@ function renderSocials() {
   if (!visible.length) { grid.innerHTML = '<div class="socials-empty">No socials yet.</div>'; return; }
   grid.innerHTML = visible.map(s => {
     const pub = s.isPublic !== false;
-    return `
-    <a class="social-card" href="${esc(s.url)}" target="_blank" rel="noopener" style="${!pub && isOwner ? 'opacity:.65;border-style:dashed' : ''}">
-      <div class="social-icon-wrap">${s.icon || '🔗'}</div>
+    return `<a class="social-card" href="${esc(s.url)}" target="_blank" rel="noopener" style="${!pub&&isOwner?'opacity:.6;border-style:dashed':''}">
+      <div class="social-icon-wrap">${s.icon||'🔗'}</div>
       <div class="social-info">
         <div class="social-name">${esc(s.platform)}</div>
-        ${s.handle ? `<div class="social-handle">${esc(s.handle)}</div>` : ''}
+        ${s.handle?`<div class="social-handle">${esc(s.handle)}</div>`:''}
       </div>
-      ${isOwner ? `
-        <div style="display:flex;flex-direction:column;gap:.25rem;align-items:flex-end;margin-left:.5rem">
-          <button class="soctoggle" data-id="${s.id}" data-pub="${pub}" style="background:none;border:1px solid rgba(201,168,76,.2);color:var(--text-muted);cursor:pointer;font-size:.5rem;padding:.1rem .3rem;border-radius:2px;font-family:var(--display);letter-spacing:.06em">${pub?'Hide':'Show'}</button>
-          <button class="socdel" data-id="${s.id}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.7rem;padding:.1rem">✕</button>
-        </div>
-      ` : ''}
+      ${isOwner?`<div style="display:flex;flex-direction:column;gap:.25rem;margin-left:.5rem">
+        <button class="soctoggle" data-id="${s.id}" data-pub="${pub}" style="background:none;border:1px solid rgba(201,168,76,.2);color:var(--text-muted);cursor:pointer;font-size:.5rem;padding:.1rem .3rem;border-radius:2px;font-family:var(--display)">${pub?'Hide':'Show'}</button>
+        <button class="socdel" data-id="${s.id}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.7rem">✕</button>
+      </div>`:''}
     </a>`;
   }).join('');
-  grid.querySelectorAll('.soctoggle').forEach(btn =>
-    btn.addEventListener('click', async function(e) {
-      e.preventDefault(); e.stopPropagation();
-      const id = this.dataset.id, pub = this.dataset.pub === 'true', newPub = !pub;
-      try {
-        await API.post('/socials/update', { id, isPublic: newPub });
-        const idx = socials.findIndex(x => x.id === id);
-        if (idx > -1) socials[idx] = { ...socials[idx], isPublic: newPub };
-        renderSocials();
-        toast(newPub ? '👁 Now public.' : '🔒 Now hidden.');
-      } catch(err) { toast('Failed to update.'); }
-    })
-  );
-  grid.querySelectorAll('.socdel').forEach(btn =>
-    btn.addEventListener('click', async function(e) {
-      e.preventDefault(); e.stopPropagation();
-      if (!confirm('Delete this social?')) return;
-      const id = this.dataset.id;
-      try {
-        await API.del('/socials/' + id);
-        socials = socials.filter(x => x.id !== id);
-        renderSocials(); toast('Deleted.');
-      } catch(err) { toast('Delete failed.'); }
-    })
-  );
+  grid.querySelectorAll('.soctoggle').forEach(btn => btn.addEventListener('click', async function(e) {
+    e.preventDefault(); e.stopPropagation();
+    const id = this.dataset.id, newPub = this.dataset.pub !== 'true';
+    try {
+      await API.post('/socials/update', { id, isPublic: newPub });
+      const idx = socials.findIndex(x => x.id === id);
+      if (idx > -1) socials[idx] = { ...socials[idx], isPublic: newPub };
+      renderSocials(); toast(newPub ? '👁 Public.' : '🔒 Hidden.');
+    } catch(err) { toast('Failed.'); }
+  }));
+  grid.querySelectorAll('.socdel').forEach(btn => btn.addEventListener('click', async function(e) {
+    e.preventDefault(); e.stopPropagation();
+    if (!confirm('Delete?')) return;
+    try {
+      await API.del('/socials/' + this.dataset.id);
+      socials = socials.filter(x => x.id !== this.dataset.id);
+      renderSocials(); toast('Deleted.');
+    } catch(err) { toast('Delete failed.'); }
+  }));
 }
 
 function openModal(id)  { const m = document.getElementById(id); if (m) m.style.display = 'flex'; }
@@ -713,8 +652,7 @@ function setStatus(state) {
 
 function showResult(el, msg, type) {
   if (!el) return;
-  el.textContent = msg;
-  el.style.display = msg ? 'block' : 'none';
+  el.textContent = msg; el.style.display = msg ? 'block' : 'none';
   el.className = 'connection-result' + (type ? ' ' + type : '');
 }
 
@@ -726,8 +664,7 @@ function toast(msg) {
     document.body.appendChild(t);
   }
   t.textContent = msg; t.style.opacity = '1';
-  clearTimeout(t._h);
-  t._h = setTimeout(() => t.style.opacity = '0', 3000);
+  clearTimeout(t._h); t._h = setTimeout(() => t.style.opacity = '0', 3000);
 }
 
 function esc(s) {
