@@ -434,20 +434,47 @@ function renderVault() {
   });
   if (!items.length) { c.innerHTML = '<div class="vault-empty">No scrolls found.</div>'; renderTagSidebar(); return; }
   const ic = { link:'⊞', note:'≡', file:'◫', idea:'◇', code:'</>' };
-  c.innerHTML = items.map(i => `
-    <div class="vault-item" data-type="${i.type}">
+  c.innerHTML = items.map(i => {
+    const pub = i.isPublic !== false;
+    return `
+    <div class="vault-item" data-type="${i.type}" style="${!pub && isOwner ? 'opacity:.65;border-style:dashed' : ''}">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
         <span class="vault-item-type">${ic[i.type]||'▦'} ${i.type}</span>
-        <span style="display:flex;align-items:center;gap:.4rem">
-          ${!i.isPublic ? '<span style="font-size:.6rem;color:var(--text-muted)">🔒</span>' : ''}
-          ${isOwner ? `<button class="vdel" data-id="${i.id}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.75rem;padding:.1rem .3rem;transition:color .15s">✕</button>` : ''}
+        <span style="display:flex;align-items:center;gap:.35rem">
+          <span style="font-size:.65rem;color:${pub?'var(--gold-dark)':'var(--text-muted)'}">${pub?'👁':'🔒'}</span>
+          ${isOwner ? `
+            <button class="vtoggle" data-id="${i.id}" data-pub="${pub}" style="background:none;border:1px solid rgba(201,168,76,.2);color:var(--text-muted);cursor:pointer;font-size:.52rem;padding:.1rem .35rem;border-radius:2px;font-family:var(--display);letter-spacing:.06em;transition:all .15s">${pub?'Hide':'Show'}</button>
+            <button class="vdel" data-id="${i.id}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.75rem;padding:.1rem .3rem;transition:color .15s">✕</button>
+          ` : ''}
         </span>
       </div>
       <div class="vault-item-title">${esc(i.titulo)}</div>
       ${i.url ? `<div class="vault-item-url"><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.url)}</a></div>` : ''}
       ${i.content ? `<div class="vault-item-preview">${esc(i.content)}</div>` : ''}
-      ${i.tags ? `<div class="vault-item-footer"><div style="display:flex;gap:.3rem;flex-wrap:wrap">${i.tags.split(',').map(t => `<span class="vault-tag">${esc(t.trim())}</span>`).join('')}</div></div>` : ''}
-    </div>`).join('');
+      ${i.tags ? `<div class="vault-item-footer"><div style="display:flex;gap:.3rem;flex-wrap:wrap">${i.tags.split(',').map(t=>`<span class="vault-tag">${esc(t.trim())}</span>`).join('')}</div></div>` : ''}
+    </div>`;
+  }).join('');
+
+  c.querySelectorAll('.vtoggle').forEach(btn => {
+    btn.addEventListener('click', async function(e) {
+      e.stopPropagation();
+      const id  = this.dataset.id;
+      const pub = this.dataset.pub === 'true';
+      const newPub = !pub;
+      const item = vaultItems.find(x => x.id === id);
+      if (!item) return;
+      try {
+        const all = [...vaultItems];
+        const idx = all.findIndex(x => x.id === id);
+        all[idx] = { ...all[idx], isPublic: newPub };
+        await API.post('/items/update', { id, isPublic: newPub });
+        vaultItems = all;
+        renderVault();
+        toast(newPub ? '👁 Now public.' : '🔒 Now hidden.');
+      } catch(err) { toast('Failed to update.'); }
+    });
+  });
+
   c.querySelectorAll('.vdel').forEach(btn => {
     btn.addEventListener('mouseenter', function() { this.style.color = '#cc6644'; });
     btn.addEventListener('mouseleave', function() { this.style.color = 'var(--text-muted)'; });
@@ -536,23 +563,48 @@ function renderShorts() {
       })
     );
   }
-  grid.innerHTML = visible.map(s => `
-    <div class="short-card" data-scat="${esc(s.cat||'')}">
+  grid.innerHTML = visible.map(s => {
+    const pub = s.isPublic !== false;
+    return `
+    <div class="short-card" data-scat="${esc(s.cat||'')}" style="${!pub && isOwner ? 'opacity:.65;border-style:dashed' : ''}">
       <div class="short-thumb">
         <div class="thumb-gradient"></div>
         <div class="play-icon"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg></div>
         ${s.cat ? `<div class="thumb-tag">${esc(s.cat)}</div>` : ''}
+        ${isOwner ? `<div style="position:absolute;top:.4rem;right:.4rem;display:flex;gap:.25rem">
+          <button class="stoggle" data-id="${s.id}" data-pub="${pub}" style="background:rgba(10,8,4,.8);border:1px solid rgba(201,168,76,.2);color:var(--text-muted);cursor:pointer;font-size:.5rem;padding:.1rem .3rem;border-radius:2px;font-family:var(--display);letter-spacing:.06em">${pub?'Hide':'Show'}</button>
+          <button class="sdel" data-id="${s.id}" style="background:rgba(10,8,4,.8);border:none;color:var(--text-muted);cursor:pointer;font-size:.7rem;padding:.1rem .35rem">✕</button>
+        </div>` : ''}
       </div>
       <div class="short-info">
         <div class="short-title">${esc(s.titulo)}</div>
         <div class="short-meta">
           ${s.views ? `<span class="short-views">${esc(s.views)} views</span>` : ''}
-          ${isOwner ? `<button class="sdel" data-id="${s.id}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.7rem;margin-left:auto;transition:color .15s">✕</button>` : ''}
+          <span style="font-size:.6rem;color:${pub?'var(--gold-dark)':'var(--text-muted)'};margin-left:auto">${pub?'👁':'🔒'}</span>
         </div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   grid.querySelectorAll('.short-card').forEach((card, i) => {
-    card.addEventListener('click', e => { if (!e.target.classList.contains('sdel') && visible[i]?.url) window.open(visible[i].url, '_blank'); });
+    card.addEventListener('click', e => {
+      if (e.target.classList.contains('sdel') || e.target.classList.contains('stoggle')) return;
+      if (visible[i]?.url) window.open(visible[i].url, '_blank');
+    });
+  });
+  grid.querySelectorAll('.stoggle').forEach(btn => {
+    btn.addEventListener('click', async function(e) {
+      e.stopPropagation();
+      const id = this.dataset.id;
+      const pub = this.dataset.pub === 'true';
+      const newPub = !pub;
+      try {
+        await API.post('/shorts/update', { id, isPublic: newPub });
+        const idx = shorts.findIndex(x => x.id === id);
+        if (idx > -1) shorts[idx] = { ...shorts[idx], isPublic: newPub };
+        renderShorts();
+        toast(newPub ? '👁 Now public.' : '🔒 Now hidden.');
+      } catch(err) { toast('Failed to update.'); }
+    });
   });
   grid.querySelectorAll('.sdel').forEach(btn => {
     btn.addEventListener('mouseenter', function() { this.style.color = '#cc6644'; });
@@ -595,16 +647,37 @@ function renderSocials() {
   if (!grid) return;
   const visible = socials.filter(s => isOwner || s.isPublic !== false);
   if (!visible.length) { grid.innerHTML = '<div class="socials-empty">No socials yet.</div>'; return; }
-  grid.innerHTML = visible.map(s => `
-    <a class="social-card" href="${esc(s.url)}" target="_blank" rel="noopener">
+  grid.innerHTML = visible.map(s => {
+    const pub = s.isPublic !== false;
+    return `
+    <a class="social-card" href="${esc(s.url)}" target="_blank" rel="noopener" style="${!pub && isOwner ? 'opacity:.65;border-style:dashed' : ''}">
       <div class="social-icon-wrap">${s.icon || '🔗'}</div>
       <div class="social-info">
         <div class="social-name">${esc(s.platform)}</div>
         ${s.handle ? `<div class="social-handle">${esc(s.handle)}</div>` : ''}
       </div>
-      ${isOwner ? `<button class="social-del" data-id="${s.id}">✕</button>` : ''}
-    </a>`).join('');
-  grid.querySelectorAll('.social-del').forEach(btn =>
+      ${isOwner ? `
+        <div style="display:flex;flex-direction:column;gap:.25rem;align-items:flex-end;margin-left:.5rem">
+          <button class="soctoggle" data-id="${s.id}" data-pub="${pub}" style="background:none;border:1px solid rgba(201,168,76,.2);color:var(--text-muted);cursor:pointer;font-size:.5rem;padding:.1rem .3rem;border-radius:2px;font-family:var(--display);letter-spacing:.06em">${pub?'Hide':'Show'}</button>
+          <button class="socdel" data-id="${s.id}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.7rem;padding:.1rem">✕</button>
+        </div>
+      ` : ''}
+    </a>`;
+  }).join('');
+  grid.querySelectorAll('.soctoggle').forEach(btn =>
+    btn.addEventListener('click', async function(e) {
+      e.preventDefault(); e.stopPropagation();
+      const id = this.dataset.id, pub = this.dataset.pub === 'true', newPub = !pub;
+      try {
+        await API.post('/socials/update', { id, isPublic: newPub });
+        const idx = socials.findIndex(x => x.id === id);
+        if (idx > -1) socials[idx] = { ...socials[idx], isPublic: newPub };
+        renderSocials();
+        toast(newPub ? '👁 Now public.' : '🔒 Now hidden.');
+      } catch(err) { toast('Failed to update.'); }
+    })
+  );
+  grid.querySelectorAll('.socdel').forEach(btn =>
     btn.addEventListener('click', async function(e) {
       e.preventDefault(); e.stopPropagation();
       if (!confirm('Delete this social?')) return;
