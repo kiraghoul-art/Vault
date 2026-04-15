@@ -7,6 +7,30 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+<style>
+.vault-item-url a {
+  font-family: var(--mono);
+  font-size: .65rem;
+  color: var(--gold-dark);
+  text-decoration: none;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: .35rem;
+  transition: color .15s;
+}
+.vault-item-url a:hover { color: var(--gold); text-decoration: underline; }
+.theme-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.theme-field { display: flex; flex-direction: column; gap: .35rem; }
+.theme-field label { font-family: var(--display); font-size: .58rem; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-dim); }
+.theme-color-wrap { display: flex; align-items: center; gap: .5rem; }
+.theme-color-wrap input[type=color] { width: 36px; height: 28px; padding: 2px; background: rgba(10,8,4,.8); border: 1px solid rgba(201,168,76,.2); border-radius: 3px; cursor: pointer; }
+.theme-color-wrap input[type=text] { flex: 1; }
+.theme-range-wrap { display: flex; align-items: center; gap: .75rem; }
+.theme-range-wrap input[type=range] { flex: 1; accent-color: var(--gold); }
+.theme-range-wrap span { font-family: var(--mono); font-size: .75rem; color: var(--gold-dim); min-width: 2.5rem; }
+</style>
 </head>
 <body>
 
@@ -16,7 +40,6 @@
   <div class="bg-grain"></div>
 </div>
 
-<!-- LOGIN MODAL (overlay) -->
 <div id="login-screen" style="display:none">
   <div class="login-box">
     <div class="login-glass">
@@ -35,43 +58,19 @@
       <p class="login-sub">Ye Private Chamber</p>
       <div class="field-group">
         <label class="field-label">Username</label>
-        <input class="field-input" type="text" id="login-user" placeholder="Enter your name" autocomplete="username">
+        <input class="field-input" type="text" id="login-user" placeholder="Enter your name" autocomplete="username" autocorrect="off" autocapitalize="none">
       </div>
       <div class="field-group">
         <label class="field-label">Password</label>
         <input class="field-input" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
       </div>
-      <div class="login-result" id="login-result"></div>
+      <div class="login-result" id="login-result" style="display:none"></div>
       <button class="btn-primary" id="btn-login" style="width:100%;margin-top:1.5rem;text-align:center;">Enter the Keep</button>
       <p class="login-hint">Thy session fadeth when the tab is sealed</p>
     </div>
   </div>
 </div>
 
-<!-- SETUP (first time) -->
-<div id="setup-screen" style="display:none">
-  <div class="setup-box">
-    <div class="login-glass">
-      <div class="login-corner tl"></div><div class="login-corner tr"></div>
-      <div class="login-corner bl"></div><div class="login-corner br"></div>
-      <div class="login-logo">K<span>ira</span></div>
-      <p class="login-sub">First Audience — Seal the Channels</p>
-      <div class="field-group"><label class="field-label">Links Channel ID</label><input class="field-input" type="text" id="setup-links" placeholder="#vault-links"></div>
-      <div class="field-group"><label class="field-label">Notes Channel ID</label><input class="field-input" type="text" id="setup-notes" placeholder="#vault-notes"></div>
-      <div class="field-group"><label class="field-label">Files Channel ID</label><input class="field-input" type="text" id="setup-files" placeholder="#vault-files"></div>
-      <div class="field-group"><label class="field-label">Ideas Channel ID</label><input class="field-input" type="text" id="setup-ideas" placeholder="#vault-ideas"></div>
-      <div class="field-group"><label class="field-label">Code Channel ID</label><input class="field-input" type="text" id="setup-code" placeholder="#vault-code"></div>
-      <div class="field-group"><label class="field-label">Background Channel ID</label><input class="field-input" type="text" id="setup-bg" placeholder="#vault-bg"></div>
-      <div class="field-group"><label class="field-label">Socials Channel ID</label><input class="field-input" type="text" id="setup-socials" placeholder="#vault-socials"></div>
-      <div class="field-group"><label class="field-label">Curriculum Channel ID</label><input class="field-input" type="text" id="setup-cv" placeholder="#vault-cv"></div>
-      <div class="login-result" id="setup-result"></div>
-      <button class="btn-primary" id="btn-setup-save" style="width:100%;margin-top:1.5rem;">Seal the Covenant</button>
-      <p class="login-hint">Thy configuration shall be enshrined — never to repeat</p>
-    </div>
-  </div>
-</div>
-
-<!-- APP — visible to everyone -->
 <div id="app">
 
 <nav>
@@ -82,7 +81,7 @@
     <button data-page="vault">Vault</button>
     <button data-page="socials">Socials</button>
     <button data-page="curriculum">Curriculum</button>
-    <button data-page="settings" class="owner-only" id="nav-settings" style="display:none">Setup</button>
+    <button data-page="settings" class="owner-only" style="display:none">Setup</button>
   </div>
   <div style="display:flex;align-items:center;gap:0.75rem;">
     <button class="nav-hamburger" id="nav-hamburger">&#9776;</button>
@@ -91,7 +90,6 @@
   </div>
 </nav>
 
-<!-- HOME -->
 <div class="page active" id="page-home">
   <div class="home-layout">
     <div class="home-left">
@@ -117,7 +115,6 @@
   </div>
 </div>
 
-<!-- SHORTS -->
 <div class="page" id="page-shorts">
   <div class="page-inner" style="display:flex;flex-direction:column;">
     <div class="section-header">
@@ -130,7 +127,6 @@
   </div>
 </div>
 
-<!-- VAULT -->
 <div class="page" id="page-vault">
   <div class="page-inner" style="overflow:hidden;display:flex;flex-direction:column;">
     <div class="vault-layout" style="flex:1;overflow:hidden;">
@@ -147,7 +143,7 @@
         <div class="vault-divider"></div>
         <div class="discord-status">
           <div class="discord-dot" id="discord-dot"></div>
-          <span id="discord-label">Discord: connected</span>
+          <span id="discord-label">Connecting…</span>
         </div>
       </div>
       <div class="vault-main">
@@ -161,17 +157,13 @@
   </div>
 </div>
 
-<!-- SOCIALS -->
 <div class="page" id="page-socials">
   <div class="page-inner">
     <div class="section-header">
       <div><h2>So<span>cials</span></h2></div>
       <p>Find me across the realm</p>
     </div>
-    <div class="socials-grid" id="socials-grid">
-      <div class="socials-empty">Loading…</div>
-    </div>
-    <!-- Owner add form -->
+    <div class="socials-grid" id="socials-grid"><div class="socials-empty">Loading…</div></div>
     <div class="owner-only socials-add-wrap" id="socials-edit-area" style="display:none">
       <div class="settings-section" style="margin-top:2rem">
         <h3>Add <span>Social</span></h3>
@@ -192,41 +184,35 @@
   </div>
 </div>
 
-<!-- CURRICULUM -->
 <div class="page" id="page-curriculum">
   <div class="page-inner">
     <div class="section-header">
       <div><h2>Curri<span>culum</span></h2></div>
       <p>Chronicles of Experience</p>
     </div>
-    <div id="cv-content">
-      <div class="cv-empty">No curriculum uploaded yet.</div>
-    </div>
+    <div id="cv-content"><div class="cv-empty">No curriculum uploaded yet.</div></div>
     <div class="owner-only" id="cv-edit-area" style="display:none;margin-top:2rem">
       <div class="settings-section">
         <h3>Upload <span>CV</span></h3>
-        <p>Upload a PDF — it will be displayed inline for visitors.</p>
-        <div class="cv-upload-box" id="cv-upload-box">
-          <div class="cv-upload-icon">📜</div>
-          <p>Drag & drop PDF here or click to browse</p>
-          <input type="file" id="cv-file-input" accept=".pdf" style="display:none">
-          <button class="btn-ghost" onclick="document.getElementById('cv-file-input').click()">Choose PDF</button>
-          <div id="cv-file-name" style="margin-top:0.5rem;font-size:0.8rem;color:var(--gold-dim)"></div>
+        <p>Host your PDF on Google Drive and paste the direct link below.</p>
+        <div class="field-group" style="margin-top:1rem">
+          <label class="field-label">PDF URL</label>
+          <input class="field-input" type="url" id="cv-url-input" placeholder="https://drive.google.com/…">
         </div>
-        <button class="settings-save" id="btn-save-cv" style="margin-top:1rem">Seal the Scroll</button>
+        <button class="settings-save" id="btn-save-cv" style="margin-top:.5rem">Seal the Scroll</button>
         <div class="connection-result" id="cv-result"></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- SETTINGS (owner only) -->
 <div class="page" id="page-settings">
   <div class="page-inner">
     <div class="settings-inner">
+
       <div class="settings-section">
         <h3>Channel <span>Config</span></h3>
-        <p>Update your Discord channel IDs.</p>
+        <p>Your Discord channel IDs for backup storage.</p>
         <div class="field-group"><label class="field-label">Links</label><input class="field-input" type="text" id="cfg-ch-links"></div>
         <div class="field-group"><label class="field-label">Notes</label><input class="field-input" type="text" id="cfg-ch-notes"></div>
         <div class="field-group"><label class="field-label">Files</label><input class="field-input" type="text" id="cfg-ch-files"></div>
@@ -235,11 +221,12 @@
         <div class="field-group"><label class="field-label">Background</label><input class="field-input" type="text" id="cfg-ch-bg"></div>
         <div class="field-group"><label class="field-label">Socials</label><input class="field-input" type="text" id="cfg-ch-socials"></div>
         <div class="field-group"><label class="field-label">Curriculum</label><input class="field-input" type="text" id="cfg-ch-cv"></div>
-        <button class="test-btn" id="btn-test-connection">Test the Courier</button>
+        <button class="test-btn" id="btn-test-connection">Test Connection</button>
         <div class="connection-result" id="connection-result"></div>
-        <br><br>
-        <button class="settings-save" id="btn-save-config">Inscribe to Discord</button>
+        <br>
+        <button class="settings-save" id="btn-save-config">Save Channels</button>
       </div>
+
       <div class="settings-section">
         <h3>Pro<span>file</span></h3>
         <div class="field-group"><label class="field-label">Display Name</label><input class="field-input" type="text" id="cfg-name" placeholder="Kira"></div>
@@ -247,33 +234,87 @@
         <div class="field-group">
           <label class="field-label">Background Image URL</label>
           <input class="field-input" type="url" id="cfg-bg-url" placeholder="https://i.imgur.com/...">
-          <div class="field-hint">Cola aqui o URL da imagem de fundo</div>
         </div>
-        <button class="settings-save" id="btn-save-profile">Seal Profile</button>
+        <button class="settings-save" id="btn-save-profile">Save Profile</button>
         <div class="connection-result" id="profile-result"></div>
       </div>
-      <div class="settings-section">
-        <h3>Discord <span>Commands</span></h3>
-        <p>Slash commands disponíveis:</p>
-        <div class="step-guide">
-          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/bg [url]</code></div></div>
-          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add link [titulo] [url] [content] [tags]</code></div></div>
-          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add note [titulo] [content] [tags]</code></div></div>
-          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add idea [titulo] [content] [tags]</code></div></div>
-          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add file [titulo] [url] [content] [tags]</code></div></div>
-          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add code [titulo] [language] [content] [tags]</code></div></div>
-          <div class="step"><div class="step-num">/</div><div class="step-content"><code class="code-inline">/add short [titulo] [url] [category] [content]</code></div></div>
+
+      <div class="settings-section" style="grid-column:1/-1">
+        <h3>Theme <span>Editor</span></h3>
+        <p>Customise colours in real time — changes preview instantly, save to apply permanently.</p>
+        <div style="margin-top:1.25rem">
+          <div class="theme-row">
+            <div class="theme-field">
+              <label>Primary Gold</label>
+              <div class="theme-color-wrap">
+                <input type="color" id="theme-gold-picker" value="#c9a84c" oninput="document.getElementById('theme-gold').value=this.value;livePreviewTheme()">
+                <input class="field-input" type="text" id="theme-gold" value="#c9a84c" placeholder="#c9a84c" oninput="document.getElementById('theme-gold-picker').value=this.value;livePreviewTheme()">
+              </div>
+            </div>
+            <div class="theme-field">
+              <label>Gold Light</label>
+              <div class="theme-color-wrap">
+                <input type="color" id="theme-gold-light-picker" value="#e8d08a" oninput="document.getElementById('theme-gold-light').value=this.value;livePreviewTheme()">
+                <input class="field-input" type="text" id="theme-gold-light" value="#e8d08a" placeholder="#e8d08a" oninput="document.getElementById('theme-gold-light-picker').value=this.value;livePreviewTheme()">
+              </div>
+            </div>
+            <div class="theme-field">
+              <label>Gold Dim</label>
+              <div class="theme-color-wrap">
+                <input type="color" id="theme-gold-dim-picker" value="#a07c30" oninput="document.getElementById('theme-gold-dim').value=this.value;livePreviewTheme()">
+                <input class="field-input" type="text" id="theme-gold-dim" value="#a07c30" placeholder="#a07c30" oninput="document.getElementById('theme-gold-dim-picker').value=this.value;livePreviewTheme()">
+              </div>
+            </div>
+            <div class="theme-field">
+              <label>Background</label>
+              <div class="theme-color-wrap">
+                <input type="color" id="theme-bg-picker" value="#080604" oninput="document.getElementById('theme-bg').value=this.value;livePreviewTheme()">
+                <input class="field-input" type="text" id="theme-bg" value="#080604" placeholder="#080604" oninput="document.getElementById('theme-bg-picker').value=this.value;livePreviewTheme()">
+              </div>
+            </div>
+            <div class="theme-field">
+              <label>Surface</label>
+              <div class="theme-color-wrap">
+                <input type="color" id="theme-surface-picker" value="#0f0c07" oninput="document.getElementById('theme-surface').value=this.value;livePreviewTheme()">
+                <input class="field-input" type="text" id="theme-surface" value="#0f0c07" placeholder="#0f0c07" oninput="document.getElementById('theme-surface-picker').value=this.value;livePreviewTheme()">
+              </div>
+            </div>
+            <div class="theme-field">
+              <label>Text</label>
+              <div class="theme-color-wrap">
+                <input type="color" id="theme-text-picker" value="#e8dcc8" oninput="document.getElementById('theme-text').value=this.value;livePreviewTheme()">
+                <input class="field-input" type="text" id="theme-text" value="#e8dcc8" placeholder="#e8dcc8" oninput="document.getElementById('theme-text-picker').value=this.value;livePreviewTheme()">
+              </div>
+            </div>
+            <div class="theme-field">
+              <label>Text Dim</label>
+              <div class="theme-color-wrap">
+                <input type="color" id="theme-text-dim-picker" value="#9a8860" oninput="document.getElementById('theme-text-dim').value=this.value;livePreviewTheme()">
+                <input class="field-input" type="text" id="theme-text-dim" value="#9a8860" placeholder="#9a8860" oninput="document.getElementById('theme-text-dim-picker').value=this.value;livePreviewTheme()">
+              </div>
+            </div>
+          </div>
+          <div class="theme-field" style="margin-top:1rem">
+            <label>Background Image Opacity</label>
+            <div class="theme-range-wrap">
+              <input type="range" id="theme-bg-opacity" min="0" max="1" step="0.05" value="0.45" oninput="document.getElementById('theme-bg-opacity-val').textContent=parseFloat(this.value).toFixed(2);livePreviewTheme()">
+              <span id="theme-bg-opacity-val">0.45</span>
+            </div>
+          </div>
         </div>
-        <button class="test-btn" id="btn-reregister-commands" style="margin-top:1rem">Re-register Commands</button>
-        <div class="connection-result" id="commands-result"></div>
+        <div style="display:flex;gap:.75rem;margin-top:1.5rem;flex-wrap:wrap">
+          <button class="settings-save" id="btn-save-theme">Seal the Theme</button>
+          <button class="test-btn" id="btn-reset-theme">Reset to Default</button>
+        </div>
+        <div class="connection-result" id="theme-result"></div>
       </div>
+
     </div>
   </div>
 </div>
 
-</div><!-- #app -->
+</div>
 
-<!-- MODALS -->
 <div class="modal-backdrop" id="modal-short">
   <div class="modal">
     <div class="modal-title">Add Scroll</div>
@@ -283,7 +324,7 @@
     <div class="field-group"><label class="field-label">Views (optional)</label><input class="field-input" type="text" id="short-views" placeholder="e.g. 12.4K"></div>
     <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem">
       <input type="checkbox" id="short-public" checked style="accent-color:var(--gold);width:16px;height:16px">
-      <label class="field-label" style="margin:0;cursor:pointer" for="short-public">Visible to public (uncheck to hide from guests)</label>
+      <label class="field-label" style="margin:0;cursor:pointer" for="short-public">Visible to public</label>
     </div>
     <div class="saving-indicator" id="short-saving">Dispatching courier…</div>
     <div class="modal-footer">
@@ -304,30 +345,23 @@
       <button class="type-opt" data-type="code">Code</button>
     </div>
     <div class="field-group"><label class="field-label">Title</label><input class="field-input" type="text" id="vault-title" placeholder="Title…"></div>
-
-    <!-- URL group (link, file with external URL) -->
     <div class="field-group" id="vault-url-group"><label class="field-label">URL</label><input class="field-input" type="url" id="vault-url" placeholder="https://…"></div>
-
-    <!-- File upload group (txt, code files) -->
     <div class="field-group" id="vault-file-group" style="display:none">
-      <label class="field-label">Upload File <span style="color:var(--text-muted);font-size:0.6rem;text-transform:none;letter-spacing:0">(txt, js, py, cs, json, md — max 1MB)</span></label>
+      <label class="field-label">Upload File</label>
       <div class="file-drop-zone" id="vault-file-drop">
         <span class="file-drop-icon">📂</span>
         <span id="vault-file-label">Drag & drop or click to browse</span>
         <input type="file" id="vault-file-input" accept=".txt,.js,.ts,.py,.cs,.java,.html,.css,.json,.md,.xml,.csv,.sh,.sql" style="display:none">
       </div>
-      <div class="field-hint">Or paste a Google Drive / Dropbox / direct URL below</div>
-      <input class="field-input" type="url" id="vault-file-url" placeholder="https://drive.google.com/... or direct URL" style="margin-top:0.5rem">
+      <div class="field-hint">Or paste a direct URL below</div>
+      <input class="field-input" type="url" id="vault-file-url" placeholder="https://…" style="margin-top:0.5rem">
     </div>
-
-    <!-- Language (code) -->
     <div class="field-group" id="vault-lang-group" style="display:none"><label class="field-label">Language</label><input class="field-input" type="text" id="vault-lang" placeholder="e.g. javascript, python…"></div>
-
     <div class="field-group"><label class="field-label" id="vault-content-label">Content / Notes</label><textarea class="field-input" id="vault-content" rows="4" placeholder="Write thy chronicle…" style="font-family:var(--mono);font-size:0.8rem"></textarea></div>
     <div class="field-group"><label class="field-label">Tags (comma-separated)</label><input class="field-input" type="text" id="vault-tags" placeholder="e.g. sorcery, battles"></div>
     <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem">
       <input type="checkbox" id="vault-public" checked style="accent-color:var(--gold);width:16px;height:16px">
-      <label class="field-label" style="margin:0;cursor:pointer" for="vault-public">Visible to public (uncheck to hide from guests)</label>
+      <label class="field-label" style="margin:0;cursor:pointer" for="vault-public">Visible to public</label>
     </div>
     <div class="saving-indicator" id="vault-saving">Dispatching courier…</div>
     <div class="modal-footer">
