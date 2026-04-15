@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupVaultModal();
   setupShortModal();
   setupSettings();
+  applyStoredTheme();
 
   const tok = sessionStorage.getItem('kira_token');
   const sc  = sessionStorage.getItem('kira_cfg');
@@ -41,7 +42,8 @@ async function loadPublic() {
     const r = await API.get('/public');
     if (!r.ok) { setStatus('error'); return; }
     applyProfile(r.profile);
-    applyBg(r.profile.bg);
+    if (r.profile.bg) applyBg(r.profile.bg);
+    if (r.profile.theme) applyTheme(r.profile.theme);
     vaultItems = r.items   || [];
     shorts     = r.shorts  || [];
     socials    = r.socials || [];
@@ -148,7 +150,8 @@ async function enterOwner() {
     shorts     = r.shorts  || [];
     socials    = r.socials || [];
     applyProfile({ name: cfg.profileName, tagline: cfg.profileTagline, bg: cfg.bgUrl });
-    applyBg(cfg.bgUrl);
+    if (cfg.bgUrl)   applyBg(cfg.bgUrl);
+    if (cfg.theme)   applyTheme(cfg.theme);
     populateSettings();
     renderVault(); renderShorts(); renderSocials(); updateStats();
     setStatus('connected');
@@ -167,7 +170,30 @@ function applyProfile(p) {
 function applyBg(bgUrl) {
   if (!bgUrl) return;
   const el = document.querySelector('.bg-img');
-  if (el) el.style.backgroundImage = `url(${bgUrl})`;
+  if (el) el.style.backgroundImage = 'url(' + bgUrl + ')';
+}
+
+function applyTheme(theme) {
+  if (!theme) return;
+  const root = document.documentElement;
+  if (theme.gold)       root.style.setProperty('--gold',       theme.gold);
+  if (theme.goldLight)  root.style.setProperty('--gold-light', theme.goldLight);
+  if (theme.goldDim)    root.style.setProperty('--gold-dim',   theme.goldDim);
+  if (theme.bg)         root.style.setProperty('--bg',         theme.bg);
+  if (theme.surface)    root.style.setProperty('--surface',    theme.surface);
+  if (theme.text)       root.style.setProperty('--text',       theme.text);
+  if (theme.textDim)    root.style.setProperty('--text-dim',   theme.textDim);
+  if (theme.bgOpacity !== undefined) {
+    const bgEl = document.querySelector('.bg-img');
+    if (bgEl) bgEl.style.opacity = theme.bgOpacity;
+  }
+}
+
+function applyStoredTheme() {
+  try {
+    const t = localStorage.getItem('kira_theme');
+    if (t) applyTheme(JSON.parse(t));
+  } catch(e) {}
 }
 
 function setupSettings() {
@@ -175,6 +201,33 @@ function setupSettings() {
   document.getElementById('btn-save-profile')?.addEventListener('click', saveProfile);
   document.getElementById('btn-test-connection')?.addEventListener('click', testConnection);
   document.getElementById('btn-add-social')?.addEventListener('click', addSocial);
+  document.getElementById('btn-save-theme')?.addEventListener('click', saveTheme);
+  document.getElementById('btn-reset-theme')?.addEventListener('click', resetTheme);
+
+  const themeInputs = ['theme-gold','theme-gold-light','theme-gold-dim','theme-bg','theme-surface','theme-text','theme-text-dim','theme-bg-opacity'];
+  themeInputs.forEach(id => {
+    document.getElementById(id)?.addEventListener('input', function() {
+      livePreviewTheme();
+    });
+  });
+}
+
+function livePreviewTheme() {
+  const theme = readThemeForm();
+  applyTheme(theme);
+}
+
+function readThemeForm() {
+  return {
+    gold:       document.getElementById('theme-gold')?.value       || '',
+    goldLight:  document.getElementById('theme-gold-light')?.value || '',
+    goldDim:    document.getElementById('theme-gold-dim')?.value   || '',
+    bg:         document.getElementById('theme-bg')?.value         || '',
+    surface:    document.getElementById('theme-surface')?.value    || '',
+    text:       document.getElementById('theme-text')?.value       || '',
+    textDim:    document.getElementById('theme-text-dim')?.value   || '',
+    bgOpacity:  parseFloat(document.getElementById('theme-bg-opacity')?.value || '0.45')
+  };
 }
 
 function populateSettings() {
@@ -191,6 +244,20 @@ function populateSettings() {
   const cb = document.getElementById('cfg-bg-url');  if (cb && cfg.bgUrl)          cb.value = cfg.bgUrl;
   const sea = document.getElementById('socials-edit-area'); if (sea) sea.style.display = '';
   const cea = document.getElementById('cv-edit-area');      if (cea) cea.style.display = '';
+
+  if (cfg.theme) {
+    const t = cfg.theme;
+    const setVal = (id, v) => { const el = document.getElementById(id); if (el && v) el.value = v; };
+    setVal('theme-gold',         t.gold);
+    setVal('theme-gold-light',   t.goldLight);
+    setVal('theme-gold-dim',     t.goldDim);
+    setVal('theme-bg',           t.bg);
+    setVal('theme-surface',      t.surface);
+    setVal('theme-text',         t.text);
+    setVal('theme-text-dim',     t.textDim);
+    const op = document.getElementById('theme-bg-opacity');
+    if (op && t.bgOpacity !== undefined) { op.value = t.bgOpacity; document.getElementById('theme-bg-opacity-val') && (document.getElementById('theme-bg-opacity-val').textContent = t.bgOpacity); }
+  }
 }
 
 async function saveConfig() {
@@ -225,12 +292,49 @@ async function saveProfile() {
     const profile = {};
     if (name)    { profile.profileName    = name;    cfg.profileName = name; }
     if (tagline) { profile.profileTagline = tagline; cfg.profileTagline = tagline; }
-    if (bgUrl)   { await API.post('/bg', { url: bgUrl }); cfg.bgUrl = bgUrl; applyBg(bgUrl); }
-    if (name || tagline) await API.post('/profile', profile);
+    if (bgUrl)   { profile.bgUrl = bgUrl; cfg.bgUrl = bgUrl; applyBg(bgUrl); }
+    await API.post('/profile', profile);
+    if (bgUrl && cfg.bg) {
+      await API.post('/bg', { url: bgUrl });
+    }
     applyProfile({ name: cfg.profileName, tagline: cfg.profileTagline });
     sessionStorage.setItem('kira_cfg', JSON.stringify(cfg));
     showResult(el, '✅ Saved.', 'ok');
   } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
+}
+
+async function saveTheme() {
+  if (!isOwner) return;
+  const theme = readThemeForm();
+  const el = document.getElementById('theme-result');
+  showResult(el, 'Saving…', '');
+  try {
+    cfg.theme = theme;
+    await API.post('/profile', { theme });
+    localStorage.setItem('kira_theme', JSON.stringify(theme));
+    sessionStorage.setItem('kira_cfg', JSON.stringify(cfg));
+    applyTheme(theme);
+    showResult(el, '✅ Theme saved.', 'ok');
+  } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
+}
+
+function resetTheme() {
+  const defaults = {
+    gold: '#c9a84c', goldLight: '#e8d08a', goldDim: '#a07c30',
+    bg: '#080604', surface: '#0f0c07', text: '#e8dcc8', textDim: '#9a8860', bgOpacity: 0.45
+  };
+  const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
+  setVal('theme-gold',        defaults.gold);
+  setVal('theme-gold-light',  defaults.goldLight);
+  setVal('theme-gold-dim',    defaults.goldDim);
+  setVal('theme-bg',          defaults.bg);
+  setVal('theme-surface',     defaults.surface);
+  setVal('theme-text',        defaults.text);
+  setVal('theme-text-dim',    defaults.textDim);
+  setVal('theme-bg-opacity',  defaults.bgOpacity);
+  const opVal = document.getElementById('theme-bg-opacity-val');
+  if (opVal) opVal.textContent = defaults.bgOpacity;
+  applyTheme(defaults);
 }
 
 async function testConnection() {
@@ -339,9 +443,9 @@ function renderVault() {
         </span>
       </div>
       <div class="vault-item-title">${esc(i.titulo)}</div>
-      ${i.url     ? `<div class="vault-item-url"><a href="${esc(i.url)}" target="_blank" rel="noopener" style="color:var(--gold-dark);text-decoration:none;font-family:var(--mono);font-size:.65rem">${esc(i.url)}</a></div>` : ''}
+      ${i.url ? `<div class="vault-item-url"><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.url)}</a></div>` : ''}
       ${i.content ? `<div class="vault-item-preview">${esc(i.content)}</div>` : ''}
-      ${i.tags    ? `<div class="vault-item-footer"><div style="display:flex;gap:.3rem;flex-wrap:wrap">${i.tags.split(',').map(t=>`<span class="vault-tag">${esc(t.trim())}</span>`).join('')}</div></div>` : ''}
+      ${i.tags ? `<div class="vault-item-footer"><div style="display:flex;gap:.3rem;flex-wrap:wrap">${i.tags.split(',').map(t => `<span class="vault-tag">${esc(t.trim())}</span>`).join('')}</div></div>` : ''}
     </div>`).join('');
   c.querySelectorAll('.vdel').forEach(btn => {
     btn.addEventListener('mouseenter', function() { this.style.color = '#cc6644'; });
