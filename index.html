@@ -27,6 +27,29 @@
 .toggle-slider::before{content:'';position:absolute;width:14px;height:14px;left:2px;top:2px;background:var(--text-muted);border-radius:50%;transition:.2s}
 .toggle-switch input:checked+.toggle-slider{background:rgba(201,168,76,.3);border-color:var(--gold-dark)}
 .toggle-switch input:checked+.toggle-slider::before{transform:translateX(16px);background:var(--gold)}
+.music-section{margin-bottom:2.5rem}
+.music-section-title{font-family:var(--display);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:1rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+.music-tracks{display:flex;flex-direction:column;gap:.35rem}
+.music-track{display:flex;align-items:center;gap:.85rem;padding:.6rem .75rem;background:rgba(12,9,4,.6);border:1px solid var(--border);border-radius:3px;text-decoration:none;transition:border-color .15s,background .15s}
+.music-track:hover{border-color:var(--gold-dark);background:rgba(20,14,6,.8)}
+.music-track-num{font-family:var(--mono);font-size:.65rem;color:var(--text-muted);width:1.2rem;text-align:right;flex-shrink:0}
+.music-track-img{width:36px;height:36px;border-radius:2px;object-fit:cover;flex-shrink:0;background:var(--surface2)}
+.music-track-info{flex:1;min-width:0}
+.music-track-name{font-family:var(--serif);font-size:.88rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.music-track-artist{font-family:var(--serif);font-size:.72rem;color:var(--text-muted);margin-top:.1rem}
+.music-track-album{font-family:var(--serif);font-size:.68rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;flex-shrink:0}
+.music-artists{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.85rem}
+.music-artist{display:flex;flex-direction:column;align-items:center;text-align:center;text-decoration:none;padding:1rem .75rem;background:rgba(12,9,4,.6);border:1px solid var(--border);border-radius:3px;transition:border-color .15s,transform .15s}
+.music-artist:hover{border-color:var(--gold-dark);transform:translateY(-2px)}
+.music-artist-img{width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:.6rem;background:var(--surface2);border:2px solid var(--border)}
+.music-artist-name{font-family:var(--serif);font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:.2rem}
+.music-artist-genre{font-family:var(--display);font-size:.55rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+.music-playlists{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.85rem}
+.music-playlist{display:flex;align-items:center;gap:.85rem;text-decoration:none;padding:.75rem;background:rgba(12,9,4,.6);border:1px solid var(--border);border-radius:3px;transition:border-color .15s,transform .15s}
+.music-playlist:hover{border-color:var(--gold-dark);transform:translateY(-2px)}
+.music-playlist-img{width:52px;height:52px;border-radius:2px;object-fit:cover;flex-shrink:0;background:var(--surface2)}
+.music-playlist-name{font-family:var(--serif);font-size:.85rem;color:var(--text);font-weight:600}
+.music-playlist-tracks{font-family:var(--display);font-size:.58rem;letter-spacing:.08em;color:var(--text-muted);margin-top:.2rem}
 </style>
 </head>
 <body>
@@ -78,6 +101,7 @@
     <button data-page="vault">Vault</button>
     <button data-page="socials">Socials</button>
     <button data-page="curriculum">Curriculum</button>
+    <button data-page="music">Music</button>
     <button data-page="settings" class="owner-only" style="display:none">Setup</button>
   </div>
   <div style="display:flex;align-items:center;gap:.75rem">
@@ -194,7 +218,14 @@
   </div>
 </div>
 
-<div class="page" id="page-settings">
+<div class="page" id="page-music">
+  <div class="page-inner">
+    <div class="section-header"><div><h2>Mu<span>sic</span></h2></div><p>Sounds of the Keep</p></div>
+    <div id="music-content">
+      <div style="color:var(--text-muted);font-style:italic;padding:2rem 0">Loading…</div>
+    </div>
+  </div>
+</div>
   <div class="page-inner">
     <div class="settings-inner">
 
@@ -221,6 +252,11 @@
             <label class="toggle-switch"><input type="checkbox" id="show-curriculum" checked><span class="toggle-slider"></span></label>
           </div>
         </div>
+          <div class="page-toggle-row">
+            <span class="page-toggle-label">Music</span>
+            <label class="toggle-switch"><input type="checkbox" id="show-music" checked><span class="toggle-slider"></span></label>
+          </div>
+        </div>
         <button class="settings-save" id="btn-save-profile" style="margin-top:1rem">Save Profile</button>
         <div class="connection-result" id="profile-result"></div>
       </div>
@@ -242,6 +278,13 @@
         </div>
         <button class="test-btn" id="btn-test-connection" style="margin-top:1rem">Test Connection</button>
         <div class="connection-result" id="connection-result"></div>
+      </div>
+
+      <div class="settings-section">
+        <h3>Spotify <span>Connect</span></h3>
+        <p>Connect your Spotify account to show top tracks, artists and playlists on the Music page.</p>
+        <button class="settings-save" id="btn-spotify-connect" style="margin-top:1rem">Connect Spotify</button>
+        <p style="margin-top:.75rem;font-size:.75rem;color:var(--text-muted);font-style:italic">Opens a Spotify auth window. After authorising, close it and reload the Music page.</p>
       </div>
 
       <div class="settings-section" style="grid-column:1/-1">
