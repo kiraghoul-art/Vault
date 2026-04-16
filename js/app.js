@@ -344,8 +344,6 @@ async function saveTheme() {
     applyTheme(theme);
     sessionStorage.setItem('kira_theme', JSON.stringify(theme));
     if (t.bgUrl) {
-      const cur = await API.get('/data').then(d => d.profile || {});
-      await API.post('/profile', { ...cur, bgUrl: t.bgUrl });
       profile.bgUrl = t.bgUrl;
       sessionStorage.setItem('kira_profile', JSON.stringify(profile));
       applyProfile();
