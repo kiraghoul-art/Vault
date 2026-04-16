@@ -82,10 +82,11 @@ function goTo(page) {
   );
   document.getElementById('page-' + page)?.classList.add('active');
   document.querySelector('.nav-links')?.classList.remove('open');
+  if (page === 'music') loadMusic();
 }
 
 function applyPageVisibility() {
-  const pages = ['shorts','vault','socials','curriculum'];
+  const pages = ['shorts','vault','socials','curriculum','music'];
   pages.forEach(p => {
     const key = 'show' + p.charAt(0).toUpperCase() + p.slice(1);
     const show = isOwner || profile[key] !== false;
@@ -238,6 +239,10 @@ function setupSettingsListeners() {
   document.getElementById('btn-reset-theme')?.addEventListener('click', resetTheme);
   document.getElementById('btn-test-connection')?.addEventListener('click', testConnection);
   document.getElementById('btn-add-social')?.addEventListener('click', addSocial);
+  document.getElementById('btn-spotify-connect')?.addEventListener('click', () => {
+    window.open(WORKER + '/spotify/login', '_blank', 'width=500,height=700');
+  });
+  document.getElementById('btn-spotify-load')?.addEventListener('click', loadMusic);
 
   document.querySelectorAll('.theme-color-input').forEach(inp => {
     inp.addEventListener('input', function() {
@@ -283,7 +288,7 @@ function populateSettings() {
   sv('cfg-name',    profile.name);
   sv('cfg-tagline', profile.tagline);
 
-  const pages = ['Shorts','Vault','Socials','Curriculum'];
+  const pages = ['Shorts','Vault','Socials','Curriculum','Music'];
   pages.forEach(p => {
     const cb = document.getElementById('show-' + p.toLowerCase());
     if (cb) cb.checked = profile['show' + p] !== false;
@@ -311,7 +316,7 @@ async function saveProfile() {
   if (!isOwner) return;
   const el = document.getElementById('profile-result');
   showResult(el, 'Saving…', '');
-  const pages = ['Shorts','Vault','Socials','Curriculum'];
+  const pages = ['Shorts','Vault','Socials','Curriculum','Music'];
   const updated = {
     name:    document.getElementById('cfg-name')?.value.trim()    || profile.name    || 'Kira',
     tagline: document.getElementById('cfg-tagline')?.value.trim() || profile.tagline || ''
@@ -668,6 +673,79 @@ function renderSocials() {
       renderSocials(); toast('Deleted.');
     } catch(err) { toast('Delete failed.'); }
   }));
+}
+
+async function loadMusic() {
+  const grid = document.getElementById('music-content');
+  if (!grid) return;
+  grid.innerHTML = '<div style="color:var(--text-muted);font-style:italic;padding:2rem 0">Loading from Spotify…</div>';
+  try {
+    const r = await API.get('/spotify/data');
+    if (!r.ok) {
+      grid.innerHTML = '<div style="color:var(--text-muted);font-style:italic;padding:2rem 0">Spotify not connected. Go to Setup → connect Spotify.</div>';
+      return;
+    }
+    renderMusic(r);
+  } catch(e) {
+    grid.innerHTML = '<div style="color:#e06c75;font-style:italic;padding:2rem 0">Error loading Spotify data.</div>';
+  }
+}
+
+function renderMusic(data) {
+  const grid = document.getElementById('music-content');
+  if (!grid) return;
+
+  let html = '';
+
+  if (data.topTracks?.length) {
+    html += `<div class="music-section">
+      <div class="music-section-title">✦ Top Tracks</div>
+      <div class="music-tracks">
+        ${data.topTracks.map((t, i) => `
+          <a class="music-track" href="${t.external_urls?.spotify || '#'}" target="_blank" rel="noopener">
+            <span class="music-track-num">${i + 1}</span>
+            <img class="music-track-img" src="${t.album?.images?.[2]?.url || ''}" alt="">
+            <div class="music-track-info">
+              <div class="music-track-name">${esc(t.name)}</div>
+              <div class="music-track-artist">${esc(t.artists?.map(a => a.name).join(', ') || '')}</div>
+            </div>
+            <div class="music-track-album">${esc(t.album?.name || '')}</div>
+          </a>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  if (data.topArtists?.length) {
+    html += `<div class="music-section">
+      <div class="music-section-title">✦ Top Artists</div>
+      <div class="music-artists">
+        ${data.topArtists.map(a => `
+          <a class="music-artist" href="${a.external_urls?.spotify || '#'}" target="_blank" rel="noopener">
+            <img class="music-artist-img" src="${a.images?.[1]?.url || a.images?.[0]?.url || ''}" alt="">
+            <div class="music-artist-name">${esc(a.name)}</div>
+            <div class="music-artist-genre">${esc(a.genres?.[0] || '')}</div>
+          </a>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  if (data.playlists?.length) {
+    html += `<div class="music-section">
+      <div class="music-section-title">✦ Playlists</div>
+      <div class="music-playlists">
+        ${data.playlists.map(p => `
+          <a class="music-playlist" href="${p.external_urls?.spotify || '#'}" target="_blank" rel="noopener">
+            <img class="music-playlist-img" src="${p.images?.[0]?.url || ''}" alt="">
+            <div class="music-playlist-info">
+              <div class="music-playlist-name">${esc(p.name)}</div>
+              <div class="music-playlist-tracks">${p.tracks?.total || 0} tracks</div>
+            </div>
+          </a>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  grid.innerHTML = html || '<div style="color:var(--text-muted);font-style:italic;padding:2rem 0">No data available.</div>';
 }
 
 function openModal(id)  { const m = document.getElementById(id); if (m) m.style.display = 'flex'; }
