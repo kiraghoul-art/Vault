@@ -239,10 +239,8 @@ function setupSettingsListeners() {
   document.getElementById('btn-reset-theme')?.addEventListener('click', resetTheme);
   document.getElementById('btn-test-connection')?.addEventListener('click', testConnection);
   document.getElementById('btn-add-social')?.addEventListener('click', addSocial);
-  document.getElementById('btn-spotify-connect')?.addEventListener('click', () => {
-    window.open(WORKER + '/spotify/login', '_blank', 'width=500,height=700');
-  });
-  document.getElementById('btn-spotify-load')?.addEventListener('click', loadMusic);
+  // Spotify settings — no OAuth, just username + now playing
+  document.getElementById('btn-save-spotify')?.addEventListener('click', saveSpotifySettings);
 
   document.querySelectorAll('.theme-color-input').forEach(inp => {
     inp.addEventListener('input', function() {
@@ -264,6 +262,18 @@ function setupSettingsListeners() {
     if (lbl) lbl.textContent = parseFloat(this.value).toFixed(2);
     livePreviewTheme();
   });
+}
+
+async function saveSpotifySettings() {
+  if (!isOwner) return;
+  const el = document.getElementById('spotify-result');
+  const username   = document.getElementById('spotify-username')?.value.trim()   || '';
+  const nowPlaying = document.getElementById('spotify-nowplaying')?.value.trim() || '';
+  showResult(el, 'Saving…', '');
+  try {
+    const r = await API.post('/spotify/nowplaying', { username, nowPlaying: nowPlaying || null });
+    showResult(el, r.ok ? '✅ Saved.' : '❌ Failed.', r.ok ? 'ok' : 'err');
+  } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
 }
 
 function livePreviewTheme() { applyTheme(readThemeForm()); }
@@ -310,6 +320,14 @@ function populateSettings() {
 
   const sea = document.getElementById('socials-edit-area'); if (sea) sea.style.display = '';
   const cea = document.getElementById('cv-edit-area');      if (cea) cea.style.display = '';
+
+  // Populate spotify fields from KV (loaded async)
+  API.get('/spotify/nowplaying').then(r => {
+    if (r.ok && r.nowPlaying) {
+      const el = document.getElementById('spotify-nowplaying');
+      if (el) el.value = r.nowPlaying;
+    }
+  }).catch(() => {});
 }
 
 async function saveProfile() {
@@ -675,18 +693,19 @@ function renderSocials() {
   }));
 }
 
+// ── MUSIC ────────────────────────────────────────────────────────
 async function loadMusic() {
   const grid = document.getElementById('music-content');
   if (!grid) return;
-  grid.innerHTML = '<div style="color:var(--text-muted);font-style:italic;padding:2rem 0">Loading from Spotify…</div>';
+  grid.innerHTML = '<div style="color:var(--text-muted);font-style:italic;padding:2rem 0">Loading…</div>';
   try {
     const r = await API.get('/spotify/data');
     if (!r.ok) {
-      grid.innerHTML = `<div style="color:#e06c75;font-style:italic;padding:2rem 0">Error: ${esc(r.error || 'unknown')}</div>`;
-      return;
-    }
-    if (!r.topTracks?.length && !r.topArtists?.length && !r.playlists?.length) {
-      grid.innerHTML = `<div style="color:var(--text-muted);font-style:italic;padding:2rem 0">Spotify connected but no data returned. Make sure your Spotify email is added as a tester in the Developer Portal, then reconnect.</div>`;
+      grid.innerHTML = `<div style="color:var(--text-muted);font-style:italic;padding:2rem 0">
+        ${esc(r.error === 'No Spotify username configured'
+          ? 'No Spotify username set. Configure it in Setup → Spotify.'
+          : 'Could not load music: ' + (r.error || 'unknown error'))}
+      </div>`;
       return;
     }
     renderMusic(r);
@@ -698,58 +717,50 @@ async function loadMusic() {
 function renderMusic(data) {
   const grid = document.getElementById('music-content');
   if (!grid) return;
-
   let html = '';
 
-  if (data.topTracks?.length) {
-    html += `<div class="music-section">
-      <div class="music-section-title">✦ Top Tracks</div>
-      <div class="music-tracks">
-        ${data.topTracks.map((t, i) => `
-          <a class="music-track" href="${t.external_urls?.spotify || '#'}" target="_blank" rel="noopener">
-            <span class="music-track-num">${i + 1}</span>
-            <img class="music-track-img" src="${t.album?.images?.[2]?.url || ''}" alt="">
-            <div class="music-track-info">
-              <div class="music-track-name">${esc(t.name)}</div>
-              <div class="music-track-artist">${esc(t.artists?.map(a => a.name).join(', ') || '')}</div>
-            </div>
-            <div class="music-track-album">${esc(t.album?.name || '')}</div>
-          </a>`).join('')}
+  // Now Playing banner
+  if (data.nowPlaying) {
+    html += `<div class="music-nowplaying">
+      <span class="music-nowplaying-dot"></span>
+      <span class="music-nowplaying-label">Now Playing</span>
+      <span class="music-nowplaying-text">${esc(data.nowPlaying)}</span>
+    </div>`;
+  }
+
+  // User profile header
+  if (data.user) {
+    const avatar = data.user.images?.[0]?.url || '';
+    const profileUrl = data.user.external_urls?.spotify || '#';
+    html += `<div class="music-user-header">
+      ${avatar ? `<img class="music-user-avatar" src="${esc(avatar)}" alt="">` : ''}
+      <div class="music-user-info">
+        <a class="music-user-name" href="${esc(profileUrl)}" target="_blank" rel="noopener">${esc(data.user.display_name || data.user.id)}</a>
+        <span class="music-user-meta">${data.user.followers?.total ?? ''} followers · ${data.playlists?.length ?? 0} public playlists</span>
       </div>
     </div>`;
   }
 
-  if (data.topArtists?.length) {
-    html += `<div class="music-section">
-      <div class="music-section-title">✦ Top Artists</div>
-      <div class="music-artists">
-        ${data.topArtists.map(a => `
-          <a class="music-artist" href="${a.external_urls?.spotify || '#'}" target="_blank" rel="noopener">
-            <img class="music-artist-img" src="${a.images?.[1]?.url || a.images?.[0]?.url || ''}" alt="">
-            <div class="music-artist-name">${esc(a.name)}</div>
-            <div class="music-artist-genre">${esc(a.genres?.[0] || '')}</div>
-          </a>`).join('')}
-      </div>
-    </div>`;
-  }
-
+  // Playlists
   if (data.playlists?.length) {
     html += `<div class="music-section">
       <div class="music-section-title">✦ Playlists</div>
       <div class="music-playlists">
         ${data.playlists.map(p => `
-          <a class="music-playlist" href="${p.external_urls?.spotify || '#'}" target="_blank" rel="noopener">
-            <img class="music-playlist-img" src="${p.images?.[0]?.url || ''}" alt="">
+          <a class="music-playlist" href="${esc(p.external_urls?.spotify || '#')}" target="_blank" rel="noopener">
+            <img class="music-playlist-img" src="${esc(p.images?.[0]?.url || '')}" alt="" onerror="this.style.display='none'">
             <div class="music-playlist-info">
               <div class="music-playlist-name">${esc(p.name)}</div>
-              <div class="music-playlist-tracks">${p.tracks?.total || 0} tracks</div>
+              <div class="music-playlist-tracks">${p.tracks?.total ?? 0} tracks</div>
             </div>
           </a>`).join('')}
       </div>
     </div>`;
+  } else if (!data.nowPlaying && !data.user) {
+    html = '<div style="color:var(--text-muted);font-style:italic;padding:2rem 0">No public playlists found.</div>';
   }
 
-  grid.innerHTML = html || '<div style="color:var(--text-muted);font-style:italic;padding:2rem 0">No data available.</div>';
+  grid.innerHTML = html || '<div style="color:var(--text-muted);font-style:italic;padding:2rem 0">No music data available.</div>';
 }
 
 function openModal(id)  { const m = document.getElementById(id); if (m) m.style.display = 'flex'; }
