@@ -95,7 +95,7 @@
 
 <nav>
   <div class="nav-logo" id="nav-logo">K<span>ira</span></div>
-  <div class="nav-links">
+  <div class="nav-links" id="nav-links">
     <button class="active" data-page="home">Home</button>
     <button data-page="shorts">Shorts</button>
     <button data-page="vault">Vault</button>
@@ -111,6 +111,7 @@
   </div>
 </nav>
 
+<!-- HOME -->
 <div class="page active" id="page-home">
   <div class="home-layout">
     <div class="home-left">
@@ -136,6 +137,7 @@
   </div>
 </div>
 
+<!-- SHORTS -->
 <div class="page" id="page-shorts">
   <div class="page-inner" style="display:flex;flex-direction:column">
     <div class="section-header"><div><h2>Short<span>s</span></h2></div><p>Thine Moving Scrolls</p></div>
@@ -145,9 +147,10 @@
   </div>
 </div>
 
+<!-- VAULT -->
 <div class="page" id="page-vault">
-  <div class="page-inner" style="overflow:hidden;display:flex;flex-direction:column">
-    <div class="vault-layout" style="flex:1;overflow:hidden">
+  <div class="page-inner vault-page-inner">
+    <div class="vault-layout">
       <div class="vault-sidebar">
         <div class="vault-sidebar-title">Categories</div>
         <div class="vault-cat active" data-vault-filter="all"><span class="vault-cat-icon">▦</span> All</div>
@@ -175,6 +178,7 @@
   </div>
 </div>
 
+<!-- SOCIALS -->
 <div class="page" id="page-socials">
   <div class="page-inner">
     <div class="section-header"><div><h2>So<span>cials</span></h2></div><p>Find me across the realm</p></div>
@@ -199,6 +203,7 @@
   </div>
 </div>
 
+<!-- CURRICULUM -->
 <div class="page" id="page-curriculum">
   <div class="page-inner">
     <div class="section-header"><div><h2>Curri<span>culum</span></h2></div><p>Chronicles of Experience</p></div>
@@ -218,6 +223,7 @@
   </div>
 </div>
 
+<!-- MUSIC -->
 <div class="page" id="page-music">
   <div class="page-inner">
     <div class="section-header"><div><h2>Mu<span>sic</span></h2></div><p>Sounds of the Keep</p></div>
@@ -226,14 +232,26 @@
     </div>
   </div>
 </div>
+
+<!-- SETTINGS -->
+<div class="page" id="page-settings">
   <div class="page-inner">
+    <div class="section-header"><div><h2>Set<span>up</span></h2></div><p>Configure thy Keep</p></div>
     <div class="settings-inner">
 
+      <!-- Profile -->
       <div class="settings-section">
         <h3>Pro<span>file</span></h3>
-        <div class="field-group"><label class="field-label">Display Name</label><input class="field-input" type="text" id="cfg-name" placeholder="Kira"></div>
-        <div class="field-group"><label class="field-label">Tagline</label><input class="field-input" type="text" id="cfg-tagline" placeholder="Short-form content creator"></div>
-        <div style="margin:1rem 0 .5rem">
+        <p>Name, tagline, and page visibility controls.</p>
+        <div class="field-group" style="margin-top:1rem">
+          <label class="field-label">Display Name</label>
+          <input class="field-input" type="text" id="cfg-name" placeholder="Kira">
+        </div>
+        <div class="field-group">
+          <label class="field-label">Tagline</label>
+          <input class="field-input" type="text" id="cfg-tagline" placeholder="Short-form content creator">
+        </div>
+        <div style="margin:1.25rem 0 .5rem">
           <div class="field-label" style="margin-bottom:.75rem">Page Visibility</div>
           <div class="page-toggle-row">
             <span class="page-toggle-label">Shorts</span>
@@ -251,102 +269,61 @@
             <span class="page-toggle-label">Curriculum</span>
             <label class="toggle-switch"><input type="checkbox" id="show-curriculum" checked><span class="toggle-slider"></span></label>
           </div>
-        </div>
           <div class="page-toggle-row">
             <span class="page-toggle-label">Music</span>
             <label class="toggle-switch"><input type="checkbox" id="show-music" checked><span class="toggle-slider"></span></label>
           </div>
         </div>
-        <button class="settings-save" id="btn-save-profile" style="margin-top:1rem">Save Profile</button>
+        <button class="settings-save" id="btn-save-profile">Save Profile</button>
         <div class="connection-result" id="profile-result"></div>
       </div>
 
+      <!-- Spotify -->
       <div class="settings-section">
-        <h3>Channel <span>IDs</span></h3>
-        <p>Discord channel IDs — used for backup logging.</p>
-        <div style="margin-top:.75rem;font-family:var(--mono);font-size:.7rem;color:var(--text-muted);line-height:2">
-          <div>links → <span style="color:var(--gold-dim)">1493193077765181550</span></div>
-          <div>notes → <span style="color:var(--gold-dim)">1493193123336028170</span></div>
-          <div>files → <span style="color:var(--gold-dim)">1493193181544845454</span></div>
-          <div>ideas → <span style="color:var(--gold-dim)">1493193239551934515</span></div>
-          <div>code &nbsp;→ <span style="color:var(--gold-dim)">1493995845048078358</span></div>
-          <div>shorts → <span style="color:var(--gold-dim)">1493995983078555678</span></div>
-          <div>bg &nbsp;&nbsp;&nbsp;→ <span style="color:var(--gold-dim)">1493580916055085147</span></div>
-          <div>profile→ <span style="color:var(--gold-dim)">1493563959423537314</span></div>
-          <div>socials→ <span style="color:var(--gold-dim)">1493640135642710127</span></div>
-          <div>cv &nbsp;&nbsp;&nbsp;→ <span style="color:var(--gold-dim)">1493640171722379264</span></div>
+        <h3>Spo<span>tify</span></h3>
+        <p>Connect your account to display top tracks, artists, and playlists on the Music page.</p>
+        <div style="margin-top:1.5rem">
+          <button class="settings-save" id="btn-spotify-connect">⟳ Connect Spotify</button>
+          <p style="margin-top:.85rem;font-size:.75rem;color:var(--text-muted);font-style:italic;line-height:1.6">Opens a Spotify auth window. After authorising, close it and reload the Music page.</p>
         </div>
-        <button class="test-btn" id="btn-test-connection" style="margin-top:1rem">Test Connection</button>
+      </div>
+
+      <!-- Discord Channels -->
+      <div class="settings-section">
+        <h3>Chan<span>nels</span></h3>
+        <p>Discord channel IDs used for backup logging.</p>
+        <div class="channel-list">
+          <div class="channel-row"><span class="channel-key">links</span><span class="channel-val">1493193077765181550</span></div>
+          <div class="channel-row"><span class="channel-key">notes</span><span class="channel-val">1493193123336028170</span></div>
+          <div class="channel-row"><span class="channel-key">files</span><span class="channel-val">1493193181544845454</span></div>
+          <div class="channel-row"><span class="channel-key">ideas</span><span class="channel-val">1493193239551934515</span></div>
+          <div class="channel-row"><span class="channel-key">code</span><span class="channel-val">1493995845048078358</span></div>
+          <div class="channel-row"><span class="channel-key">shorts</span><span class="channel-val">1493995983078555678</span></div>
+          <div class="channel-row"><span class="channel-key">bg</span><span class="channel-val">1493580916055085147</span></div>
+          <div class="channel-row"><span class="channel-key">profile</span><span class="channel-val">1493563959423537314</span></div>
+          <div class="channel-row"><span class="channel-key">socials</span><span class="channel-val">1493640135642710127</span></div>
+          <div class="channel-row"><span class="channel-key">cv</span><span class="channel-val">1493640171722379264</span></div>
+        </div>
+        <button class="test-btn" id="btn-test-connection" style="margin-top:1.25rem">Test Connection</button>
         <div class="connection-result" id="connection-result"></div>
       </div>
 
-      <div class="settings-section">
-        <h3>Spotify <span>Connect</span></h3>
-        <p>Connect your Spotify account to show top tracks, artists and playlists on the Music page.</p>
-        <button class="settings-save" id="btn-spotify-connect" style="margin-top:1rem">Connect Spotify</button>
-        <p style="margin-top:.75rem;font-size:.75rem;color:var(--text-muted);font-style:italic">Opens a Spotify auth window. After authorising, close it and reload the Music page.</p>
-      </div>
-
-      <div class="settings-section" style="grid-column:1/-1">
+      <!-- Theme — full width -->
+      <div class="settings-section settings-section--full">
         <h3>Theme <span>Editor</span></h3>
         <p>Changes preview live — save to persist across all devices.</p>
         <div class="theme-grid">
-          <div class="theme-field">
-            <label>Primary Gold</label>
-            <div class="color-wrap">
-              <input type="color" class="theme-color-picker" id="theme-gold-picker" data-target="theme-gold" value="#c9a84c">
-              <input class="field-input theme-color-input" type="text" id="theme-gold" value="#c9a84c" placeholder="#c9a84c">
-            </div>
-          </div>
-          <div class="theme-field">
-            <label>Gold Light</label>
-            <div class="color-wrap">
-              <input type="color" class="theme-color-picker" id="theme-gold-light-picker" data-target="theme-gold-light" value="#e8d08a">
-              <input class="field-input theme-color-input" type="text" id="theme-gold-light" value="#e8d08a" placeholder="#e8d08a">
-            </div>
-          </div>
-          <div class="theme-field">
-            <label>Gold Dim</label>
-            <div class="color-wrap">
-              <input type="color" class="theme-color-picker" id="theme-gold-dim-picker" data-target="theme-gold-dim" value="#a07c30">
-              <input class="field-input theme-color-input" type="text" id="theme-gold-dim" value="#a07c30" placeholder="#a07c30">
-            </div>
-          </div>
-          <div class="theme-field">
-            <label>Background</label>
-            <div class="color-wrap">
-              <input type="color" class="theme-color-picker" id="theme-bg-picker" data-target="theme-bg" value="#080604">
-              <input class="field-input theme-color-input" type="text" id="theme-bg" value="#080604" placeholder="#080604">
-            </div>
-          </div>
-          <div class="theme-field">
-            <label>Surface</label>
-            <div class="color-wrap">
-              <input type="color" class="theme-color-picker" id="theme-surface-picker" data-target="theme-surface" value="#0f0c07">
-              <input class="field-input theme-color-input" type="text" id="theme-surface" value="#0f0c07" placeholder="#0f0c07">
-            </div>
-          </div>
-          <div class="theme-field">
-            <label>Text</label>
-            <div class="color-wrap">
-              <input type="color" class="theme-color-picker" id="theme-text-picker" data-target="theme-text" value="#e8dcc8">
-              <input class="field-input theme-color-input" type="text" id="theme-text" value="#e8dcc8" placeholder="#e8dcc8">
-            </div>
-          </div>
-          <div class="theme-field">
-            <label>Text Dim</label>
-            <div class="color-wrap">
-              <input type="color" class="theme-color-picker" id="theme-text-dim-picker" data-target="theme-text-dim" value="#9a8860">
-              <input class="field-input theme-color-input" type="text" id="theme-text-dim" value="#9a8860" placeholder="#9a8860">
-            </div>
-          </div>
-          <div class="theme-field">
-            <label>Background Image URL</label>
-            <input class="field-input" type="url" id="theme-bg-url" placeholder="https://i.imgur.com/…">
-          </div>
+          <div class="theme-field"><label>Primary Gold</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-gold-picker" data-target="theme-gold" value="#c9a84c"><input class="field-input theme-color-input" type="text" id="theme-gold" value="#c9a84c" placeholder="#c9a84c"></div></div>
+          <div class="theme-field"><label>Gold Light</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-gold-light-picker" data-target="theme-gold-light" value="#e8d08a"><input class="field-input theme-color-input" type="text" id="theme-gold-light" value="#e8d08a" placeholder="#e8d08a"></div></div>
+          <div class="theme-field"><label>Gold Dim</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-gold-dim-picker" data-target="theme-gold-dim" value="#a07c30"><input class="field-input theme-color-input" type="text" id="theme-gold-dim" value="#a07c30" placeholder="#a07c30"></div></div>
+          <div class="theme-field"><label>Background</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-bg-picker" data-target="theme-bg" value="#080604"><input class="field-input theme-color-input" type="text" id="theme-bg" value="#080604" placeholder="#080604"></div></div>
+          <div class="theme-field"><label>Surface</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-surface-picker" data-target="theme-surface" value="#0f0c07"><input class="field-input theme-color-input" type="text" id="theme-surface" value="#0f0c07" placeholder="#0f0c07"></div></div>
+          <div class="theme-field"><label>Text</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-text-picker" data-target="theme-text" value="#e8dcc8"><input class="field-input theme-color-input" type="text" id="theme-text" value="#e8dcc8" placeholder="#e8dcc8"></div></div>
+          <div class="theme-field"><label>Text Dim</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-text-dim-picker" data-target="theme-text-dim" value="#9a8860"><input class="field-input theme-color-input" type="text" id="theme-text-dim" value="#9a8860" placeholder="#9a8860"></div></div>
+          <div class="theme-field"><label>Background Image URL</label><input class="field-input" type="url" id="theme-bg-url" placeholder="https://i.imgur.com/…"></div>
         </div>
-        <div class="theme-field" style="margin-top:1rem">
-          <label>Background Image Opacity</label>
+        <div class="theme-field" style="margin-top:1rem;max-width:360px">
+          <label>Background Opacity</label>
           <div class="range-wrap">
             <input type="range" id="theme-bg-opacity" min="0" max="1" step="0.05" value="0.45">
             <span id="theme-bg-opacity-val">0.45</span>
@@ -363,8 +340,9 @@
   </div>
 </div>
 
-</div>
+</div><!-- #app -->
 
+<!-- MODALS -->
 <div class="modal-backdrop" id="modal-short">
   <div class="modal">
     <div class="modal-title">Add Scroll</div>
@@ -400,7 +378,7 @@
       <label class="field-label">File</label>
       <div class="file-drop-zone" id="vault-file-drop">
         <span class="file-drop-icon">📂</span>
-        <span id="vault-file-label">Drag & drop or click to browse</span>
+        <span id="vault-file-label">Drag &amp; drop or click to browse</span>
         <input type="file" id="vault-file-input" accept=".txt,.js,.ts,.py,.cs,.java,.html,.css,.json,.md,.xml,.csv,.sh,.sql" style="display:none">
       </div>
       <div class="field-hint">Or paste a direct URL below</div>
