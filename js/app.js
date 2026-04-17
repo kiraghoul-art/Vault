@@ -16,6 +16,8 @@ let shorts  = [];
 let socials = [];
 let vaultFilter = 'all';
 let vaultType   = 'link';
+// playlist rows state for setup
+let playlistRows = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
   setupNav();
@@ -43,8 +45,8 @@ async function loadPublic() {
   try {
     const r = await API.get('/public');
     if (!r.ok) { setStatus('error'); return; }
-    profile = r.profile || {};
-    theme   = r.theme   || {};
+    profile    = r.profile || {};
+    theme      = r.theme   || {};
     vaultItems = r.items   || [];
     shorts     = r.shorts  || [];
     socials    = r.socials || [];
@@ -239,8 +241,11 @@ function setupSettingsListeners() {
   document.getElementById('btn-reset-theme')?.addEventListener('click', resetTheme);
   document.getElementById('btn-test-connection')?.addEventListener('click', testConnection);
   document.getElementById('btn-add-social')?.addEventListener('click', addSocial);
-  // Spotify settings — no OAuth, just username + now playing
-  document.getElementById('btn-save-spotify')?.addEventListener('click', saveSpotifySettings);
+  document.getElementById('btn-save-music')?.addEventListener('click', saveMusic);
+  document.getElementById('btn-add-playlist-row')?.addEventListener('click', () => {
+    playlistRows.push({ name: '', url: '', img: '' });
+    renderPlaylistRows();
+  });
 
   document.querySelectorAll('.theme-color-input').forEach(inp => {
     inp.addEventListener('input', function() {
@@ -264,14 +269,47 @@ function setupSettingsListeners() {
   });
 }
 
-async function saveSpotifySettings() {
+function renderPlaylistRows() {
+  const container = document.getElementById('playlist-rows');
+  if (!container) return;
+  if (!playlistRows.length) { container.innerHTML = ''; return; }
+  container.innerHTML = playlistRows.map((row, i) => `
+    <div class="playlist-row">
+      <input class="field-input" type="text" placeholder="Nome" value="${esc(row.name)}" data-pi="${i}" data-pf="name">
+      <input class="field-input" type="url"  placeholder="Link Spotify" value="${esc(row.url)}" data-pi="${i}" data-pf="url">
+      <input class="field-input" type="url"  placeholder="URL imagem (opcional)" value="${esc(row.img)}" data-pi="${i}" data-pf="img">
+      <button class="playlist-row-del" data-pi="${i}">✕</button>
+    </div>
+  `).join('');
+  container.querySelectorAll('input[data-pi]').forEach(inp => {
+    inp.addEventListener('input', function() {
+      playlistRows[+this.dataset.pi][this.dataset.pf] = this.value;
+    });
+  });
+  container.querySelectorAll('.playlist-row-del').forEach(btn => {
+    btn.addEventListener('click', function() {
+      playlistRows.splice(+this.dataset.pi, 1);
+      renderPlaylistRows();
+    });
+  });
+}
+
+async function saveMusic() {
   if (!isOwner) return;
-  const el = document.getElementById('spotify-result');
-  const username   = document.getElementById('spotify-username')?.value.trim()   || '';
-  const nowPlaying = document.getElementById('spotify-nowplaying')?.value.trim() || '';
+  const el = document.getElementById('music-result');
   showResult(el, 'Saving…', '');
+  const themeSong = {
+    title:  document.getElementById('music-song-title')?.value.trim()  || '',
+    artist: document.getElementById('music-song-artist')?.value.trim() || '',
+    url:    document.getElementById('music-song-url')?.value.trim()    || '',
+    img:    document.getElementById('music-song-img')?.value.trim()    || ''
+  };
+  const playlists = playlistRows.filter(r => r.name || r.url);
   try {
-    const r = await API.post('/spotify/nowplaying', { username, nowPlaying: nowPlaying || null });
+    const r = await API.post('/music', {
+      themeSong: themeSong.title || themeSong.url ? themeSong : null,
+      playlists
+    });
     showResult(el, r.ok ? '✅ Saved.' : '❌ Failed.', r.ok ? 'ok' : 'err');
   } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
 }
@@ -311,7 +349,7 @@ function populateSettings() {
   if (theme.surface)    { sv('theme-surface',     theme.surface);    const pk = document.getElementById('theme-surface-picker');    if (pk) pk.value = theme.surface; }
   if (theme.text)       { sv('theme-text',        theme.text);       const pk = document.getElementById('theme-text-picker');       if (pk) pk.value = theme.text; }
   if (theme.textDim)    { sv('theme-text-dim',    theme.textDim);    const pk = document.getElementById('theme-text-dim-picker');   if (pk) pk.value = theme.textDim; }
-  if (theme.bgUrl)      sv('theme-bg-url',     theme.bgUrl);
+  if (theme.bgUrl)      sv('theme-bg-url', theme.bgUrl);
   if (theme.bgOpacity !== undefined) {
     sv('theme-bg-opacity', theme.bgOpacity);
     const lbl = document.getElementById('theme-bg-opacity-val');
@@ -321,12 +359,17 @@ function populateSettings() {
   const sea = document.getElementById('socials-edit-area'); if (sea) sea.style.display = '';
   const cea = document.getElementById('cv-edit-area');      if (cea) cea.style.display = '';
 
-  // Populate spotify fields from KV (loaded async)
-  API.get('/spotify/nowplaying').then(r => {
-    if (r.ok && r.nowPlaying) {
-      const el = document.getElementById('spotify-nowplaying');
-      if (el) el.value = r.nowPlaying;
+  // Load music settings
+  API.get('/music').then(r => {
+    if (!r.ok) return;
+    if (r.themeSong) {
+      sv('music-song-title',  r.themeSong.title);
+      sv('music-song-artist', r.themeSong.artist);
+      sv('music-song-url',    r.themeSong.url);
+      sv('music-song-img',    r.themeSong.img);
     }
+    playlistRows = (r.playlists || []).map(p => ({ name: p.name || '', url: p.url || '', img: p.img || '' }));
+    renderPlaylistRows();
   }).catch(() => {});
 }
 
@@ -693,74 +736,89 @@ function renderSocials() {
   }));
 }
 
-// ── MUSIC ────────────────────────────────────────────────────────
+/* ── MUSIC ─────────────────────────────────────────────────────── */
 async function loadMusic() {
-  const grid = document.getElementById('music-content');
-  if (!grid) return;
-  grid.innerHTML = '<div style="color:var(--text-muted);font-style:italic;padding:2rem 0">Loading…</div>';
+  const container = document.getElementById('music-content');
+  if (!container) return;
+  container.innerHTML = '<div class="music-empty">Loading…</div>';
   try {
-    const r = await API.get('/spotify/data');
-    if (!r.ok) {
-      grid.innerHTML = `<div style="color:var(--text-muted);font-style:italic;padding:2rem 0">
-        ${esc(r.error === 'No Spotify username configured'
-          ? 'No Spotify username set. Configure it in Setup → Spotify.'
-          : 'Could not load music: ' + (r.error || 'unknown error'))}
-      </div>`;
-      return;
-    }
-    renderMusic(r);
+    const r = await API.get('/music');
+    if (!r.ok) { container.innerHTML = '<div class="music-empty">Could not load music data.</div>'; return; }
+    renderMusic(r, container);
   } catch(e) {
-    grid.innerHTML = `<div style="color:#e06c75;font-style:italic;padding:2rem 0">Connection error: ${esc(e.message)}</div>`;
+    container.innerHTML = `<div class="music-empty">Connection error.</div>`;
   }
 }
 
-function renderMusic(data) {
-  const grid = document.getElementById('music-content');
-  if (!grid) return;
+function renderMusic(data, container) {
   let html = '';
 
-  // Now Playing banner
-  if (data.nowPlaying) {
-    html += `<div class="music-nowplaying">
-      <span class="music-nowplaying-dot"></span>
-      <span class="music-nowplaying-label">Now Playing</span>
-      <span class="music-nowplaying-text">${esc(data.nowPlaying)}</span>
-    </div>`;
-  }
+  // Theme Song
+  if (data.themeSong?.title || data.themeSong?.url) {
+    const s = data.themeSong;
+    const href = s.url || '#';
+    const imgHtml = s.img
+      ? `<img class="music-theme-cover" src="${esc(s.img)}" alt="${esc(s.title)}" onerror="this.parentElement.innerHTML='<div style=width:140px;height:140px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:#0a0704>♪</div>'">`
+      : `<div style="width:140px;height:140px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:#0a0704;color:var(--gold-dark)">♪</div>`;
 
-  // User profile header
-  if (data.user) {
-    const avatar = data.user.images?.[0]?.url || '';
-    const profileUrl = data.user.external_urls?.spotify || '#';
-    html += `<div class="music-user-header">
-      ${avatar ? `<img class="music-user-avatar" src="${esc(avatar)}" alt="">` : ''}
-      <div class="music-user-info">
-        <a class="music-user-name" href="${esc(profileUrl)}" target="_blank" rel="noopener">${esc(data.user.display_name || data.user.id)}</a>
-        <span class="music-user-meta">${data.user.followers?.total ?? ''} followers · ${data.playlists?.length ?? 0} public playlists</span>
-      </div>
+    html += `
+    <div class="music-theme-wrap">
+      <div class="music-theme-eyebrow">Theme Song</div>
+      <a class="music-theme-card" href="${esc(href)}" target="_blank" rel="noopener">
+        <span class="corner tr"></span>
+        <span class="corner br"></span>
+        <div class="music-theme-vinyl">${imgHtml}</div>
+        <div class="music-theme-body">
+          <div class="music-theme-label">
+            <span class="music-eq"><span></span><span></span><span></span><span></span></span>
+            Now Playing
+          </div>
+          <div class="music-theme-title">${esc(s.title || 'Untitled')}</div>
+          ${s.artist ? `<div class="music-theme-artist">${esc(s.artist)}</div>` : ''}
+          <div class="music-theme-cta">
+            <svg viewBox="0 0 24 24"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+            Open in Spotify
+            <svg viewBox="0 0 24 24" style="width:8px;height:8px"><path d="M13 5l7 7-7 7M5 12h15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+          </div>
+        </div>
+      </a>
     </div>`;
   }
 
   // Playlists
   if (data.playlists?.length) {
-    html += `<div class="music-section">
-      <div class="music-section-title">✦ Playlists</div>
-      <div class="music-playlists">
-        ${data.playlists.map(p => `
-          <a class="music-playlist" href="${esc(p.external_urls?.spotify || '#')}" target="_blank" rel="noopener">
-            <img class="music-playlist-img" src="${esc(p.images?.[0]?.url || '')}" alt="" onerror="this.style.display='none'">
+    html += `
+    <div class="music-playlists-section">
+      <div class="music-section-title">Playlists</div>
+      <div class="music-playlists-grid">
+        ${data.playlists.map(p => {
+          const imgPart = p.img
+            ? `<img class="music-playlist-img" src="${esc(p.img)}" alt="${esc(p.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+            : '';
+          return `
+          <a class="music-playlist-card" href="${esc(p.url || '#')}" target="_blank" rel="noopener">
+            <div class="music-playlist-img-wrap">
+              ${imgPart}
+              <div class="music-playlist-img-placeholder" style="${p.img?'display:none':''}">♫</div>
+              <div class="music-playlist-play">
+                <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+              </div>
+            </div>
             <div class="music-playlist-info">
               <div class="music-playlist-name">${esc(p.name)}</div>
-              <div class="music-playlist-tracks">${p.tracks?.total ?? 0} tracks</div>
+              <div class="music-playlist-meta">Playlist · Spotify</div>
             </div>
-          </a>`).join('')}
+          </a>`;
+        }).join('')}
       </div>
     </div>`;
-  } else if (!data.nowPlaying && !data.user) {
-    html = '<div style="color:var(--text-muted);font-style:italic;padding:2rem 0">No public playlists found.</div>';
   }
 
-  grid.innerHTML = html || '<div style="color:var(--text-muted);font-style:italic;padding:2rem 0">No music data available.</div>';
+  if (!html) {
+    html = '<div class="music-empty">No music configured yet.</div>';
+  }
+
+  container.innerHTML = html;
 }
 
 function openModal(id)  { const m = document.getElementById(id); if (m) m.style.display = 'flex'; }
