@@ -682,12 +682,16 @@ async function loadMusic() {
   try {
     const r = await API.get('/spotify/data');
     if (!r.ok) {
-      grid.innerHTML = '<div style="color:var(--text-muted);font-style:italic;padding:2rem 0">Spotify not connected. Go to Setup → connect Spotify.</div>';
+      grid.innerHTML = `<div style="color:#e06c75;font-style:italic;padding:2rem 0">Error: ${esc(r.error || 'unknown')}</div>`;
+      return;
+    }
+    if (!r.topTracks?.length && !r.topArtists?.length && !r.playlists?.length) {
+      grid.innerHTML = `<div style="color:var(--text-muted);font-style:italic;padding:2rem 0">Spotify connected but no data returned. Make sure your Spotify email is added as a tester in the Developer Portal, then reconnect.</div>`;
       return;
     }
     renderMusic(r);
   } catch(e) {
-    grid.innerHTML = '<div style="color:#e06c75;font-style:italic;padding:2rem 0">Error loading Spotify data.</div>';
+    grid.innerHTML = `<div style="color:#e06c75;font-style:italic;padding:2rem 0">Connection error: ${esc(e.message)}</div>`;
   }
 }
 
