@@ -27,28 +27,26 @@
 .toggle-slider::before{content:'';position:absolute;width:14px;height:14px;left:2px;top:2px;background:var(--text-muted);border-radius:50%;transition:.2s}
 .toggle-switch input:checked+.toggle-slider{background:rgba(201,168,76,.3);border-color:var(--gold-dark)}
 .toggle-switch input:checked+.toggle-slider::before{transform:translateX(16px);background:var(--gold)}
+
+/* ── MUSIC PAGE ── */
 .music-section{margin-bottom:2.5rem}
 .music-section-title{font-family:var(--display);font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:1rem;padding-bottom:.5rem;border-bottom:1px solid var(--border)}
-.music-tracks{display:flex;flex-direction:column;gap:.35rem}
-.music-track{display:flex;align-items:center;gap:.85rem;padding:.6rem .75rem;background:rgba(12,9,4,.6);border:1px solid var(--border);border-radius:3px;text-decoration:none;transition:border-color .15s,background .15s}
-.music-track:hover{border-color:var(--gold-dark);background:rgba(20,14,6,.8)}
-.music-track-num{font-family:var(--mono);font-size:.65rem;color:var(--text-muted);width:1.2rem;text-align:right;flex-shrink:0}
-.music-track-img{width:36px;height:36px;border-radius:2px;object-fit:cover;flex-shrink:0;background:var(--surface2)}
-.music-track-info{flex:1;min-width:0}
-.music-track-name{font-family:var(--serif);font-size:.88rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.music-track-artist{font-family:var(--serif);font-size:.72rem;color:var(--text-muted);margin-top:.1rem}
-.music-track-album{font-family:var(--serif);font-size:.68rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;flex-shrink:0}
-.music-artists{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.85rem}
-.music-artist{display:flex;flex-direction:column;align-items:center;text-align:center;text-decoration:none;padding:1rem .75rem;background:rgba(12,9,4,.6);border:1px solid var(--border);border-radius:3px;transition:border-color .15s,transform .15s}
-.music-artist:hover{border-color:var(--gold-dark);transform:translateY(-2px)}
-.music-artist-img{width:80px;height:80px;border-radius:50%;object-fit:cover;margin-bottom:.6rem;background:var(--surface2);border:2px solid var(--border)}
-.music-artist-name{font-family:var(--serif);font-size:.85rem;font-weight:600;color:var(--text);margin-bottom:.2rem}
-.music-artist-genre{font-family:var(--display);font-size:.55rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+.music-nowplaying{display:flex;align-items:center;gap:.75rem;padding:.75rem 1.1rem;margin-bottom:1.75rem;background:linear-gradient(90deg,rgba(201,168,76,.08),rgba(201,168,76,.03));border:1px solid rgba(201,168,76,.22);border-left:3px solid var(--gold);border-radius:3px}
+.music-nowplaying-dot{width:8px;height:8px;border-radius:50%;background:#1db954;box-shadow:0 0 6px rgba(29,185,84,.7);flex-shrink:0;animation:pulse-dot 2s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
+.music-nowplaying-label{font-family:var(--display);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dim);flex-shrink:0}
+.music-nowplaying-text{font-family:var(--serif);font-size:.9rem;color:var(--text);font-style:italic}
+.music-user-header{display:flex;align-items:center;gap:1rem;margin-bottom:2rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border)}
+.music-user-avatar{width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid var(--border-med);flex-shrink:0}
+.music-user-name{font-family:var(--display);font-size:.95rem;font-weight:600;color:var(--gold-light);text-decoration:none;letter-spacing:.06em;display:block;margin-bottom:.2rem;transition:color .15s}
+.music-user-name:hover{color:var(--gold)}
+.music-user-meta{font-family:var(--display);font-size:.6rem;letter-spacing:.1em;color:var(--text-muted);text-transform:uppercase}
 .music-playlists{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.85rem}
 .music-playlist{display:flex;align-items:center;gap:.85rem;text-decoration:none;padding:.75rem;background:rgba(12,9,4,.6);border:1px solid var(--border);border-radius:3px;transition:border-color .15s,transform .15s}
 .music-playlist:hover{border-color:var(--gold-dark);transform:translateY(-2px)}
 .music-playlist-img{width:52px;height:52px;border-radius:2px;object-fit:cover;flex-shrink:0;background:var(--surface2)}
-.music-playlist-name{font-family:var(--serif);font-size:.85rem;color:var(--text);font-weight:600}
+.music-playlist-info{flex:1;min-width:0}
+.music-playlist-name{font-family:var(--serif);font-size:.85rem;color:var(--text);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .music-playlist-tracks{font-family:var(--display);font-size:.58rem;letter-spacing:.08em;color:var(--text-muted);margin-top:.2rem}
 </style>
 </head>
@@ -60,6 +58,7 @@
   <div class="bg-grain"></div>
 </div>
 
+<!-- LOGIN -->
 <div id="login-screen" style="display:none">
   <div class="login-box">
     <div class="login-glass">
@@ -93,6 +92,7 @@
 
 <div id="app">
 
+<!-- NAV -->
 <nav>
   <div class="nav-logo" id="nav-logo">K<span>ira</span></div>
   <div class="nav-links" id="nav-links">
@@ -281,11 +281,19 @@
       <!-- Spotify -->
       <div class="settings-section">
         <h3>Spo<span>tify</span></h3>
-        <p>Connect your account to display top tracks, artists, and playlists on the Music page.</p>
-        <div style="margin-top:1.5rem">
-          <button class="settings-save" id="btn-spotify-connect">⟳ Connect Spotify</button>
-          <p style="margin-top:.85rem;font-size:.75rem;color:var(--text-muted);font-style:italic;line-height:1.6">Opens a Spotify auth window. After authorising, close it and reload the Music page.</p>
+        <p>Mostra as tuas playlists públicas e o que estás a ouvir. Não requer Premium.</p>
+        <div class="field-group" style="margin-top:1rem">
+          <label class="field-label">Spotify Username</label>
+          <input class="field-input" type="text" id="spotify-username" placeholder="o teu username do Spotify">
+          <span class="field-hint">Perfil Spotify → ··· → Partilhar → Copiar link. O username é depois de /user/</span>
         </div>
+        <div class="field-group">
+          <label class="field-label">Now Playing</label>
+          <input class="field-input" type="text" id="spotify-nowplaying" placeholder="ex: Hozier — Work Song">
+          <span class="field-hint">Texto livre — aparece como banner no topo da página Music.</span>
+        </div>
+        <button class="settings-save" id="btn-save-spotify" style="margin-top:.25rem">Save Spotify</button>
+        <div class="connection-result" id="spotify-result"></div>
       </div>
 
       <!-- Discord Channels -->
@@ -342,7 +350,7 @@
 
 </div><!-- #app -->
 
-<!-- MODALS -->
+<!-- MODAL: ADD SHORT -->
 <div class="modal-backdrop" id="modal-short">
   <div class="modal">
     <div class="modal-title">Add Scroll</div>
@@ -362,6 +370,7 @@
   </div>
 </div>
 
+<!-- MODAL: ADD VAULT ITEM -->
 <div class="modal-backdrop" id="modal-vault">
   <div class="modal">
     <div class="modal-title">New Chronicle Entry</div>
