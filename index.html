@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <style>
-/* ── INLINE COMPONENT STYLES ── */
+/* ── COMPONENT STYLES ── */
 .vault-item-url a{font-family:var(--mono);font-size:.65rem;color:var(--gold-dark);text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:.35rem;transition:color .15s}
 .vault-item-url a:hover{color:var(--gold);text-decoration:underline}
 .theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.75rem;margin-top:1rem}
@@ -29,375 +29,200 @@
 .toggle-switch input:checked+.toggle-slider{background:rgba(201,168,76,.3);border-color:var(--gold-dark)}
 .toggle-switch input:checked+.toggle-slider::before{transform:translateX(16px);background:var(--gold)}
 
-/* ══════════════════════════════════════════
-   MUSIC PAGE — THEME SONG + PLAYLISTS
-   ══════════════════════════════════════════ */
+/* ══════════════════════════════════════
+   MUSIC PAGE
+   ══════════════════════════════════════ */
+.music-theme-wrap{position:relative;margin-bottom:3rem}
+.music-theme-eyebrow{font-family:var(--display);font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:1rem;display:flex;align-items:center;gap:.6rem}
+.music-theme-eyebrow::before{content:'';display:inline-block;width:24px;height:1px;background:var(--gold-dark)}
 
-/* Theme Song — hero card */
-.music-theme-wrap {
-  position: relative;
-  margin-bottom: 3rem;
+/* Theme card with gif background */
+.music-theme-card{
+  display:flex;align-items:stretch;
+  position:relative;overflow:hidden;
+  border:1px solid rgba(201,168,76,.3);border-radius:4px;
+  text-decoration:none;max-width:680px;
+  min-height:180px;
+  transition:border-color .25s,box-shadow .25s;
 }
-.music-theme-eyebrow {
-  font-family: var(--display);
-  font-size: .58rem;
-  letter-spacing: .22em;
-  text-transform: uppercase;
-  color: var(--gold-dim);
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: .6rem;
+.music-theme-card:hover{border-color:rgba(201,168,76,.6);box-shadow:0 0 50px rgba(201,168,76,.18),0 8px 32px rgba(0,0,0,.8)}
+/* GIF background layer */
+.music-theme-bg{
+  position:absolute;inset:0;z-index:0;
+  background-size:cover;background-position:center;background-repeat:no-repeat;
 }
-.music-theme-eyebrow::before {
-  content: '';
-  display: inline-block;
-  width: 24px;
-  height: 1px;
-  background: var(--gold-dark);
+.music-theme-bg img{width:100%;height:100%;object-fit:cover;display:block}
+/* Dark overlay over gif */
+.music-theme-overlay{
+  position:absolute;inset:0;z-index:1;
+  background:linear-gradient(90deg,rgba(4,3,1,.92) 0%,rgba(4,3,1,.75) 45%,rgba(4,3,1,.5) 100%);
 }
-.music-theme-card {
-  display: flex;
-  align-items: stretch;
-  gap: 0;
-  background: linear-gradient(135deg, rgba(22,16,8,.97) 0%, rgba(10,8,4,.99) 100%);
-  border: 1px solid rgba(201,168,76,.28);
-  border-radius: 4px;
-  overflow: hidden;
-  text-decoration: none;
-  position: relative;
-  transition: border-color .25s, box-shadow .25s;
-  max-width: 640px;
+/* Content over gif */
+.music-theme-content{
+  position:relative;z-index:2;
+  display:flex;align-items:center;gap:1.5rem;
+  padding:1.5rem 2rem;width:100%;
 }
-.music-theme-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(201,168,76,.06) 0%, transparent 60%);
-  pointer-events: none;
+.music-theme-cover{
+  width:110px;height:110px;border-radius:3px;object-fit:cover;flex-shrink:0;
+  border:1px solid rgba(201,168,76,.25);
+  box-shadow:0 4px 20px rgba(0,0,0,.7),0 0 0 1px rgba(0,0,0,.4);
 }
-.music-theme-card:hover {
-  border-color: rgba(201,168,76,.55);
-  box-shadow: 0 0 40px rgba(201,168,76,.15), 0 8px 32px rgba(0,0,0,.7);
+.music-theme-cover-placeholder{
+  width:110px;height:110px;border-radius:3px;flex-shrink:0;
+  background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.15);
+  display:flex;align-items:center;justify-content:center;
+  font-size:2.5rem;color:var(--gold-dark);
 }
-/* Vinyl record visual */
-.music-theme-vinyl {
-  position: relative;
-  width: 140px;
-  min-height: 140px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #0a0704;
-  overflow: hidden;
+.music-theme-info{flex:1;min-width:0}
+.music-theme-label{
+  font-family:var(--display);font-size:.55rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--gold-dim);margin-bottom:.5rem;
+  display:flex;align-items:center;gap:.5rem;
 }
-.music-theme-cover {
-  width: 140px;
-  height: 140px;
-  object-fit: cover;
-  display: block;
-  transition: transform .4s ease, filter .4s ease;
-}
-.music-theme-card:hover .music-theme-cover {
-  transform: scale(1.06);
-  filter: brightness(1.1);
-}
-/* Vinyl overlay ring */
-.music-theme-vinyl::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 50% 50%, transparent 28%, rgba(0,0,0,.55) 29%, rgba(0,0,0,.55) 32%, transparent 33%),
-    radial-gradient(circle at 50% 50%, transparent 48%, rgba(0,0,0,.25) 49%);
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity .3s;
-}
-.music-theme-card:hover .music-theme-vinyl::after { opacity: 1; }
-
-.music-theme-body {
-  flex: 1;
-  padding: 1.5rem 1.75rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  position: relative;
-}
-.music-theme-label {
-  font-family: var(--display);
-  font-size: .55rem;
-  letter-spacing: .18em;
-  text-transform: uppercase;
-  color: var(--gold-dark);
-  margin-bottom: .6rem;
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-}
-/* Animated equaliser bars */
-.music-eq {
-  display: inline-flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 12px;
-}
-.music-eq span {
-  display: block;
-  width: 2px;
-  background: var(--gold);
-  border-radius: 1px;
-  animation: eq-bar 1.2s ease-in-out infinite;
-}
+.music-eq{display:inline-flex;align-items:flex-end;gap:2px;height:11px}
+.music-eq span{display:block;width:2px;background:var(--gold);border-radius:1px;animation:eq-bar 1.2s ease-in-out infinite}
 .music-eq span:nth-child(1){height:60%;animation-delay:0s}
 .music-eq span:nth-child(2){height:100%;animation-delay:.15s}
 .music-eq span:nth-child(3){height:40%;animation-delay:.3s}
 .music-eq span:nth-child(4){height:80%;animation-delay:.1s}
-@keyframes eq-bar {
-  0%,100%{transform:scaleY(1)}
-  50%{transform:scaleY(.35)}
+@keyframes eq-bar{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.3)}}
+.music-theme-title{
+  font-family:var(--display2);
+  font-size:clamp(1rem,3vw,1.55rem);
+  font-weight:700;color:var(--gold-light);
+  letter-spacing:.04em;line-height:1.15;margin-bottom:.3rem;
+  text-shadow:0 0 20px rgba(201,168,76,.35),0 2px 4px rgba(0,0,0,.8);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.music-theme-title {
-  font-family: var(--display2);
-  font-size: clamp(1.1rem, 3vw, 1.6rem);
-  font-weight: 700;
-  color: var(--gold-light);
-  letter-spacing: .04em;
-  line-height: 1.15;
-  margin-bottom: .4rem;
-  text-shadow: 0 0 20px rgba(201,168,76,.3);
+.music-theme-artist{font-family:var(--serif);font-size:.9rem;color:var(--text-dim);font-style:italic;margin-bottom:1rem}
+.music-theme-cta{
+  display:inline-flex;align-items:center;gap:.5rem;
+  font-family:var(--display);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--gold-dim);border:1px solid rgba(201,168,76,.25);
+  padding:.38rem .85rem;border-radius:2px;width:fit-content;
+  transition:all .2s;
 }
-.music-theme-artist {
-  font-family: var(--serif);
-  font-size: .95rem;
-  color: var(--text-dim);
-  font-style: italic;
-  margin-bottom: 1.1rem;
-}
-.music-theme-cta {
-  display: inline-flex;
-  align-items: center;
-  gap: .5rem;
-  font-family: var(--display);
-  font-size: .6rem;
-  letter-spacing: .14em;
-  text-transform: uppercase;
-  color: var(--gold-dim);
-  border: 1px solid rgba(201,168,76,.25);
-  padding: .4rem .85rem;
-  border-radius: 2px;
-  width: fit-content;
-  transition: color .2s, border-color .2s, background .2s;
-}
-.music-theme-cta svg { width: 10px; height: 10px; fill: currentColor; transition: transform .2s; }
-.music-theme-card:hover .music-theme-cta {
-  color: var(--gold-light);
-  border-color: var(--gold);
-  background: rgba(201,168,76,.07);
-}
-.music-theme-card:hover .music-theme-cta svg { transform: translateX(3px); }
-
-/* Corner ornaments */
-.music-theme-card .corner {
-  position: absolute;
-  width: 10px; height: 10px;
-  border-color: rgba(201,168,76,.35);
-  border-style: solid;
-}
-.music-theme-card .corner.tr { top: 6px; right: 6px; border-width: 1px 1px 0 0; }
-.music-theme-card .corner.br { bottom: 6px; right: 6px; border-width: 0 1px 1px 0; }
-
-/* Glow line at top */
-.music-theme-card::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold-dark) 30%, var(--gold) 50%, var(--gold-dark) 70%, transparent);
-  opacity: .7;
-}
+.music-theme-card:hover .music-theme-cta{color:var(--gold-light);border-color:var(--gold);background:rgba(201,168,76,.08)}
+/* corner ornaments */
+.music-theme-card .mc{position:absolute;width:10px;height:10px;border-color:rgba(201,168,76,.4);border-style:solid;z-index:3}
+.music-theme-card .mc-tr{top:7px;right:7px;border-width:1px 1px 0 0}
+.music-theme-card .mc-bl{bottom:7px;left:7px;border-width:0 0 1px 1px}
+/* top glow line */
+.music-theme-card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold-dark) 30%,var(--gold) 50%,var(--gold-dark) 70%,transparent);z-index:3}
 
 /* ── PLAYLISTS ── */
-.music-playlists-section { margin-top: .5rem; }
-.music-section-title {
-  font-family: var(--display);
-  font-size: .65rem;
-  letter-spacing: .2em;
-  text-transform: uppercase;
-  color: var(--gold-dim);
-  margin-bottom: 1.25rem;
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-}
-.music-section-title::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, var(--gold-dark), transparent);
-  opacity: .5;
-}
-.music-playlists-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1rem;
-}
-.music-playlist-card {
-  display: flex;
-  flex-direction: column;
-  text-decoration: none;
-  background: rgba(12,9,4,.7);
-  border: 1px solid var(--border);
-  border-radius: 3px;
-  overflow: hidden;
-  transition: border-color .2s, transform .2s, box-shadow .2s;
-  position: relative;
-}
-.music-playlist-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(201,168,76,.2), transparent);
-}
-.music-playlist-card:hover {
-  border-color: var(--gold-dark);
-  transform: translateY(-3px);
-  box-shadow: 0 12px 30px rgba(0,0,0,.6), 0 0 0 1px rgba(201,168,76,.08);
-}
-.music-playlist-img-wrap {
-  position: relative;
-  aspect-ratio: 1;
-  overflow: hidden;
-  background: var(--surface2);
-}
-.music-playlist-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform .35s ease, filter .35s ease;
-}
-.music-playlist-card:hover .music-playlist-img {
-  transform: scale(1.08);
-  filter: brightness(1.1) saturate(1.1);
-}
-.music-playlist-img-wrap::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,.6) 100%);
-}
-/* Spotify play icon on hover */
-.music-playlist-play {
-  position: absolute;
-  bottom: .6rem;
-  right: .6rem;
-  width: 28px;
-  height: 28px;
-  background: rgba(201,168,76,.9);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transform: translateY(4px);
-  transition: opacity .2s, transform .2s;
-  z-index: 2;
-}
-.music-playlist-play svg { width: 10px; height: 10px; fill: #080604; margin-left: 1px; }
-.music-playlist-card:hover .music-playlist-play {
-  opacity: 1;
-  transform: translateY(0);
-}
-/* No image fallback */
-.music-playlist-img-placeholder {
-  width: 100%;
-  aspect-ratio: 1;
-  background: linear-gradient(135deg, var(--surface2), var(--surface3));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2rem;
-  color: var(--text-muted);
-}
-.music-playlist-info {
-  padding: .75rem .85rem;
-}
-.music-playlist-name {
-  font-family: var(--serif);
-  font-size: .88rem;
-  font-weight: 600;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: .2rem;
-}
-.music-playlist-meta {
-  font-family: var(--display);
-  font-size: .55rem;
-  letter-spacing: .08em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
+.music-playlists-section{margin-top:.5rem}
+.music-section-title{font-family:var(--display);font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem}
+.music-section-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--gold-dark),transparent);opacity:.5}
+.music-playlists-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:1rem}
 
-/* Empty state */
-.music-empty {
-  font-family: var(--serif);
-  font-style: italic;
-  color: var(--text-muted);
-  padding: 2.5rem 0;
-  font-size: .9rem;
+.music-playlist-card{
+  display:flex;flex-direction:column;text-decoration:none;
+  border:1px solid var(--border);border-radius:3px;overflow:hidden;
+  position:relative;transition:border-color .2s,transform .2s,box-shadow .2s;
 }
+.music-playlist-card:hover{border-color:var(--gold-dark);transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,.6),0 0 0 1px rgba(201,168,76,.08)}
+/* gif background for playlist card */
+.music-playlist-imgwrap{position:relative;aspect-ratio:1;overflow:hidden;background:var(--surface2)}
+.music-playlist-gif{position:absolute;inset:0;z-index:0}
+.music-playlist-gif img{width:100%;height:100%;object-fit:cover;display:block}
+.music-playlist-cover{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s,filter .35s}
+.music-playlist-card:hover .music-playlist-cover{transform:scale(1.08);filter:brightness(1.1)}
+.music-playlist-imgwrap::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%,rgba(0,0,0,.65) 100%);z-index:2}
+.music-playlist-play{position:absolute;bottom:.6rem;right:.6rem;width:28px;height:28px;background:rgba(201,168,76,.9);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transform:translateY(4px);transition:opacity .2s,transform .2s;z-index:3}
+.music-playlist-play svg{width:10px;height:10px;fill:#080604;margin-left:1px}
+.music-playlist-card:hover .music-playlist-play{opacity:1;transform:translateY(0)}
+.music-playlist-placeholder{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:2.5rem;color:var(--text-muted);background:linear-gradient(135deg,var(--surface2),var(--surface3))}
+.music-playlist-info{padding:.75rem .85rem;position:relative;z-index:1;background:rgba(8,6,3,.85)}
+.music-playlist-name{font-family:var(--serif);font-size:.88rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:.2rem}
+.music-playlist-meta{font-family:var(--display);font-size:.55rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+.music-empty{font-family:var(--serif);font-style:italic;color:var(--text-muted);padding:2.5rem 0;font-size:.9rem}
 
-/* ── SETUP: Music section playlist rows ── */
-.playlist-rows { display: flex; flex-direction: column; gap: .6rem; margin-top: .75rem; }
-.playlist-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr auto;
-  gap: .5rem;
-  align-items: center;
+/* ══════════════════════════════════════
+   SETUP — drag drop zone + guides
+   ══════════════════════════════════════ */
+.setup-guide{
+  margin-top:1rem;padding:.85rem 1rem;
+  background:rgba(201,168,76,.04);
+  border:1px solid rgba(201,168,76,.1);
+  border-left:2px solid var(--gold-dark);
+  border-radius:2px;
 }
-.playlist-row-del {
-  background: none;
-  border: 1px solid rgba(201,168,76,.15);
-  color: var(--text-muted);
-  cursor: pointer;
-  font-size: .75rem;
-  padding: .4rem .55rem;
-  border-radius: 2px;
-  transition: color .15s, border-color .15s;
-  flex-shrink: 0;
-}
-.playlist-row-del:hover { color: #cc6644; border-color: #7a3a22; }
-.btn-add-row {
-  font-family: var(--display);
-  font-size: .6rem;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--gold-dim);
-  background: transparent;
-  border: 1px dashed rgba(201,168,76,.2);
-  padding: .45rem 1rem;
-  cursor: pointer;
-  border-radius: 2px;
-  width: 100%;
-  margin-top: .4rem;
-  transition: all .2s;
-}
-.btn-add-row:hover { border-color: var(--gold-dark); color: var(--gold-light); background: rgba(201,168,76,.04); }
+.setup-guide-title{font-family:var(--display);font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:.6rem;display:flex;align-items:center;gap:.4rem}
+.setup-guide-title::before{content:'?';width:14px;height:14px;border-radius:50%;border:1px solid var(--gold-dark);display:flex;align-items:center;justify-content:center;font-size:.55rem;flex-shrink:0}
+.setup-guide ol,.setup-guide ul{padding-left:1.1rem;display:flex;flex-direction:column;gap:.3rem}
+.setup-guide li{font-family:var(--serif);font-size:.78rem;color:var(--text-muted);line-height:1.5}
+.setup-guide a{color:var(--gold-dim);text-decoration:none}
+.setup-guide a:hover{color:var(--gold);text-decoration:underline}
+.setup-guide code{font-family:var(--mono);font-size:.7rem;color:var(--gold-dim);background:rgba(201,168,76,.07);padding:1px 5px;border-radius:2px}
 
-@media (max-width: 600px) {
-  .playlist-row { grid-template-columns: 1fr auto; grid-template-rows: auto auto auto; }
-  .playlist-row input:nth-child(2),
-  .playlist-row input:nth-child(3) { grid-column: 1; }
-  .music-playlists-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
-  .music-theme-vinyl { width: 100px; min-height: 100px; }
-  .music-theme-cover { width: 100px; height: 100px; }
-  .music-theme-body { padding: 1rem 1.25rem; }
-  .music-theme-title { font-size: 1.1rem; }
+/* Drag drop zone */
+.spotify-drop-zone{
+  border:2px dashed rgba(201,168,76,.25);border-radius:3px;
+  padding:1.5rem;text-align:center;
+  background:rgba(10,8,4,.5);cursor:pointer;
+  transition:border-color .2s,background .2s;
+  margin-top:1rem;
+}
+.spotify-drop-zone.drag-over,.spotify-drop-zone:hover{border-color:var(--gold-dim);background:rgba(201,168,76,.04)}
+.spotify-drop-zone-icon{font-size:1.5rem;margin-bottom:.4rem}
+.spotify-drop-zone p{font-family:var(--serif);font-style:italic;font-size:.82rem;color:var(--text-muted);margin-bottom:.5rem}
+.spotify-drop-zone-hint{font-family:var(--display);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted)}
+
+/* Music item preview card in setup */
+.music-preview-card{
+  display:flex;align-items:center;gap:.75rem;
+  padding:.75rem;margin-top:.75rem;
+  background:rgba(12,9,4,.8);border:1px solid rgba(201,168,76,.2);border-radius:3px;
+}
+.music-preview-img{width:44px;height:44px;border-radius:2px;object-fit:cover;flex-shrink:0;background:var(--surface2)}
+.music-preview-info{flex:1;min-width:0}
+.music-preview-title{font-family:var(--serif);font-size:.88rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.music-preview-artist{font-family:var(--serif);font-size:.72rem;color:var(--text-muted);font-style:italic;margin-top:.1rem}
+.music-preview-del{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.75rem;padding:.2rem .35rem;transition:color .15s;flex-shrink:0}
+.music-preview-del:hover{color:#cc6644}
+
+/* Playlists in setup */
+.playlist-setup-list{display:flex;flex-direction:column;gap:.5rem;margin-top:.75rem}
+.playlist-setup-item{
+  background:rgba(12,9,4,.6);border:1px solid var(--border);border-radius:3px;
+  padding:.6rem .75rem;
+  display:flex;align-items:center;gap:.75rem;
+}
+.playlist-setup-thumb{width:36px;height:36px;border-radius:2px;object-fit:cover;flex-shrink:0;background:var(--surface2)}
+.playlist-setup-name{flex:1;font-family:var(--serif);font-size:.85rem;color:var(--text);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.playlist-gif-input{font-family:var(--mono);font-size:.65rem;color:var(--ink);background:rgba(10,8,4,.7);border:1px solid rgba(201,168,76,.15);border-radius:2px;padding:.35rem .5rem;width:180px;flex-shrink:0;caret-color:var(--gold)}
+.playlist-gif-input::placeholder{color:var(--text-muted)}
+.playlist-setup-del{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.75rem;padding:.2rem .35rem;transition:color .15s;flex-shrink:0}
+.playlist-setup-del:hover{color:#cc6644}
+
+/* Channels editor */
+.channel-editor-list{display:flex;flex-direction:column;gap:.4rem;margin-top:.75rem}
+.channel-editor-row{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:.4rem;align-items:center}
+.channel-editor-drag{color:var(--text-muted);font-size:.8rem;cursor:grab;padding:0 .2rem;flex-shrink:0}
+.channel-editor-row input{font-family:var(--mono);font-size:.65rem;color:var(--ink);background:rgba(10,8,4,.7);border:1px solid rgba(201,168,76,.15);border-radius:2px;padding:.38rem .5rem;caret-color:var(--gold)}
+.channel-editor-row input::placeholder{color:var(--text-muted)}
+.channel-editor-del{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.75rem;padding:.2rem .35rem;border-radius:2px;border:1px solid transparent;transition:all .15s}
+.channel-editor-del:hover{color:#cc6644;border-color:#7a3a22}
+.btn-add-channel{font-family:var(--display);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-dim);background:transparent;border:1px dashed rgba(201,168,76,.2);padding:.45rem 1rem;cursor:pointer;border-radius:2px;width:100%;margin-top:.4rem;transition:all .2s}
+.btn-add-channel:hover{border-color:var(--gold-dark);color:var(--gold-light);background:rgba(201,168,76,.04)}
+
+/* Spotify credentials */
+.spotify-creds-fields{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.75rem}
+
+/* Loading spinner inline */
+.spin{display:inline-block;width:12px;height:12px;border:1.5px solid rgba(201,168,76,.3);border-top-color:var(--gold);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-left:.4rem}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+@media(max-width:640px){
+  .music-theme-content{padding:1rem 1.25rem;gap:1rem}
+  .music-theme-cover,.music-theme-cover-placeholder{width:80px;height:80px}
+  .music-theme-title{font-size:1rem}
+  .music-playlists-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+  .channel-editor-row{grid-template-columns:auto 1fr 1fr auto}
+  .spotify-creds-fields{grid-template-columns:1fr}
+  .playlist-gif-input{width:120px}
 }
 </style>
 </head>
@@ -534,7 +359,7 @@
   <div class="page-inner">
     <div class="section-header"><div><h2>So<span>cials</span></h2></div><p>Find me across the realm</p></div>
     <div class="socials-grid" id="socials-grid"><div class="socials-empty">Loading…</div></div>
-    <div class="owner-only socials-add-wrap" id="socials-edit-area" style="display:none">
+    <div class="owner-only" id="socials-edit-area" style="display:none">
       <div class="settings-section" style="margin-top:2rem">
         <h3>Add <span>Social</span></h3>
         <div class="socials-form-row">
@@ -578,9 +403,7 @@
 <div class="page" id="page-music">
   <div class="page-inner">
     <div class="section-header"><div><h2>Mu<span>sic</span></h2></div><p>Sounds of the Keep</p></div>
-    <div id="music-content">
-      <div class="music-empty">Loading…</div>
-    </div>
+    <div id="music-content"><div class="music-empty">Loading…</div></div>
   </div>
 </div>
 
@@ -590,10 +413,10 @@
     <div class="section-header"><div><h2>Set<span>up</span></h2></div><p>Configure thy Keep</p></div>
     <div class="settings-inner">
 
-      <!-- Profile -->
+      <!-- ── PROFILE ── -->
       <div class="settings-section">
         <h3>Pro<span>file</span></h3>
-        <p>Name, tagline, and page visibility controls.</p>
+        <p>Nome, tagline e visibilidade das páginas.</p>
         <div class="field-group" style="margin-top:1rem">
           <label class="field-label">Display Name</label>
           <input class="field-input" type="text" id="cfg-name" placeholder="Kira">
@@ -614,75 +437,113 @@
         <div class="connection-result" id="profile-result"></div>
       </div>
 
-      <!-- Music / Spotify -->
+      <!-- ── MUSIC ── -->
       <div class="settings-section">
         <h3>Mu<span>sic</span></h3>
-        <p>Define o teu Theme Song e as tuas playlists. Tudo manual, sem dependências.</p>
+        <p>Arrasta links do Spotify para adicionar a música e playlists.</p>
 
         <div style="margin-top:1.25rem">
-          <div class="field-label" style="margin-bottom:.75rem">Theme Song</div>
-          <div class="field-group">
-            <label class="field-label">Título da Música</label>
-            <input class="field-input" type="text" id="music-song-title" placeholder="ex: Work Song">
+          <div class="field-label" style="margin-bottom:.5rem">Theme Song</div>
+          <div class="spotify-drop-zone" id="drop-theme">
+            <div class="spotify-drop-zone-icon">🎵</div>
+            <p>Arrasta ou cola um link de música do Spotify</p>
+            <div class="spotify-drop-zone-hint">open.spotify.com/track/…</div>
           </div>
-          <div class="field-group">
-            <label class="field-label">Artista</label>
-            <input class="field-input" type="text" id="music-song-artist" placeholder="ex: Hozier">
-          </div>
-          <div class="field-group">
-            <label class="field-label">Link Spotify</label>
-            <input class="field-input" type="url" id="music-song-url" placeholder="https://open.spotify.com/track/…">
-          </div>
-          <div class="field-group">
-            <label class="field-label">Capa (URL da imagem)</label>
-            <input class="field-input" type="url" id="music-song-img" placeholder="https://i.scdn.co/image/…">
-            <span class="field-hint">Abre a música no Spotify Web → clica na capa com botão direito → Copiar endereço da imagem</span>
+          <div id="theme-preview"></div>
+          <div class="field-group" style="margin-top:.75rem" id="theme-gif-group" style="display:none">
+            <label class="field-label">GIF de fundo</label>
+            <input class="field-input" type="url" id="music-song-gif" placeholder="https://media.discordapp.net/… ou media.tenor.com/…">
+            <span class="field-hint">Clica com botão direito no GIF no Discord → Copiar endereço da imagem</span>
           </div>
         </div>
 
-        <div style="margin-top:1.5rem">
+        <div style="margin-top:1.75rem">
           <div class="field-label" style="margin-bottom:.5rem">Playlists</div>
-          <div style="font-family:var(--display);font-size:.55rem;letter-spacing:.08em;color:var(--text-muted);margin-bottom:.75rem">Nome · URL · URL da imagem (opcional)</div>
-          <div class="playlist-rows" id="playlist-rows"></div>
-          <button class="btn-add-row" id="btn-add-playlist-row">+ Adicionar playlist</button>
+          <div class="spotify-drop-zone" id="drop-playlist">
+            <div class="spotify-drop-zone-icon">🎧</div>
+            <p>Arrasta ou cola um link de playlist do Spotify</p>
+            <div class="spotify-drop-zone-hint">open.spotify.com/playlist/…</div>
+          </div>
+          <div class="playlist-setup-list" id="playlist-setup-list"></div>
         </div>
 
         <button class="settings-save" id="btn-save-music" style="margin-top:1.25rem">Save Music</button>
         <div class="connection-result" id="music-result"></div>
+
+        <div class="setup-guide">
+          <div class="setup-guide-title">Como usar</div>
+          <ol class="setup-guide">
+            <li>Abre o Spotify → clica nos <strong>três pontos</strong> da música/playlist → <strong>Partilhar</strong> → <strong>Copiar link</strong></li>
+            <li>Cola o link na zona de drop acima — a info é preenchida automaticamente</li>
+            <li>Para o GIF: no Discord, clica com botão direito no GIF → <strong>Copiar endereço da imagem</strong></li>
+            <li>O link deve começar com <code>media.discordapp.net</code> ou <code>media.tenor.com</code></li>
+          </ol>
+        </div>
       </div>
 
-      <!-- Discord Channels -->
+      <!-- ── SPOTIFY CREDENTIALS ── -->
+      <div class="settings-section">
+        <h3>Spo<span>tify API</span></h3>
+        <p>Credenciais para o auto-fetch dos links. Usa a conta com Premium se quiseres trocar.</p>
+        <div class="spotify-creds-fields">
+          <div class="field-group">
+            <label class="field-label">Client ID</label>
+            <input class="field-input" type="text" id="spotify-client-id" placeholder="466f8a2cdf…">
+          </div>
+          <div class="field-group">
+            <label class="field-label">Client Secret</label>
+            <input class="field-input" type="password" id="spotify-client-secret" placeholder="••••••••••••">
+          </div>
+        </div>
+        <button class="settings-save" id="btn-save-spotify-creds">Save Credentials</button>
+        <div class="connection-result" id="spotify-creds-result"></div>
+
+        <div class="setup-guide">
+          <div class="setup-guide-title">Como obter as credenciais</div>
+          <ol class="setup-guide">
+            <li>Vai a <a href="https://developer.spotify.com/dashboard" target="_blank">developer.spotify.com/dashboard</a></li>
+            <li>Cria uma app ou abre a existente <strong>Kira Vault</strong></li>
+            <li>Copia o <strong>Client ID</strong> e o <strong>Client Secret</strong></li>
+            <li>Em <strong>Redirect URIs</strong> certifica que tens: <code>https://kira-discord-proxy.ghoullkira.workers.dev/spotify/callback</code></li>
+            <li>Para usar a conta Premium: faz login nessa conta no Spotify e obtém as credenciais dessa app</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ── CHANNELS ── -->
       <div class="settings-section">
         <h3>Chan<span>nels</span></h3>
-        <p>Discord channel IDs used for backup logging.</p>
-        <div class="channel-list">
-          <div class="channel-row"><span class="channel-key">links</span><span class="channel-val">1493193077765181550</span></div>
-          <div class="channel-row"><span class="channel-key">notes</span><span class="channel-val">1493193123336028170</span></div>
-          <div class="channel-row"><span class="channel-key">files</span><span class="channel-val">1493193181544845454</span></div>
-          <div class="channel-row"><span class="channel-key">ideas</span><span class="channel-val">1493193239551934515</span></div>
-          <div class="channel-row"><span class="channel-key">code</span><span class="channel-val">1493995845048078358</span></div>
-          <div class="channel-row"><span class="channel-key">shorts</span><span class="channel-val">1493995983078555678</span></div>
-          <div class="channel-row"><span class="channel-key">bg</span><span class="channel-val">1493580916055085147</span></div>
-          <div class="channel-row"><span class="channel-key">profile</span><span class="channel-val">1493563959423537314</span></div>
-          <div class="channel-row"><span class="channel-key">socials</span><span class="channel-val">1493640135642710127</span></div>
-          <div class="channel-row"><span class="channel-key">cv</span><span class="channel-val">1493640171722379264</span></div>
-        </div>
-        <button class="test-btn" id="btn-test-connection" style="margin-top:1.25rem">Test Connection</button>
+        <p>Channels do Discord para backup de conteúdo. Podes adicionar, editar e remover.</p>
+        <div class="channel-editor-list" id="channel-editor-list"></div>
+        <button class="btn-add-channel" id="btn-add-channel">+ Adicionar channel</button>
+        <button class="settings-save" id="btn-save-channels" style="margin-top:1rem">Save Channels</button>
+        <div class="connection-result" id="channels-result"></div>
+        <button class="test-btn" id="btn-test-connection" style="margin-top:.75rem">Test Connection</button>
         <div class="connection-result" id="connection-result"></div>
+
+        <div class="setup-guide">
+          <div class="setup-guide-title">Como obter um Channel ID</div>
+          <ol class="setup-guide">
+            <li>No Discord, vai a <strong>Configurações → Avançado → Activa Modo de Programador</strong></li>
+            <li>Clica com botão direito no channel → <strong>Copiar ID do Channel</strong></li>
+            <li>O label é o nome que queres dar (ex: <code>music</code>, <code>notas</code>)</li>
+            <li>A página indica onde este channel é usado para backup</li>
+          </ol>
+        </div>
       </div>
 
-      <!-- Theme — full width -->
+      <!-- ── THEME ── -->
       <div class="settings-section settings-section--full">
         <h3>Theme <span>Editor</span></h3>
         <p>Changes preview live — save to persist across all devices.</p>
         <div class="theme-grid">
-          <div class="theme-field"><label>Primary Gold</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-gold-picker" data-target="theme-gold" value="#c9a84c"><input class="field-input theme-color-input" type="text" id="theme-gold" value="#c9a84c" placeholder="#c9a84c"></div></div>
-          <div class="theme-field"><label>Gold Light</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-gold-light-picker" data-target="theme-gold-light" value="#e8d08a"><input class="field-input theme-color-input" type="text" id="theme-gold-light" value="#e8d08a" placeholder="#e8d08a"></div></div>
-          <div class="theme-field"><label>Gold Dim</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-gold-dim-picker" data-target="theme-gold-dim" value="#a07c30"><input class="field-input theme-color-input" type="text" id="theme-gold-dim" value="#a07c30" placeholder="#a07c30"></div></div>
-          <div class="theme-field"><label>Background</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-bg-picker" data-target="theme-bg" value="#080604"><input class="field-input theme-color-input" type="text" id="theme-bg" value="#080604" placeholder="#080604"></div></div>
-          <div class="theme-field"><label>Surface</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-surface-picker" data-target="theme-surface" value="#0f0c07"><input class="field-input theme-color-input" type="text" id="theme-surface" value="#0f0c07" placeholder="#0f0c07"></div></div>
-          <div class="theme-field"><label>Text</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-text-picker" data-target="theme-text" value="#e8dcc8"><input class="field-input theme-color-input" type="text" id="theme-text" value="#e8dcc8" placeholder="#e8dcc8"></div></div>
-          <div class="theme-field"><label>Text Dim</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-text-dim-picker" data-target="theme-text-dim" value="#9a8860"><input class="field-input theme-color-input" type="text" id="theme-text-dim" value="#9a8860" placeholder="#9a8860"></div></div>
+          <div class="theme-field"><label>Primary Gold</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-gold-picker" data-target="theme-gold" value="#c9a84c"><input class="field-input theme-color-input" type="text" id="theme-gold" value="#c9a84c"></div></div>
+          <div class="theme-field"><label>Gold Light</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-gold-light-picker" data-target="theme-gold-light" value="#e8d08a"><input class="field-input theme-color-input" type="text" id="theme-gold-light" value="#e8d08a"></div></div>
+          <div class="theme-field"><label>Gold Dim</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-gold-dim-picker" data-target="theme-gold-dim" value="#a07c30"><input class="field-input theme-color-input" type="text" id="theme-gold-dim" value="#a07c30"></div></div>
+          <div class="theme-field"><label>Background</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-bg-picker" data-target="theme-bg" value="#080604"><input class="field-input theme-color-input" type="text" id="theme-bg" value="#080604"></div></div>
+          <div class="theme-field"><label>Surface</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-surface-picker" data-target="theme-surface" value="#0f0c07"><input class="field-input theme-color-input" type="text" id="theme-surface" value="#0f0c07"></div></div>
+          <div class="theme-field"><label>Text</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-text-picker" data-target="theme-text" value="#e8dcc8"><input class="field-input theme-color-input" type="text" id="theme-text" value="#e8dcc8"></div></div>
+          <div class="theme-field"><label>Text Dim</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-text-dim-picker" data-target="theme-text-dim" value="#9a8860"><input class="field-input theme-color-input" type="text" id="theme-text-dim" value="#9a8860"></div></div>
           <div class="theme-field"><label>Background Image URL</label><input class="field-input" type="url" id="theme-bg-url" placeholder="https://i.imgur.com/…"></div>
         </div>
         <div class="theme-field" style="margin-top:1rem;max-width:360px">
@@ -697,6 +558,15 @@
           <button class="test-btn" id="btn-reset-theme">Reset Default</button>
         </div>
         <div class="connection-result" id="theme-result"></div>
+
+        <div class="setup-guide" style="margin-top:1.5rem">
+          <div class="setup-guide-title">Background Image</div>
+          <ol class="setup-guide">
+            <li>Upload a imagem para o <a href="https://imgur.com/upload" target="_blank">Imgur</a> ou outro host</li>
+            <li>Copia o link directo da imagem (deve terminar em <code>.jpg</code>, <code>.png</code>, <code>.webp</code>)</li>
+            <li>Cola no campo acima e ajusta a opacidade</li>
+          </ol>
+        </div>
       </div>
 
     </div>
@@ -705,7 +575,7 @@
 
 </div><!-- #app -->
 
-<!-- MODAL: ADD SHORT -->
+<!-- MODAL: SHORT -->
 <div class="modal-backdrop" id="modal-short">
   <div class="modal">
     <div class="modal-title">Add Scroll</div>
@@ -725,7 +595,7 @@
   </div>
 </div>
 
-<!-- MODAL: ADD VAULT ITEM -->
+<!-- MODAL: VAULT -->
 <div class="modal-backdrop" id="modal-vault">
   <div class="modal">
     <div class="modal-title">New Chronicle Entry</div>
