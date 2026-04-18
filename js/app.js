@@ -8,16 +8,11 @@ const API = {
   async del(p)    { return (await fetch(WORKER + p, { method:'DELETE', headers: this.h() })).json(); }
 };
 
-let profile = {};
-let theme   = {};
-let isOwner = false;
-let vaultItems = [];
-let shorts  = [];
-let socials = [];
-let vaultFilter = 'all';
-let vaultType   = 'link';
-// playlist rows state for setup
-let playlistRows = [];
+let profile = {}, theme = {}, isOwner = false;
+let vaultItems = [], shorts = [], socials = [];
+let vaultFilter = 'all', vaultType = 'link';
+let musicData = { themeSong: null, playlists: [] };
+let channelRows = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
   setupNav();
@@ -25,6 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   setupVaultModal();
   setupShortModal();
   setupSettingsListeners();
+  setupMusicDropZones();
   applyStoredTheme();
 
   const tok = sessionStorage.getItem('kira_token');
@@ -45,15 +41,9 @@ async function loadPublic() {
   try {
     const r = await API.get('/public');
     if (!r.ok) { setStatus('error'); return; }
-    profile    = r.profile || {};
-    theme      = r.theme   || {};
-    vaultItems = r.items   || [];
-    shorts     = r.shorts  || [];
-    socials    = r.socials || [];
-    applyProfile();
-    applyTheme(theme);
-    applyPageVisibility();
-    renderAll();
+    profile = r.profile || {}; theme = r.theme || {};
+    vaultItems = r.items || []; shorts = r.shorts || []; socials = r.socials || [];
+    applyProfile(); applyTheme(theme); applyPageVisibility(); renderAll();
     setStatus('connected');
   } catch(e) { setStatus('error'); }
 }
@@ -88,12 +78,11 @@ function goTo(page) {
 }
 
 function applyPageVisibility() {
-  const pages = ['shorts','vault','socials','curriculum','music'];
-  pages.forEach(p => {
+  ['shorts','vault','socials','curriculum','music'].forEach(p => {
     const key = 'show' + p.charAt(0).toUpperCase() + p.slice(1);
     const show = isOwner || profile[key] !== false;
-    const navBtn = document.querySelector(`.nav-links button[data-page="${p}"]`);
-    if (navBtn) navBtn.style.display = show ? '' : 'none';
+    const btn = document.querySelector(`.nav-links button[data-page="${p}"]`);
+    if (btn) btn.style.display = show ? '' : 'none';
   });
 }
 
@@ -111,13 +100,11 @@ function openLoginModal() {
   const s = document.getElementById('login-screen');
   if (s) { s.style.display = 'flex'; document.getElementById('login-user')?.focus(); }
 }
-
 function closeLoginModal() {
   const s = document.getElementById('login-screen');
   if (s) s.style.display = 'none';
   setLoginMsg('');
 }
-
 function setLoginMsg(msg, ok) {
   const el = document.getElementById('login-result');
   if (!el) return;
@@ -139,9 +126,7 @@ async function doLogin() {
       body: JSON.stringify({ username: user, password: pass })
     })).json();
     if (!r.ok) { setLoginMsg('Wrong credentials.'); return; }
-    API.token = r.token;
-    profile = r.profile || {};
-    theme   = r.theme   || {};
+    API.token = r.token; profile = r.profile || {}; theme = r.theme || {};
     sessionStorage.setItem('kira_token', r.token);
     sessionStorage.setItem('kira_profile', JSON.stringify(profile));
     sessionStorage.setItem('kira_theme', JSON.stringify(theme));
@@ -154,56 +139,40 @@ async function doLogin() {
 function doLogout() {
   API.token = null; isOwner = false;
   profile = {}; theme = {}; vaultItems = []; shorts = []; socials = [];
-  sessionStorage.clear();
-  location.reload();
+  sessionStorage.clear(); location.reload();
 }
 
 async function enterOwner(fetchData) {
   isOwner = true;
   document.querySelectorAll('.owner-only').forEach(el => el.style.display = '');
-  applyProfile();
-  applyTheme(theme);
+  applyProfile(); applyTheme(theme);
 
   if (fetchData) {
     setStatus('connecting');
     try {
       const r = await API.get('/data');
       if (!r.ok) { setStatus('error'); return; }
-      profile    = r.profile || {};
-      theme      = r.theme   || {};
-      vaultItems = r.items   || [];
-      shorts     = r.shorts  || [];
-      socials    = r.socials || [];
+      profile = r.profile || {}; theme = r.theme || {};
+      vaultItems = r.items || []; shorts = r.shorts || []; socials = r.socials || [];
       sessionStorage.setItem('kira_profile', JSON.stringify(profile));
       sessionStorage.setItem('kira_theme', JSON.stringify(theme));
     } catch(e) { setStatus('error'); return; }
   } else {
     const r = await API.get('/data');
     if (r.ok) {
-      profile    = r.profile || {};
-      theme      = r.theme   || {};
-      vaultItems = r.items   || [];
-      shorts     = r.shorts  || [];
-      socials    = r.socials || [];
+      profile = r.profile || {}; theme = r.theme || {};
+      vaultItems = r.items || []; shorts = r.shorts || []; socials = r.socials || [];
       sessionStorage.setItem('kira_profile', JSON.stringify(profile));
       sessionStorage.setItem('kira_theme', JSON.stringify(theme));
     }
   }
 
-  applyProfile();
-  applyTheme(theme);
-  applyPageVisibility();
-  populateSettings();
-  renderAll();
-  setStatus('connected');
+  applyProfile(); applyTheme(theme); applyPageVisibility();
+  await populateSettings();
+  renderAll(); setStatus('connected');
 }
 
-function renderAll() {
-  renderVault();
-  renderShorts();
-  renderSocials();
-  updateStats();
-}
+function renderAll() { renderVault(); renderShorts(); renderSocials(); updateStats(); }
 
 function applyProfile() {
   const bgEl = document.querySelector('.bg-img');
@@ -235,6 +204,7 @@ function applyStoredTheme() {
   try { const t = localStorage.getItem('kira_theme'); if (t) applyTheme(JSON.parse(t)); } catch(e) {}
 }
 
+/* ── SETTINGS ──────────────────────────────────────────────────── */
 function setupSettingsListeners() {
   document.getElementById('btn-save-profile')?.addEventListener('click', saveProfile);
   document.getElementById('btn-save-theme')?.addEventListener('click', saveTheme);
@@ -242,15 +212,17 @@ function setupSettingsListeners() {
   document.getElementById('btn-test-connection')?.addEventListener('click', testConnection);
   document.getElementById('btn-add-social')?.addEventListener('click', addSocial);
   document.getElementById('btn-save-music')?.addEventListener('click', saveMusic);
-  document.getElementById('btn-add-playlist-row')?.addEventListener('click', () => {
-    playlistRows.push({ name: '', url: '', img: '' });
-    renderPlaylistRows();
+  document.getElementById('btn-save-channels')?.addEventListener('click', saveChannels);
+  document.getElementById('btn-add-channel')?.addEventListener('click', () => {
+    channelRows.push({ id: '', label: '', page: '' });
+    renderChannelRows();
   });
+  document.getElementById('btn-save-spotify-creds')?.addEventListener('click', saveSpotifyCreds);
 
   document.querySelectorAll('.theme-color-input').forEach(inp => {
     inp.addEventListener('input', function() {
-      const picker = document.getElementById(this.id + '-picker');
-      if (picker) picker.value = this.value;
+      const pk = document.getElementById(this.id + '-picker');
+      if (pk) pk.value = this.value;
       livePreviewTheme();
     });
   });
@@ -261,87 +233,21 @@ function setupSettingsListeners() {
       livePreviewTheme();
     });
   });
-  const opSlider = document.getElementById('theme-bg-opacity');
-  if (opSlider) opSlider.addEventListener('input', function() {
+  const op = document.getElementById('theme-bg-opacity');
+  if (op) op.addEventListener('input', function() {
     const lbl = document.getElementById('theme-bg-opacity-val');
     if (lbl) lbl.textContent = parseFloat(this.value).toFixed(2);
     livePreviewTheme();
   });
 }
 
-function renderPlaylistRows() {
-  const container = document.getElementById('playlist-rows');
-  if (!container) return;
-  if (!playlistRows.length) { container.innerHTML = ''; return; }
-  container.innerHTML = playlistRows.map((row, i) => `
-    <div class="playlist-row">
-      <input class="field-input" type="text" placeholder="Nome" value="${esc(row.name)}" data-pi="${i}" data-pf="name">
-      <input class="field-input" type="url"  placeholder="Link Spotify" value="${esc(row.url)}" data-pi="${i}" data-pf="url">
-      <input class="field-input" type="url"  placeholder="URL imagem (opcional)" value="${esc(row.img)}" data-pi="${i}" data-pf="img">
-      <button class="playlist-row-del" data-pi="${i}">✕</button>
-    </div>
-  `).join('');
-  container.querySelectorAll('input[data-pi]').forEach(inp => {
-    inp.addEventListener('input', function() {
-      playlistRows[+this.dataset.pi][this.dataset.pf] = this.value;
-    });
-  });
-  container.querySelectorAll('.playlist-row-del').forEach(btn => {
-    btn.addEventListener('click', function() {
-      playlistRows.splice(+this.dataset.pi, 1);
-      renderPlaylistRows();
-    });
-  });
-}
-
-async function saveMusic() {
-  if (!isOwner) return;
-  const el = document.getElementById('music-result');
-  showResult(el, 'Saving…', '');
-  const themeSong = {
-    title:  document.getElementById('music-song-title')?.value.trim()  || '',
-    artist: document.getElementById('music-song-artist')?.value.trim() || '',
-    url:    document.getElementById('music-song-url')?.value.trim()    || '',
-    img:    document.getElementById('music-song-img')?.value.trim()    || ''
-  };
-  const playlists = playlistRows.filter(r => r.name || r.url);
-  try {
-    const r = await API.post('/music', {
-      themeSong: themeSong.title || themeSong.url ? themeSong : null,
-      playlists
-    });
-    showResult(el, r.ok ? '✅ Saved.' : '❌ Failed.', r.ok ? 'ok' : 'err');
-  } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
-}
-
-function livePreviewTheme() { applyTheme(readThemeForm()); }
-
-function readThemeForm() {
-  const g = id => document.getElementById(id)?.value || '';
-  return {
-    gold:      g('theme-gold')      || '#c9a84c',
-    goldLight: g('theme-gold-light')|| '#e8d08a',
-    goldDim:   g('theme-gold-dim')  || '#a07c30',
-    bg:        g('theme-bg')        || '#080604',
-    surface:   g('theme-surface')   || '#0f0c07',
-    text:      g('theme-text')      || '#e8dcc8',
-    textDim:   g('theme-text-dim')  || '#9a8860',
-    bgUrl:     g('theme-bg-url'),
-    bgOpacity: parseFloat(document.getElementById('theme-bg-opacity')?.value || '0.45')
-  };
-}
-
-function populateSettings() {
+async function populateSettings() {
   const sv = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined) el.value = v; };
-  sv('cfg-name',    profile.name);
-  sv('cfg-tagline', profile.tagline);
-
-  const pages = ['Shorts','Vault','Socials','Curriculum','Music'];
-  pages.forEach(p => {
+  sv('cfg-name', profile.name); sv('cfg-tagline', profile.tagline);
+  ['Shorts','Vault','Socials','Curriculum','Music'].forEach(p => {
     const cb = document.getElementById('show-' + p.toLowerCase());
     if (cb) cb.checked = profile['show' + p] !== false;
   });
-
   if (theme.gold)       { sv('theme-gold',       theme.gold);       const pk = document.getElementById('theme-gold-picker');       if (pk) pk.value = theme.gold; }
   if (theme.goldLight)  { sv('theme-gold-light',  theme.goldLight);  const pk = document.getElementById('theme-gold-light-picker'); if (pk) pk.value = theme.goldLight; }
   if (theme.goldDim)    { sv('theme-gold-dim',    theme.goldDim);    const pk = document.getElementById('theme-gold-dim-picker');   if (pk) pk.value = theme.goldDim; }
@@ -359,20 +265,258 @@ function populateSettings() {
   const sea = document.getElementById('socials-edit-area'); if (sea) sea.style.display = '';
   const cea = document.getElementById('cv-edit-area');      if (cea) cea.style.display = '';
 
-  // Load music settings
-  API.get('/music').then(r => {
-    if (!r.ok) return;
-    if (r.themeSong) {
-      sv('music-song-title',  r.themeSong.title);
-      sv('music-song-artist', r.themeSong.artist);
-      sv('music-song-url',    r.themeSong.url);
-      sv('music-song-img',    r.themeSong.img);
+  // Load music
+  try {
+    const r = await API.get('/music');
+    if (r.ok) {
+      musicData = { themeSong: r.themeSong || null, playlists: r.playlists || [] };
+      renderMusicSetup();
     }
-    playlistRows = (r.playlists || []).map(p => ({ name: p.name || '', url: p.url || '', img: p.img || '' }));
-    renderPlaylistRows();
-  }).catch(() => {});
+  } catch(e) {}
+
+  // Load channels
+  try {
+    const r = await API.get('/channels');
+    if (r.ok) { channelRows = r.channels || []; renderChannelRows(); }
+  } catch(e) {}
 }
 
+/* ── MUSIC DROP ZONES ──────────────────────────────────────────── */
+function setupMusicDropZones() {
+  setupDropZone('drop-theme', handleThemeDrop);
+  setupDropZone('drop-playlist', handlePlaylistDrop);
+}
+
+function setupDropZone(id, handler) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
+  el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+  el.addEventListener('drop', e => {
+    e.preventDefault(); el.classList.remove('drag-over');
+    const url = e.dataTransfer.getData('text/plain') || e.dataTransfer.getData('text/uri-list');
+    if (url) handler(url.trim());
+  });
+  el.addEventListener('click', () => {
+    const inp = prompt('Cola o link do Spotify:');
+    if (inp) handler(inp.trim());
+  });
+}
+
+async function handleThemeDrop(url) {
+  if (!isOwner) return;
+  const prev = document.getElementById('theme-preview');
+  if (prev) prev.innerHTML = '<div style="padding:.5rem 0;font-family:var(--serif);font-size:.8rem;color:var(--gold-dim)">A carregar… <span class="spin"></span></div>';
+  try {
+    const r = await API.post('/spotify/lookup', { url });
+    if (!r.ok) { toast('❌ ' + r.error); if (prev) prev.innerHTML = ''; return; }
+    musicData.themeSong = { title: r.title || r.name, artist: r.artist || '', img: r.img, url: r.url, gif: musicData.themeSong?.gif || '' };
+    renderMusicSetup();
+    toast('✦ Theme song adicionado.');
+  } catch(e) { toast('Erro: ' + e.message); if (prev) prev.innerHTML = ''; }
+}
+
+async function handlePlaylistDrop(url) {
+  if (!isOwner) return;
+  const list = document.getElementById('playlist-setup-list');
+  if (list) {
+    const tmp = document.createElement('div');
+    tmp.style.cssText = 'padding:.5rem 0;font-family:var(--serif);font-size:.8rem;color:var(--gold-dim)';
+    tmp.innerHTML = 'A carregar… <span class="spin"></span>';
+    list.appendChild(tmp);
+  }
+  try {
+    const r = await API.post('/spotify/lookup', { url });
+    if (!r.ok) { toast('❌ ' + r.error); renderMusicSetup(); return; }
+    musicData.playlists.push({ name: r.name || r.title, img: r.img, url: r.url, gif: '' });
+    renderMusicSetup();
+    toast('✦ Playlist adicionada.');
+  } catch(e) { toast('Erro: ' + e.message); renderMusicSetup(); }
+}
+
+function renderMusicSetup() {
+  // Theme preview
+  const prev = document.getElementById('theme-preview');
+  const gifGroup = document.getElementById('theme-gif-group');
+  if (prev) {
+    if (musicData.themeSong?.title) {
+      const s = musicData.themeSong;
+      prev.innerHTML = `<div class="music-preview-card">
+        ${s.img ? `<img class="music-preview-img" src="${esc(s.img)}" alt="">` : '<div class="music-preview-img" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem">♪</div>'}
+        <div class="music-preview-info">
+          <div class="music-preview-title">${esc(s.title)}</div>
+          ${s.artist ? `<div class="music-preview-artist">${esc(s.artist)}</div>` : ''}
+        </div>
+        <button class="music-preview-del" id="btn-del-theme">✕</button>
+      </div>`;
+      document.getElementById('btn-del-theme')?.addEventListener('click', () => {
+        musicData.themeSong = null; renderMusicSetup();
+      });
+      if (gifGroup) { gifGroup.style.display = ''; document.getElementById('music-song-gif').value = s.gif || ''; }
+    } else {
+      prev.innerHTML = '';
+      if (gifGroup) gifGroup.style.display = 'none';
+    }
+  }
+
+  // Playlists
+  const list = document.getElementById('playlist-setup-list');
+  if (!list) return;
+  if (!musicData.playlists.length) { list.innerHTML = ''; return; }
+  list.innerHTML = musicData.playlists.map((p, i) => `
+    <div class="playlist-setup-item">
+      ${p.img ? `<img class="playlist-setup-thumb" src="${esc(p.img)}" alt="">` : '<div class="playlist-setup-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1rem">🎧</div>'}
+      <div class="playlist-setup-name">${esc(p.name)}</div>
+      <input class="playlist-gif-input" type="url" placeholder="GIF URL (opcional)" value="${esc(p.gif||'')}" data-pi="${i}">
+      <button class="playlist-setup-del" data-pi="${i}">✕</button>
+    </div>
+  `).join('');
+  list.querySelectorAll('.playlist-gif-input').forEach(inp => {
+    inp.addEventListener('input', function() { musicData.playlists[+this.dataset.pi].gif = this.value; });
+  });
+  list.querySelectorAll('.playlist-setup-del').forEach(btn => {
+    btn.addEventListener('click', function() {
+      musicData.playlists.splice(+this.dataset.pi, 1); renderMusicSetup();
+    });
+  });
+}
+
+async function saveMusic() {
+  if (!isOwner) return;
+  const el = document.getElementById('music-result');
+  showResult(el, 'Saving…', '');
+  const gifVal = document.getElementById('music-song-gif')?.value.trim() || '';
+  if (musicData.themeSong) musicData.themeSong.gif = gifVal;
+  try {
+    const r = await API.post('/music', { themeSong: musicData.themeSong, playlists: musicData.playlists });
+    showResult(el, r.ok ? '✅ Saved.' : '❌ Failed.', r.ok ? 'ok' : 'err');
+  } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
+}
+
+/* ── CHANNELS ──────────────────────────────────────────────────── */
+function renderChannelRows() {
+  const container = document.getElementById('channel-editor-list');
+  if (!container) return;
+  if (!channelRows.length) { container.innerHTML = ''; return; }
+  container.innerHTML = channelRows.map((ch, i) => `
+    <div class="channel-editor-row">
+      <span class="channel-editor-drag">⠿</span>
+      <input type="text" class="field-input" placeholder="Label (ex: music)" value="${esc(ch.label)}" data-ci="${i}" data-cf="label">
+      <input type="text" class="field-input" placeholder="Channel ID" value="${esc(ch.id)}" data-ci="${i}" data-cf="id" style="font-family:var(--mono);font-size:.65rem">
+      <button class="channel-editor-del" data-ci="${i}">✕</button>
+    </div>
+  `).join('');
+  container.querySelectorAll('input[data-ci]').forEach(inp => {
+    inp.addEventListener('input', function() { channelRows[+this.dataset.ci][this.dataset.cf] = this.value; });
+  });
+  container.querySelectorAll('.channel-editor-del').forEach(btn => {
+    btn.addEventListener('click', function() { channelRows.splice(+this.dataset.ci, 1); renderChannelRows(); });
+  });
+}
+
+async function saveChannels() {
+  if (!isOwner) return;
+  const el = document.getElementById('channels-result');
+  showResult(el, 'Saving…', '');
+  try {
+    const r = await API.post('/channels', { channels: channelRows });
+    showResult(el, r.ok ? '✅ Saved.' : '❌ Failed.', r.ok ? 'ok' : 'err');
+  } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
+}
+
+async function saveSpotifyCreds() {
+  if (!isOwner) return;
+  const el = document.getElementById('spotify-creds-result');
+  const clientId     = document.getElementById('spotify-client-id')?.value.trim()     || '';
+  const clientSecret = document.getElementById('spotify-client-secret')?.value.trim() || '';
+  if (!clientId && !clientSecret) { showResult(el, '❌ Fill at least one field.', 'err'); return; }
+  showResult(el, 'Saving…', '');
+  try {
+    const r = await API.post('/spotify/credentials', { clientId, clientSecret });
+    showResult(el, r.ok ? '✅ Saved.' : '❌ Failed.', r.ok ? 'ok' : 'err');
+  } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
+}
+
+/* ── MUSIC PAGE ────────────────────────────────────────────────── */
+async function loadMusic() {
+  const container = document.getElementById('music-content');
+  if (!container) return;
+  container.innerHTML = '<div class="music-empty">Loading…</div>';
+  try {
+    const r = await API.get('/music');
+    if (!r.ok) { container.innerHTML = '<div class="music-empty">Could not load music.</div>'; return; }
+    renderMusic(r, container);
+  } catch(e) { container.innerHTML = '<div class="music-empty">Connection error.</div>'; }
+}
+
+function renderMusic(data, container) {
+  let html = '';
+
+  if (data.themeSong?.title || data.themeSong?.url) {
+    const s = data.themeSong;
+    const coverHtml = s.img
+      ? `<img class="music-theme-cover" src="${esc(s.img)}" alt="${esc(s.title||'')}" onerror="this.outerHTML='<div class=music-theme-cover-placeholder>♪</div>'">`
+      : `<div class="music-theme-cover-placeholder">♪</div>`;
+    const gifBg = s.gif
+      ? `<div class="music-theme-bg"><img src="${esc(s.gif)}" alt=""></div>`
+      : `<div class="music-theme-bg" style="background:linear-gradient(135deg,#0a0704 0%,#1a1006 100%)"></div>`;
+
+    html += `
+    <div class="music-theme-wrap">
+      <div class="music-theme-eyebrow">Theme Song</div>
+      <a class="music-theme-card" href="${esc(s.url||'#')}" target="_blank" rel="noopener">
+        <span class="mc mc-tr"></span>
+        <span class="mc mc-bl"></span>
+        ${gifBg}
+        <div class="music-theme-overlay"></div>
+        <div class="music-theme-content">
+          ${coverHtml}
+          <div class="music-theme-info">
+            <div class="music-theme-label">
+              <span class="music-eq"><span></span><span></span><span></span><span></span></span>
+              Now Playing
+            </div>
+            <div class="music-theme-title">${esc(s.title||'Untitled')}</div>
+            ${s.artist ? `<div class="music-theme-artist">${esc(s.artist)}</div>` : ''}
+            <div class="music-theme-cta">
+              <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+              Open in Spotify
+            </div>
+          </div>
+        </div>
+      </a>
+    </div>`;
+  }
+
+  if (data.playlists?.length) {
+    html += `
+    <div class="music-playlists-section">
+      <div class="music-section-title">Playlists</div>
+      <div class="music-playlists-grid">
+        ${data.playlists.map(p => {
+          const gifLayer = p.gif ? `<div class="music-playlist-gif"><img src="${esc(p.gif)}" alt=""></div>` : '';
+          const coverLayer = p.img ? `<img class="music-playlist-cover" src="${esc(p.img)}" alt="${esc(p.name||'')}" onerror="this.style.display='none'">` : '';
+          const placeholder = (!p.img && !p.gif) ? `<div class="music-playlist-placeholder">♫</div>` : '';
+          return `
+          <a class="music-playlist-card" href="${esc(p.url||'#')}" target="_blank" rel="noopener">
+            <div class="music-playlist-imgwrap">
+              ${gifLayer}${coverLayer}${placeholder}
+              <div class="music-playlist-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+            </div>
+            <div class="music-playlist-info">
+              <div class="music-playlist-name">${esc(p.name||'Playlist')}</div>
+              <div class="music-playlist-meta">Playlist · Spotify</div>
+            </div>
+          </a>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  container.innerHTML = html || '<div class="music-empty">No music configured yet. Go to Setup → Music.</div>';
+}
+
+/* ── PROFILE / THEME SAVE ──────────────────────────────────────── */
 async function saveProfile() {
   if (!isOwner) return;
   const el = document.getElementById('profile-result');
@@ -382,18 +526,14 @@ async function saveProfile() {
     name:    document.getElementById('cfg-name')?.value.trim()    || profile.name    || 'Kira',
     tagline: document.getElementById('cfg-tagline')?.value.trim() || profile.tagline || ''
   };
-  pages.forEach(p => {
-    const cb = document.getElementById('show-' + p.toLowerCase());
-    if (cb) updated['show' + p] = cb.checked;
-  });
+  pages.forEach(p => { const cb = document.getElementById('show-' + p.toLowerCase()); if (cb) updated['show' + p] = cb.checked; });
   if (profile.bgUrl) updated.bgUrl = profile.bgUrl;
   try {
     const r = await API.post('/profile', updated);
     if (!r.ok) { showResult(el, '❌ Failed.', 'err'); return; }
     profile = r.profile || { ...profile, ...updated };
     sessionStorage.setItem('kira_profile', JSON.stringify(profile));
-    applyProfile();
-    applyPageVisibility();
+    applyProfile(); applyPageVisibility();
     showResult(el, '✅ Saved.', 'ok');
   } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
 }
@@ -406,28 +546,35 @@ async function saveTheme() {
   try {
     const r = await API.post('/theme', t);
     if (!r.ok) { showResult(el, '❌ Failed.', 'err'); return; }
-    theme = r.theme || t;
-    applyTheme(theme);
+    theme = r.theme || t; applyTheme(theme);
     sessionStorage.setItem('kira_theme', JSON.stringify(theme));
-    if (t.bgUrl) {
-      profile.bgUrl = t.bgUrl;
-      sessionStorage.setItem('kira_profile', JSON.stringify(profile));
-      applyProfile();
-    }
+    if (t.bgUrl) { profile.bgUrl = t.bgUrl; sessionStorage.setItem('kira_profile', JSON.stringify(profile)); applyProfile(); }
     showResult(el, '✅ Theme saved.', 'ok');
   } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
+}
+
+function livePreviewTheme() { applyTheme(readThemeForm()); }
+function readThemeForm() {
+  const g = id => document.getElementById(id)?.value || '';
+  return {
+    gold: g('theme-gold')||'#c9a84c', goldLight: g('theme-gold-light')||'#e8d08a',
+    goldDim: g('theme-gold-dim')||'#a07c30', bg: g('theme-bg')||'#080604',
+    surface: g('theme-surface')||'#0f0c07', text: g('theme-text')||'#e8dcc8',
+    textDim: g('theme-text-dim')||'#9a8860', bgUrl: g('theme-bg-url'),
+    bgOpacity: parseFloat(document.getElementById('theme-bg-opacity')?.value || '0.45')
+  };
 }
 
 function resetTheme() {
   const d = { gold:'#c9a84c', goldLight:'#e8d08a', goldDim:'#a07c30', bg:'#080604', surface:'#0f0c07', text:'#e8dcc8', textDim:'#9a8860', bgOpacity:0.45 };
   const sv = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
-  sv('theme-gold',       d.gold);       const pk1 = document.getElementById('theme-gold-picker');       if (pk1) pk1.value = d.gold;
-  sv('theme-gold-light', d.goldLight);  const pk2 = document.getElementById('theme-gold-light-picker'); if (pk2) pk2.value = d.goldLight;
-  sv('theme-gold-dim',   d.goldDim);    const pk3 = document.getElementById('theme-gold-dim-picker');   if (pk3) pk3.value = d.goldDim;
-  sv('theme-bg',         d.bg);         const pk4 = document.getElementById('theme-bg-picker');         if (pk4) pk4.value = d.bg;
-  sv('theme-surface',    d.surface);    const pk5 = document.getElementById('theme-surface-picker');    if (pk5) pk5.value = d.surface;
-  sv('theme-text',       d.text);       const pk6 = document.getElementById('theme-text-picker');       if (pk6) pk6.value = d.text;
-  sv('theme-text-dim',   d.textDim);    const pk7 = document.getElementById('theme-text-dim-picker');   if (pk7) pk7.value = d.textDim;
+  sv('theme-gold', d.gold);       const pk1 = document.getElementById('theme-gold-picker');       if (pk1) pk1.value = d.gold;
+  sv('theme-gold-light', d.goldLight); const pk2 = document.getElementById('theme-gold-light-picker'); if (pk2) pk2.value = d.goldLight;
+  sv('theme-gold-dim', d.goldDim);    const pk3 = document.getElementById('theme-gold-dim-picker');   if (pk3) pk3.value = d.goldDim;
+  sv('theme-bg', d.bg);               const pk4 = document.getElementById('theme-bg-picker');         if (pk4) pk4.value = d.bg;
+  sv('theme-surface', d.surface);     const pk5 = document.getElementById('theme-surface-picker');    if (pk5) pk5.value = d.surface;
+  sv('theme-text', d.text);           const pk6 = document.getElementById('theme-text-picker');       if (pk6) pk6.value = d.text;
+  sv('theme-text-dim', d.textDim);    const pk7 = document.getElementById('theme-text-dim-picker');   if (pk7) pk7.value = d.textDim;
   sv('theme-bg-opacity', d.bgOpacity);
   const lbl = document.getElementById('theme-bg-opacity-val'); if (lbl) lbl.textContent = '0.45';
   applyTheme(d);
@@ -443,6 +590,7 @@ async function testConnection() {
   } catch(e) { showResult(el, '❌ ' + e.message, 'err'); setStatus('error'); }
 }
 
+/* ── VAULT ─────────────────────────────────────────────────────── */
 function setupVaultModal() {
   document.querySelectorAll('.vault-cat').forEach(c =>
     c.addEventListener('click', function() {
@@ -457,9 +605,7 @@ function setupVaultModal() {
   document.querySelectorAll('.type-opt').forEach(b =>
     b.addEventListener('click', function() {
       document.querySelectorAll('.type-opt').forEach(x => x.classList.remove('active'));
-      this.classList.add('active');
-      vaultType = this.dataset.type;
-      updateVaultFields(vaultType);
+      this.classList.add('active'); vaultType = this.dataset.type; updateVaultFields(vaultType);
     })
   );
   document.getElementById('btn-confirm-vault')?.addEventListener('click', addVaultItem);
@@ -469,10 +615,7 @@ function setupVaultModal() {
   const fi = document.getElementById('vault-file-input');
   if (dz && fi) {
     dz.addEventListener('click', () => fi.click());
-    fi.addEventListener('change', function() {
-      const lbl = document.getElementById('vault-file-label');
-      if (lbl && this.files[0]) lbl.textContent = this.files[0].name;
-    });
+    fi.addEventListener('change', function() { const lbl = document.getElementById('vault-file-label'); if (lbl && this.files[0]) lbl.textContent = this.files[0].name; });
   }
 }
 
@@ -480,30 +623,28 @@ function openVaultModal(type) {
   vaultType = type || 'link';
   document.querySelectorAll('.type-opt').forEach(b => b.classList.toggle('active', b.dataset.type === vaultType));
   updateVaultFields(vaultType);
-  ['vault-title','vault-url','vault-content','vault-tags','vault-lang','vault-file-url'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
+  ['vault-title','vault-url','vault-content','vault-tags','vault-lang','vault-file-url'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   const lbl = document.getElementById('vault-file-label'); if (lbl) lbl.textContent = 'Drag & drop or click to browse';
-  const pub = document.getElementById('vault-public');     if (pub) pub.checked = true;
-  const sav = document.getElementById('vault-saving');     if (sav) sav.style.display = 'none';
+  const pub = document.getElementById('vault-public'); if (pub) pub.checked = true;
+  const sav = document.getElementById('vault-saving'); if (sav) sav.style.display = 'none';
   openModal('modal-vault');
 }
 
 function updateVaultFields(type) {
-  const ug = document.getElementById('vault-url-group');    if (ug) ug.style.display  = (type==='note'||type==='idea') ? 'none' : '';
-  const fg = document.getElementById('vault-file-group');   if (fg) fg.style.display  = type==='file' ? '' : 'none';
-  const lg = document.getElementById('vault-lang-group');   if (lg) lg.style.display  = type==='code' ? '' : 'none';
-  const cl = document.getElementById('vault-content-label'); if (cl) cl.textContent   = type==='code' ? 'Code' : 'Content / Notes';
+  const ug = document.getElementById('vault-url-group');   if (ug) ug.style.display  = (type==='note'||type==='idea') ? 'none' : '';
+  const fg = document.getElementById('vault-file-group');  if (fg) fg.style.display  = type==='file' ? '' : 'none';
+  const lg = document.getElementById('vault-lang-group');  if (lg) lg.style.display  = type==='code' ? '' : 'none';
+  const cl = document.getElementById('vault-content-label'); if (cl) cl.textContent  = type==='code' ? 'Code' : 'Content / Notes';
 }
 
 async function addVaultItem() {
   if (!isOwner) return;
-  const titulo   = document.getElementById('vault-title')?.value.trim()    || '';
-  const url      = document.getElementById('vault-url')?.value.trim()      || '';
-  const content  = document.getElementById('vault-content')?.value.trim()  || '';
-  const tags     = document.getElementById('vault-tags')?.value.trim()     || '';
-  const lang     = document.getElementById('vault-lang')?.value.trim()     || '';
-  const fileUrl  = document.getElementById('vault-file-url')?.value.trim() || '';
+  const titulo  = document.getElementById('vault-title')?.value.trim()    || '';
+  const url     = document.getElementById('vault-url')?.value.trim()      || '';
+  const content = document.getElementById('vault-content')?.value.trim()  || '';
+  const tags    = document.getElementById('vault-tags')?.value.trim()     || '';
+  const lang    = document.getElementById('vault-lang')?.value.trim()     || '';
+  const fileUrl = document.getElementById('vault-file-url')?.value.trim() || '';
   const isPublic = document.getElementById('vault-public')?.checked ?? true;
   if (!titulo) { toast('Title is required.'); return; }
   const sav = document.getElementById('vault-saving'); if (sav) sav.style.display = 'block';
@@ -580,6 +721,7 @@ function renderTagSidebar() {
   }));
 }
 
+/* ── SHORTS ────────────────────────────────────────────────────── */
 function setupShortModal() {
   document.getElementById('btn-add-short')?.addEventListener('click', openShortModal);
   document.getElementById('btn-confirm-short')?.addEventListener('click', addShort);
@@ -596,10 +738,10 @@ function openShortModal() {
 
 async function addShort() {
   if (!isOwner) return;
-  const titulo   = document.getElementById('short-title')?.value.trim() || '';
-  const url      = document.getElementById('short-url')?.value.trim()   || '';
-  const cat      = document.getElementById('short-cat')?.value.trim()   || '';
-  const views    = document.getElementById('short-views')?.value.trim() || '';
+  const titulo  = document.getElementById('short-title')?.value.trim() || '';
+  const url     = document.getElementById('short-url')?.value.trim()   || '';
+  const cat     = document.getElementById('short-cat')?.value.trim()   || '';
+  const views   = document.getElementById('short-views')?.value.trim() || '';
   const isPublic = document.getElementById('short-public')?.checked ?? true;
   if (!titulo || !url) { toast('Title and URL required.'); return; }
   const sav = document.getElementById('short-saving'); if (sav) sav.style.display = 'block';
@@ -677,6 +819,7 @@ function renderShorts() {
   }));
 }
 
+/* ── SOCIALS ───────────────────────────────────────────────────── */
 async function addSocial() {
   if (!isOwner) return;
   const platform = document.getElementById('social-platform')?.value.trim() || '';
@@ -691,7 +834,7 @@ async function addSocial() {
       socials.push({ id: r.id, platform, url, handle, icon, isPublic });
       renderSocials();
       ['social-platform','social-url','social-handle','social-icon'].forEach(id => { const f = document.getElementById(id); if (f) f.value = ''; });
-      const el = document.getElementById('social-result'); showResult(el, '✅ Added.', 'ok');
+      showResult(document.getElementById('social-result'), '✅ Added.', 'ok');
     } else toast('Error: ' + (r.error || 'failed'));
   } catch(e) { toast('Error: ' + e.message); }
 }
@@ -736,91 +879,7 @@ function renderSocials() {
   }));
 }
 
-/* ── MUSIC ─────────────────────────────────────────────────────── */
-async function loadMusic() {
-  const container = document.getElementById('music-content');
-  if (!container) return;
-  container.innerHTML = '<div class="music-empty">Loading…</div>';
-  try {
-    const r = await API.get('/music');
-    if (!r.ok) { container.innerHTML = '<div class="music-empty">Could not load music data.</div>'; return; }
-    renderMusic(r, container);
-  } catch(e) {
-    container.innerHTML = `<div class="music-empty">Connection error.</div>`;
-  }
-}
-
-function renderMusic(data, container) {
-  let html = '';
-
-  // Theme Song
-  if (data.themeSong?.title || data.themeSong?.url) {
-    const s = data.themeSong;
-    const href = s.url || '#';
-    const imgHtml = s.img
-      ? `<img class="music-theme-cover" src="${esc(s.img)}" alt="${esc(s.title)}" onerror="this.parentElement.innerHTML='<div style=width:140px;height:140px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:#0a0704>♪</div>'">`
-      : `<div style="width:140px;height:140px;display:flex;align-items:center;justify-content:center;font-size:3rem;background:#0a0704;color:var(--gold-dark)">♪</div>`;
-
-    html += `
-    <div class="music-theme-wrap">
-      <div class="music-theme-eyebrow">Theme Song</div>
-      <a class="music-theme-card" href="${esc(href)}" target="_blank" rel="noopener">
-        <span class="corner tr"></span>
-        <span class="corner br"></span>
-        <div class="music-theme-vinyl">${imgHtml}</div>
-        <div class="music-theme-body">
-          <div class="music-theme-label">
-            <span class="music-eq"><span></span><span></span><span></span><span></span></span>
-            Now Playing
-          </div>
-          <div class="music-theme-title">${esc(s.title || 'Untitled')}</div>
-          ${s.artist ? `<div class="music-theme-artist">${esc(s.artist)}</div>` : ''}
-          <div class="music-theme-cta">
-            <svg viewBox="0 0 24 24"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-            Open in Spotify
-            <svg viewBox="0 0 24 24" style="width:8px;height:8px"><path d="M13 5l7 7-7 7M5 12h15" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
-          </div>
-        </div>
-      </a>
-    </div>`;
-  }
-
-  // Playlists
-  if (data.playlists?.length) {
-    html += `
-    <div class="music-playlists-section">
-      <div class="music-section-title">Playlists</div>
-      <div class="music-playlists-grid">
-        ${data.playlists.map(p => {
-          const imgPart = p.img
-            ? `<img class="music-playlist-img" src="${esc(p.img)}" alt="${esc(p.name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
-            : '';
-          return `
-          <a class="music-playlist-card" href="${esc(p.url || '#')}" target="_blank" rel="noopener">
-            <div class="music-playlist-img-wrap">
-              ${imgPart}
-              <div class="music-playlist-img-placeholder" style="${p.img?'display:none':''}">♫</div>
-              <div class="music-playlist-play">
-                <svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
-              </div>
-            </div>
-            <div class="music-playlist-info">
-              <div class="music-playlist-name">${esc(p.name)}</div>
-              <div class="music-playlist-meta">Playlist · Spotify</div>
-            </div>
-          </a>`;
-        }).join('')}
-      </div>
-    </div>`;
-  }
-
-  if (!html) {
-    html = '<div class="music-empty">No music configured yet.</div>';
-  }
-
-  container.innerHTML = html;
-}
-
+/* ── UTILS ─────────────────────────────────────────────────────── */
 function openModal(id)  { const m = document.getElementById(id); if (m) m.style.display = 'flex'; }
 function closeModal(id) { const m = document.getElementById(id); if (m) m.style.display = 'none'; }
 
@@ -843,8 +902,7 @@ function setStatus(state) {
 
 function showResult(el, msg, type) {
   if (!el) return;
-  el.textContent = msg;
-  el.style.display = msg ? 'block' : 'none';
+  el.textContent = msg; el.style.display = msg ? 'block' : 'none';
   el.className = 'connection-result' + (type ? ' ' + type : '');
 }
 
@@ -856,8 +914,7 @@ function toast(msg) {
     document.body.appendChild(t);
   }
   t.textContent = msg; t.style.opacity = '1';
-  clearTimeout(t._h);
-  t._h = setTimeout(() => t.style.opacity = '0', 3000);
+  clearTimeout(t._h); t._h = setTimeout(() => t.style.opacity = '0', 3000);
 }
 
 function esc(s) {
