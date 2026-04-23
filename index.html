@@ -5,231 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KIRA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link rel="stylesheet" id="theme-css" href="css/themes/medieval.css">
 <link rel="stylesheet" href="css/style.css">
-<style>
-/* ── COMPONENT STYLES ── */
-.vault-item-url a{font-family:var(--mono);font-size:.65rem;color:var(--gold-dark);text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:.35rem;transition:color .15s}
-.vault-item-url a:hover{color:var(--gold);text-decoration:underline}
-.theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.75rem;margin-top:1rem}
-.theme-field{display:flex;flex-direction:column;gap:.35rem}
-.theme-field label{font-family:var(--display);font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gold-dim)}
-.color-wrap{display:flex;align-items:center;gap:.5rem}
-.color-wrap input[type=color]{width:34px;height:28px;padding:2px;background:rgba(10,8,4,.8);border:1px solid rgba(201,168,76,.2);border-radius:3px;cursor:pointer;flex-shrink:0}
-.range-wrap{display:flex;align-items:center;gap:.75rem}
-.range-wrap input[type=range]{flex:1;accent-color:var(--gold)}
-.range-wrap span{font-family:var(--mono);font-size:.75rem;color:var(--gold-dim);min-width:2.5rem}
-.page-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:.45rem .5rem;border-bottom:1px solid rgba(201,168,76,.08)}
-.page-toggle-row:last-child{border-bottom:none}
-.page-toggle-label{font-family:var(--display);font-size:.65rem;letter-spacing:.1em;color:var(--text-dim)}
-.toggle-switch{position:relative;width:36px;height:20px;flex-shrink:0}
-.toggle-switch input{opacity:0;width:0;height:0}
-.toggle-slider{position:absolute;inset:0;background:rgba(201,168,76,.15);border:1px solid rgba(201,168,76,.2);border-radius:20px;cursor:pointer;transition:.2s}
-.toggle-slider::before{content:'';position:absolute;width:14px;height:14px;left:2px;top:2px;background:var(--text-muted);border-radius:50%;transition:.2s}
-.toggle-switch input:checked+.toggle-slider{background:rgba(201,168,76,.3);border-color:var(--gold-dark)}
-.toggle-switch input:checked+.toggle-slider::before{transform:translateX(16px);background:var(--gold)}
-
-/* ══════════════════════════════════════
-   MUSIC PAGE
-   ══════════════════════════════════════ */
-.music-theme-wrap{position:relative;margin-bottom:3rem}
-.music-theme-eyebrow{font-family:var(--display);font-size:.58rem;letter-spacing:.22em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:1rem;display:flex;align-items:center;gap:.6rem}
-.music-theme-eyebrow::before{content:'';display:inline-block;width:24px;height:1px;background:var(--gold-dark)}
-
-/* Theme card with gif background */
-.music-theme-card{
-  display:flex;align-items:stretch;
-  position:relative;overflow:hidden;
-  border:1px solid rgba(201,168,76,.3);border-radius:4px;
-  text-decoration:none;max-width:680px;
-  min-height:180px;
-  transition:border-color .25s,box-shadow .25s;
-}
-.music-theme-card:hover{border-color:rgba(201,168,76,.6);box-shadow:0 0 50px rgba(201,168,76,.18),0 8px 32px rgba(0,0,0,.8)}
-/* GIF background layer */
-.music-theme-bg{
-  position:absolute;inset:0;z-index:0;
-  background-size:cover;background-position:center;background-repeat:no-repeat;
-}
-.music-theme-bg img{width:100%;height:100%;object-fit:cover;display:block}
-/* Dark overlay over gif */
-.music-theme-overlay{
-  position:absolute;inset:0;z-index:1;
-  background:linear-gradient(90deg,rgba(4,3,1,.92) 0%,rgba(4,3,1,.75) 45%,rgba(4,3,1,.5) 100%);
-}
-/* Content over gif */
-.music-theme-content{
-  position:relative;z-index:2;
-  display:flex;align-items:center;gap:1.5rem;
-  padding:1.5rem 2rem;width:100%;
-}
-.music-theme-cover{
-  width:110px;height:110px;border-radius:3px;object-fit:cover;flex-shrink:0;
-  border:1px solid rgba(201,168,76,.25);
-  box-shadow:0 4px 20px rgba(0,0,0,.7),0 0 0 1px rgba(0,0,0,.4);
-}
-.music-theme-cover-placeholder{
-  width:110px;height:110px;border-radius:3px;flex-shrink:0;
-  background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.15);
-  display:flex;align-items:center;justify-content:center;
-  font-size:2.5rem;color:var(--gold-dark);
-}
-.music-theme-info{flex:1;min-width:0}
-.music-theme-label{
-  font-family:var(--display);font-size:.55rem;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--gold-dim);margin-bottom:.5rem;
-  display:flex;align-items:center;gap:.5rem;
-}
-.music-eq{display:inline-flex;align-items:flex-end;gap:2px;height:11px}
-.music-eq span{display:block;width:2px;background:var(--gold);border-radius:1px;animation:eq-bar 1.2s ease-in-out infinite}
-.music-eq span:nth-child(1){height:60%;animation-delay:0s}
-.music-eq span:nth-child(2){height:100%;animation-delay:.15s}
-.music-eq span:nth-child(3){height:40%;animation-delay:.3s}
-.music-eq span:nth-child(4){height:80%;animation-delay:.1s}
-@keyframes eq-bar{0%,100%{transform:scaleY(1)}50%{transform:scaleY(.3)}}
-.music-theme-title{
-  font-family:var(--display2);
-  font-size:clamp(1rem,3vw,1.55rem);
-  font-weight:700;color:var(--gold-light);
-  letter-spacing:.04em;line-height:1.15;margin-bottom:.3rem;
-  text-shadow:0 0 20px rgba(201,168,76,.35),0 2px 4px rgba(0,0,0,.8);
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-}
-.music-theme-artist{font-family:var(--serif);font-size:.9rem;color:var(--text-dim);font-style:italic;margin-bottom:1rem}
-.music-theme-cta{
-  display:inline-flex;align-items:center;gap:.5rem;
-  font-family:var(--display);font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--gold-dim);border:1px solid rgba(201,168,76,.25);
-  padding:.38rem .85rem;border-radius:2px;width:fit-content;
-  transition:all .2s;
-}
-.music-theme-card:hover .music-theme-cta{color:var(--gold-light);border-color:var(--gold);background:rgba(201,168,76,.08)}
-/* corner ornaments */
-.music-theme-card .mc{position:absolute;width:10px;height:10px;border-color:rgba(201,168,76,.4);border-style:solid;z-index:3}
-.music-theme-card .mc-tr{top:7px;right:7px;border-width:1px 1px 0 0}
-.music-theme-card .mc-bl{bottom:7px;left:7px;border-width:0 0 1px 1px}
-/* top glow line */
-.music-theme-card::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold-dark) 30%,var(--gold) 50%,var(--gold-dark) 70%,transparent);z-index:3}
-
-/* ── PLAYLISTS ── */
-.music-playlists-section{margin-top:.5rem}
-.music-section-title{font-family:var(--display);font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:1.25rem;display:flex;align-items:center;gap:.75rem}
-.music-section-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--gold-dark),transparent);opacity:.5}
-.music-playlists-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:1rem}
-
-.music-playlist-card{
-  display:flex;flex-direction:column;text-decoration:none;
-  border:1px solid var(--border);border-radius:3px;overflow:hidden;
-  position:relative;transition:border-color .2s,transform .2s,box-shadow .2s;
-}
-.music-playlist-card:hover{border-color:var(--gold-dark);transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,.6),0 0 0 1px rgba(201,168,76,.08)}
-/* gif background for playlist card */
-.music-playlist-imgwrap{position:relative;aspect-ratio:1;overflow:hidden;background:var(--surface2)}
-.music-playlist-gif{position:absolute;inset:0;z-index:0}
-.music-playlist-gif img{width:100%;height:100%;object-fit:cover;display:block}
-.music-playlist-cover{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s,filter .35s}
-.music-playlist-card:hover .music-playlist-cover{transform:scale(1.08);filter:brightness(1.1)}
-.music-playlist-imgwrap::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%,rgba(0,0,0,.65) 100%);z-index:2}
-.music-playlist-play{position:absolute;bottom:.6rem;right:.6rem;width:28px;height:28px;background:rgba(201,168,76,.9);border-radius:50%;display:flex;align-items:center;justify-content:center;opacity:0;transform:translateY(4px);transition:opacity .2s,transform .2s;z-index:3}
-.music-playlist-play svg{width:10px;height:10px;fill:#080604;margin-left:1px}
-.music-playlist-card:hover .music-playlist-play{opacity:1;transform:translateY(0)}
-.music-playlist-placeholder{width:100%;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:2.5rem;color:var(--text-muted);background:linear-gradient(135deg,var(--surface2),var(--surface3))}
-.music-playlist-info{padding:.75rem .85rem;position:relative;z-index:1;background:rgba(8,6,3,.85)}
-.music-playlist-name{font-family:var(--serif);font-size:.88rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:.2rem}
-.music-playlist-meta{font-family:var(--display);font-size:.55rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
-.music-empty{font-family:var(--serif);font-style:italic;color:var(--text-muted);padding:2.5rem 0;font-size:.9rem}
-
-/* ══════════════════════════════════════
-   SETUP — drag drop zone + guides
-   ══════════════════════════════════════ */
-.setup-guide{
-  margin-top:1rem;padding:.85rem 1rem;
-  background:rgba(201,168,76,.04);
-  border:1px solid rgba(201,168,76,.1);
-  border-left:2px solid var(--gold-dark);
-  border-radius:2px;
-}
-.setup-guide-title{font-family:var(--display);font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:.6rem;display:flex;align-items:center;gap:.4rem}
-.setup-guide-title::before{content:'?';width:14px;height:14px;border-radius:50%;border:1px solid var(--gold-dark);display:flex;align-items:center;justify-content:center;font-size:.55rem;flex-shrink:0}
-.setup-guide ol,.setup-guide ul{padding-left:1.1rem;display:flex;flex-direction:column;gap:.3rem}
-.setup-guide li{font-family:var(--serif);font-size:.78rem;color:var(--text-muted);line-height:1.5}
-.setup-guide a{color:var(--gold-dim);text-decoration:none}
-.setup-guide a:hover{color:var(--gold);text-decoration:underline}
-.setup-guide code{font-family:var(--mono);font-size:.7rem;color:var(--gold-dim);background:rgba(201,168,76,.07);padding:1px 5px;border-radius:2px}
-
-/* Drag drop zone */
-.spotify-drop-zone{
-  border:2px dashed rgba(201,168,76,.25);border-radius:3px;
-  padding:1.5rem;text-align:center;
-  background:rgba(10,8,4,.5);cursor:pointer;
-  transition:border-color .2s,background .2s;
-  margin-top:1rem;
-}
-.spotify-drop-zone.drag-over,.spotify-drop-zone:hover{border-color:var(--gold-dim);background:rgba(201,168,76,.04)}
-.spotify-drop-zone-icon{font-size:1.5rem;margin-bottom:.4rem}
-.spotify-drop-zone p{font-family:var(--serif);font-style:italic;font-size:.82rem;color:var(--text-muted);margin-bottom:.5rem}
-.spotify-drop-zone-hint{font-family:var(--display);font-size:.58rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted)}
-
-/* Music item preview card in setup */
-.music-preview-card{
-  display:flex;align-items:center;gap:.75rem;
-  padding:.75rem;margin-top:.75rem;
-  background:rgba(12,9,4,.8);border:1px solid rgba(201,168,76,.2);border-radius:3px;
-}
-.music-preview-img{width:44px;height:44px;border-radius:2px;object-fit:cover;flex-shrink:0;background:var(--surface2)}
-.music-preview-info{flex:1;min-width:0}
-.music-preview-title{font-family:var(--serif);font-size:.88rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.music-preview-artist{font-family:var(--serif);font-size:.72rem;color:var(--text-muted);font-style:italic;margin-top:.1rem}
-.music-preview-del{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.75rem;padding:.2rem .35rem;transition:color .15s;flex-shrink:0}
-.music-preview-del:hover{color:#cc6644}
-
-/* Playlists in setup */
-.playlist-setup-list{display:flex;flex-direction:column;gap:.5rem;margin-top:.75rem}
-.playlist-setup-item{
-  background:rgba(12,9,4,.6);border:1px solid var(--border);border-radius:3px;
-  padding:.6rem .75rem;
-  display:flex;align-items:center;gap:.75rem;
-}
-.playlist-setup-thumb{width:36px;height:36px;border-radius:2px;object-fit:cover;flex-shrink:0;background:var(--surface2)}
-.playlist-setup-name{flex:1;font-family:var(--serif);font-size:.85rem;color:var(--text);min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.playlist-gif-input{font-family:var(--mono);font-size:.65rem;color:var(--ink);background:rgba(10,8,4,.7);border:1px solid rgba(201,168,76,.15);border-radius:2px;padding:.35rem .5rem;width:180px;flex-shrink:0;caret-color:var(--gold)}
-.playlist-gif-input::placeholder{color:var(--text-muted)}
-.playlist-setup-del{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.75rem;padding:.2rem .35rem;transition:color .15s;flex-shrink:0}
-.playlist-setup-del:hover{color:#cc6644}
-
-/* Channels editor */
-.channel-editor-list{display:flex;flex-direction:column;gap:.4rem;margin-top:.75rem}
-.channel-editor-row{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:.4rem;align-items:center}
-.channel-editor-drag{color:var(--text-muted);font-size:.8rem;cursor:grab;padding:0 .2rem;flex-shrink:0}
-.channel-editor-row input{font-family:var(--mono);font-size:.65rem;color:var(--ink);background:rgba(10,8,4,.7);border:1px solid rgba(201,168,76,.15);border-radius:2px;padding:.38rem .5rem;caret-color:var(--gold)}
-.channel-editor-row input::placeholder{color:var(--text-muted)}
-.channel-editor-del{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.75rem;padding:.2rem .35rem;border-radius:2px;border:1px solid transparent;transition:all .15s}
-.channel-editor-del:hover{color:#cc6644;border-color:#7a3a22}
-.btn-add-channel{font-family:var(--display);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-dim);background:transparent;border:1px dashed rgba(201,168,76,.2);padding:.45rem 1rem;cursor:pointer;border-radius:2px;width:100%;margin-top:.4rem;transition:all .2s}
-.btn-add-channel:hover{border-color:var(--gold-dark);color:var(--gold-light);background:rgba(201,168,76,.04)}
-
-/* Spotify credentials */
-.spotify-creds-fields{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.75rem}
-
-/* Loading spinner inline */
-.spin{display:inline-block;width:12px;height:12px;border:1.5px solid rgba(201,168,76,.3);border-top-color:var(--gold);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-left:.4rem}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-@media(max-width:640px){
-  .music-theme-content{padding:1rem 1.25rem;gap:1rem}
-  .music-theme-cover,.music-theme-cover-placeholder{width:80px;height:80px}
-  .music-theme-title{font-size:1rem}
-  .music-playlists-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
-  .channel-editor-row{grid-template-columns:auto 1fr 1fr auto}
-  .spotify-creds-fields{grid-template-columns:1fr}
-  .playlist-gif-input{width:120px}
-}
-</style>
 </head>
 <body>
 
 <div class="bg-wrap">
-  <div class="bg-img"></div>
+  <div class="bg-img" id="bg-img"></div>
   <div class="bg-overlay"></div>
   <div class="bg-grain"></div>
 </div>
@@ -237,31 +20,20 @@
 <!-- LOGIN -->
 <div id="login-screen" style="display:none">
   <div class="login-box">
-    <div class="login-glass">
-      <div class="login-corner tl"></div><div class="login-corner tr"></div>
-      <div class="login-corner bl"></div><div class="login-corner br"></div>
-      <button class="login-close" id="btn-close-login">✕</button>
-      <div class="login-emblem">
-        <svg viewBox="0 0 80 70" xmlns="http://www.w3.org/2000/svg">
-          <path d="M20 55 L20 36 L30 46 L40 22 L50 46 L60 36 L60 55 Z" stroke-linejoin="round"/>
-          <rect x="18" y="55" width="44" height="5" rx="0.5"/>
-          <circle cx="40" cy="22" r="2.5"/><circle cx="20" cy="36" r="2"/><circle cx="60" cy="36" r="2"/>
-          <line x1="30" y1="60" x2="30" y2="65"/><line x1="40" y1="60" x2="40" y2="67"/><line x1="50" y1="60" x2="50" y2="65"/>
-        </svg>
-      </div>
-      <div class="login-logo">K<span>ira</span></div>
-      <p class="login-sub">Ye Private Chamber</p>
+    <div class="login-card">
+      <div class="login-logo" id="login-logo">K<span style="color:var(--accent)">ira</span></div>
+      <p class="login-sub">Enter the Keep</p>
       <div class="field-group">
         <label class="field-label">Username</label>
-        <input class="field-input" type="text" id="login-user" placeholder="Enter your name" autocomplete="username" autocorrect="off" autocapitalize="none">
+        <input class="input" type="text" id="login-user" placeholder="Username" autocomplete="username" autocorrect="off" autocapitalize="none">
       </div>
       <div class="field-group">
         <label class="field-label">Password</label>
-        <input class="field-input" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+        <input class="input" type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
       </div>
-      <div class="login-result" id="login-result" style="display:none"></div>
-      <button class="btn-primary" id="btn-login" style="width:100%;margin-top:1.5rem;text-align:center">Enter the Keep</button>
-      <p class="login-hint">Thy session fadeth when the tab is sealed</p>
+      <div class="login-result" id="login-result"></div>
+      <button class="btn-primary" id="btn-login" style="width:100%;margin-top:1.25rem;justify-content:center">Enter</button>
+      <p class="login-hint">Session ends when tab is closed</p>
     </div>
   </div>
 </div>
@@ -273,128 +45,59 @@
   <div class="nav-logo" id="nav-logo">K<span>ira</span></div>
   <div class="nav-links" id="nav-links">
     <button class="active" data-page="home">Home</button>
-    <button data-page="shorts">Shorts</button>
-    <button data-page="vault">Vault</button>
-    <button data-page="socials">Socials</button>
-    <button data-page="curriculum">Curriculum</button>
+    <button data-page="projects">Projects</button>
     <button data-page="music">Music</button>
-    <button data-page="settings" class="owner-only" style="display:none">Setup</button>
+    <button data-page="shorts">Shorts</button>
+    <button data-page="vault" class="owner-only" style="display:none">Vault</button>
+    <button data-page="socials">Socials</button>
+    <button data-page="cv">CV</button>
+    <button data-page="about">About</button>
+    <button data-page="setup" class="owner-only" style="display:none">Setup</button>
   </div>
-  <div style="display:flex;align-items:center;gap:.75rem">
+  <div class="nav-actions">
     <button class="nav-hamburger" id="nav-hamburger">&#9776;</button>
-    <button class="btn-logout owner-only" id="btn-logout" title="Logout" style="display:none">&#x23FB;</button>
-    <button class="btn-login-nav" id="btn-open-login" title="Enter the Keep">⚔</button>
+    <button class="nav-icon-btn owner-only" id="btn-logout" title="Logout" style="display:none">&#x23FB;</button>
+    <button class="nav-icon-btn" id="btn-open-login" title="Login">⚔</button>
   </div>
 </nav>
 
 <!-- HOME -->
 <div class="page active" id="page-home">
-  <div class="home-layout">
-    <div class="home-left">
-      <div class="home-eyebrow">Chronicles &amp; Legacy</div>
-      <h1 class="home-h1" id="hero-title">Kira<em>creates.</em></h1>
-      <div class="home-divider">
-        <div class="home-divider-line"></div>
-        <div class="home-divider-diamond"></div>
-        <div class="home-divider-line" style="background:linear-gradient(90deg,transparent,rgba(201,168,76,0.5))"></div>
+  <div class="home-hero">
+    <div class="home-content">
+      <div class="home-avatar-wrap">
+        <img class="home-avatar" id="home-avatar" src="" alt="" style="display:none">
       </div>
-      <p class="home-tagline" id="hero-tagline">Short-form content, ideas, and a private vault.</p>
+      <div class="home-eyebrow" id="home-eyebrow">Portfolio</div>
+      <h1 class="home-name" id="home-name">Kira</h1>
+      <p class="home-tagline" id="home-tagline">Short-form content, ideas, and a private vault.</p>
+      <blockquote class="home-quote" id="home-quote" style="display:none"></blockquote>
       <div class="home-cta">
-        <button class="btn-primary" data-goto="shorts">View Shorts</button>
-        <button class="btn-ghost" data-goto="vault">Open Vault</button>
+        <button class="btn-primary" data-goto="projects">View Projects</button>
+        <button class="btn-ghost"   data-goto="about">About Me</button>
       </div>
       <div class="home-stats">
+        <div class="stat-item"><span class="stat-num" id="stat-projects">0</span><span class="stat-label">Projects</span></div>
         <div class="stat-item"><span class="stat-num" id="stat-shorts">0</span><span class="stat-label">Shorts</span></div>
-        <div class="stat-item"><span class="stat-num" id="stat-items">0</span><span class="stat-label">Vault Items</span></div>
-        <div class="stat-item"><span class="stat-num" id="stat-tags">0</span><span class="stat-label">Tags</span></div>
+        <div class="stat-item"><span class="stat-num" id="stat-socials">0</span><span class="stat-label">Socials</span></div>
       </div>
-    </div>
-    <div class="home-right"><div class="home-right-veil"></div></div>
-  </div>
-</div>
-
-<!-- SHORTS -->
-<div class="page" id="page-shorts">
-  <div class="page-inner" style="display:flex;flex-direction:column">
-    <div class="section-header"><div><h2>Short<span>s</span></h2></div><p>Thine Moving Scrolls</p></div>
-    <div class="filter-bar" id="filter-bar"><button class="filter-btn active" data-filter="all">All</button></div>
-    <div class="shorts-grid" id="shorts-grid"></div>
-    <button class="add-short-btn owner-only" id="btn-add-short" style="display:none">✦ Add Scroll</button>
-  </div>
-</div>
-
-<!-- VAULT -->
-<div class="page" id="page-vault">
-  <div class="page-inner vault-page-inner">
-    <div class="vault-layout">
-      <div class="vault-sidebar">
-        <div class="vault-sidebar-title">Categories</div>
-        <div class="vault-cat active" data-vault-filter="all"><span class="vault-cat-icon">▦</span> All</div>
-        <div class="vault-cat" data-vault-filter="link"><span class="vault-cat-icon">⊞</span> Links</div>
-        <div class="vault-cat" data-vault-filter="note"><span class="vault-cat-icon">≡</span> Notes</div>
-        <div class="vault-cat" data-vault-filter="file"><span class="vault-cat-icon">◫</span> Files</div>
-        <div class="vault-cat" data-vault-filter="idea"><span class="vault-cat-icon">◇</span> Ideas</div>
-        <div class="vault-cat" data-vault-filter="code"><span class="vault-cat-icon">&#60;/&#62;</span> Code</div>
-        <div class="vault-divider"></div>
-        <div id="tag-sidebar"></div>
-        <div class="vault-divider"></div>
-        <div class="discord-status">
-          <div class="discord-dot" id="discord-dot"></div>
-          <span id="discord-label">Connecting…</span>
-        </div>
-      </div>
-      <div class="vault-main">
-        <div class="vault-topbar">
-          <input class="vault-search" placeholder="Search the chronicles…" id="vault-search-input">
-          <button class="vault-add-btn owner-only" id="btn-add-vault" style="display:none">✦ New Scroll</button>
-        </div>
-        <div class="vault-cards" id="vault-cards"></div>
-      </div>
+      <div class="home-nav-links" id="home-nav-links"></div>
     </div>
   </div>
 </div>
 
-<!-- SOCIALS -->
-<div class="page" id="page-socials">
+<!-- PROJECTS -->
+<div class="page" id="page-projects">
   <div class="page-inner">
-    <div class="section-header"><div><h2>So<span>cials</span></h2></div><p>Find me across the realm</p></div>
-    <div class="socials-grid" id="socials-grid"><div class="socials-empty">Loading…</div></div>
-    <div class="owner-only" id="socials-edit-area" style="display:none">
-      <div class="settings-section" style="margin-top:2rem">
-        <h3>Add <span>Social</span></h3>
-        <div class="socials-form-row">
-          <div class="field-group"><label class="field-label">Platform</label><input class="field-input" id="social-platform" placeholder="Instagram, TikTok…"></div>
-          <div class="field-group"><label class="field-label">URL</label><input class="field-input" id="social-url" placeholder="https://…"></div>
-          <div class="field-group"><label class="field-label">Handle</label><input class="field-input" id="social-handle" placeholder="@kira"></div>
-          <div class="field-group"><label class="field-label">Icon (emoji)</label><input class="field-input" id="social-icon" placeholder="📸"></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem">
-          <input type="checkbox" id="social-public" checked style="accent-color:var(--gold);width:16px;height:16px">
-          <label class="field-label" style="margin:0;cursor:pointer" for="social-public">Visible to public</label>
-        </div>
-        <button class="settings-save" id="btn-add-social">✦ Add Social</button>
-        <div class="connection-result" id="social-result"></div>
-      </div>
+    <div class="section-header">
+      <h2>Pro<span>jects</span></h2>
+      <p>Things I've built</p>
+      <div class="section-divider"></div>
     </div>
-  </div>
-</div>
-
-<!-- CURRICULUM -->
-<div class="page" id="page-curriculum">
-  <div class="page-inner">
-    <div class="section-header"><div><h2>Curri<span>culum</span></h2></div><p>Chronicles of Experience</p></div>
-    <div id="cv-content"><div class="cv-empty">No curriculum yet.</div></div>
-    <div class="owner-only" id="cv-edit-area" style="display:none;margin-top:2rem">
-      <div class="settings-section">
-        <h3>Upload <span>CV</span></h3>
-        <p>Host your PDF on Google Drive and paste the direct link below.</p>
-        <div class="field-group" style="margin-top:1rem">
-          <label class="field-label">PDF URL</label>
-          <input class="field-input" type="url" id="cv-url-input" placeholder="https://drive.google.com/…">
-        </div>
-        <button class="settings-save" id="btn-save-cv" style="margin-top:.5rem">Seal the Scroll</button>
-        <div class="connection-result" id="cv-result"></div>
-      </div>
+    <div class="projects-filter" id="projects-filter"></div>
+    <div class="grid-auto" id="projects-grid"></div>
+    <div style="text-align:center;margin-top:2rem">
+      <button class="btn-ghost btn-sm owner-only" id="btn-add-project" style="display:none">+ Add Project</button>
     </div>
   </div>
 </div>
@@ -402,171 +105,318 @@
 <!-- MUSIC -->
 <div class="page" id="page-music">
   <div class="page-inner">
-    <div class="section-header"><div><h2>Mu<span>sic</span></h2></div><p>Sounds of the Keep</p></div>
+    <div class="section-header">
+      <h2>Mu<span>sic</span></h2>
+      <p>Sounds of the Keep</p>
+      <div class="section-divider"></div>
+    </div>
     <div id="music-content"><div class="music-empty">Loading…</div></div>
   </div>
 </div>
 
-<!-- SETTINGS -->
-<div class="page" id="page-settings">
+<!-- SHORTS -->
+<div class="page" id="page-shorts">
   <div class="page-inner">
-    <div class="section-header"><div><h2>Set<span>up</span></h2></div><p>Configure thy Keep</p></div>
-    <div class="settings-inner">
+    <div class="section-header">
+      <h2>Short<span>s</span></h2>
+      <p>Short-form content</p>
+      <div class="section-divider"></div>
+    </div>
+    <div class="projects-filter" id="shorts-filter"></div>
+    <div class="shorts-grid" id="shorts-grid"></div>
+    <div style="text-align:center;margin-top:2rem">
+      <button class="btn-ghost btn-sm owner-only" id="btn-add-short" style="display:none">+ Add Short</button>
+    </div>
+  </div>
+</div>
 
-      <!-- ── PROFILE ── -->
-      <div class="settings-section">
+<!-- VAULT -->
+<div class="page" id="page-vault">
+  <div class="vault-layout">
+    <div class="vault-sidebar">
+      <div class="vault-sidebar-title">Categories</div>
+      <div class="vault-cat active" data-vf="all">▦ All</div>
+      <div class="vault-cat" data-vf="link">⊞ Links</div>
+      <div class="vault-cat" data-vf="note">≡ Notes</div>
+      <div class="vault-cat" data-vf="file">◫ Files</div>
+      <div class="vault-cat" data-vf="idea">◇ Ideas</div>
+      <div class="vault-cat" data-vf="code">&lt;/&gt; Code</div>
+      <div class="vault-divider"></div>
+      <div id="vault-tags"></div>
+      <div class="vault-divider"></div>
+      <div class="discord-status">
+        <div class="discord-dot" id="discord-dot"></div>
+        <span id="discord-label">Connecting…</span>
+      </div>
+    </div>
+    <div class="vault-main">
+      <div class="vault-topbar">
+        <input class="vault-search input" placeholder="Search…" id="vault-search">
+        <button class="btn-ghost btn-sm" id="btn-add-vault">+ New</button>
+      </div>
+      <div class="vault-cards" id="vault-cards"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SOCIALS -->
+<div class="page" id="page-socials">
+  <div class="page-inner">
+    <div class="section-header">
+      <h2>So<span>cials</span></h2>
+      <p>Find me across the web</p>
+      <div class="section-divider"></div>
+    </div>
+    <div class="socials-grid" id="socials-grid"></div>
+    <div style="text-align:center;margin-top:2rem">
+      <button class="btn-ghost btn-sm owner-only" id="btn-add-social" style="display:none">+ Add Social</button>
+    </div>
+  </div>
+</div>
+
+<!-- CV -->
+<div class="page" id="page-cv">
+  <div class="page-inner">
+    <div class="section-header">
+      <h2>Curri<span>culum</span></h2>
+      <p>Chronicles of experience</p>
+      <div class="section-divider"></div>
+    </div>
+    <div id="cv-content"><div class="cv-empty">No CV uploaded yet.</div></div>
+    <div class="owner-only" id="cv-edit" style="display:none;margin-top:1.5rem">
+      <div class="setup-section" style="max-width:500px">
+        <div class="field-group">
+          <label class="field-label">PDF URL (Google Drive direct link)</label>
+          <input class="input" type="url" id="cv-url" placeholder="https://drive.google.com/…">
+        </div>
+        <button class="btn-primary btn-sm" id="btn-save-cv">Save CV</button>
+        <div class="result-msg" id="cv-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<div class="page" id="page-about">
+  <div class="page-inner">
+    <div class="section-header">
+      <h2>A<span>bout</span></h2>
+      <p>The person behind the screen</p>
+      <div class="section-divider"></div>
+    </div>
+    <div class="about-layout" id="about-layout">
+      <div class="about-img-wrap">
+        <img class="about-img" id="about-img" src="" alt="" style="display:none">
+        <div class="about-img-placeholder" id="about-img-placeholder">🧙</div>
+      </div>
+      <div>
+        <div class="about-text" id="about-text">Loading…</div>
+        <div class="owner-only" id="about-edit" style="display:none;margin-top:1.5rem">
+          <div class="setup-section">
+            <div class="field-group">
+              <label class="field-label">Photo URL</label>
+              <input class="input" type="url" id="about-img-url" placeholder="https://…">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Text</label>
+              <textarea class="input" id="about-text-input" rows="8" placeholder="Tell your story…"></textarea>
+            </div>
+            <button class="btn-primary btn-sm" id="btn-save-about">Save About</button>
+            <div class="result-msg" id="about-result"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div class="page" id="page-setup">
+  <div class="page-inner">
+    <div class="section-header">
+      <h2>Set<span>up</span></h2>
+      <p>Configure everything</p>
+      <div class="section-divider"></div>
+    </div>
+    <div class="setup-grid">
+
+      <!-- Profile -->
+      <div class="setup-section">
         <h3>Pro<span>file</span></h3>
-        <p>Nome, tagline e visibilidade das páginas.</p>
-        <div class="field-group" style="margin-top:1rem">
+        <p>Name, tagline, quote, avatar and page visibility.</p>
+        <div class="field-group">
           <label class="field-label">Display Name</label>
-          <input class="field-input" type="text" id="cfg-name" placeholder="Kira">
+          <input class="input" type="text" id="cfg-name" placeholder="Kira">
         </div>
         <div class="field-group">
           <label class="field-label">Tagline</label>
-          <input class="field-input" type="text" id="cfg-tagline" placeholder="Short-form content creator">
+          <input class="input" type="text" id="cfg-tagline" placeholder="Developer & creator">
         </div>
-        <div style="margin:1.25rem 0 .5rem">
-          <div class="field-label" style="margin-bottom:.75rem">Page Visibility</div>
-          <div class="page-toggle-row"><span class="page-toggle-label">Shorts</span><label class="toggle-switch"><input type="checkbox" id="show-shorts" checked><span class="toggle-slider"></span></label></div>
-          <div class="page-toggle-row"><span class="page-toggle-label">Vault</span><label class="toggle-switch"><input type="checkbox" id="show-vault" checked><span class="toggle-slider"></span></label></div>
-          <div class="page-toggle-row"><span class="page-toggle-label">Socials</span><label class="toggle-switch"><input type="checkbox" id="show-socials" checked><span class="toggle-slider"></span></label></div>
-          <div class="page-toggle-row"><span class="page-toggle-label">Curriculum</span><label class="toggle-switch"><input type="checkbox" id="show-curriculum" checked><span class="toggle-slider"></span></label></div>
-          <div class="page-toggle-row"><span class="page-toggle-label">Music</span><label class="toggle-switch"><input type="checkbox" id="show-music" checked><span class="toggle-slider"></span></label></div>
+        <div class="field-group">
+          <label class="field-label">Quote</label>
+          <input class="input" type="text" id="cfg-quote" placeholder="A quote that defines you…">
         </div>
-        <button class="settings-save" id="btn-save-profile">Save Profile</button>
-        <div class="connection-result" id="profile-result"></div>
+        <div class="field-group">
+          <label class="field-label">Avatar URL</label>
+          <input class="input" type="url" id="cfg-avatar" placeholder="https://…">
+        </div>
+        <div style="margin:1rem 0">
+          <div class="field-label" style="margin-bottom:.6rem">Page Visibility</div>
+          <div class="toggle-row"><span class="toggle-label">Projects</span><label class="toggle-switch"><input type="checkbox" id="show-projects" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><span class="toggle-label">Music</span><label class="toggle-switch"><input type="checkbox" id="show-music" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><span class="toggle-label">Shorts</span><label class="toggle-switch"><input type="checkbox" id="show-shorts" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><span class="toggle-label">Vault</span><label class="toggle-switch"><input type="checkbox" id="show-vault" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><span class="toggle-label">Socials</span><label class="toggle-switch"><input type="checkbox" id="show-socials" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><span class="toggle-label">CV</span><label class="toggle-switch"><input type="checkbox" id="show-cv" checked><span class="toggle-slider"></span></label></div>
+          <div class="toggle-row"><span class="toggle-label">About</span><label class="toggle-switch"><input type="checkbox" id="show-about" checked><span class="toggle-slider"></span></label></div>
+        </div>
+        <button class="btn-primary btn-sm" id="btn-save-profile">Save Profile</button>
+        <div class="result-msg" id="profile-result"></div>
       </div>
 
-      <!-- ── MUSIC ── -->
-      <div class="settings-section">
+      <!-- Music -->
+      <div class="setup-section">
         <h3>Mu<span>sic</span></h3>
-        <p>Arrasta links do Spotify para adicionar a música e playlists.</p>
-
-        <div style="margin-top:1.25rem">
+        <p>Theme song e playlists. Cola links do Spotify — a info é preenchida automaticamente.</p>
+        <div style="margin-top:1rem">
           <div class="field-label" style="margin-bottom:.5rem">Theme Song</div>
-          <div class="spotify-drop-zone" id="drop-theme">
-            <div class="spotify-drop-zone-icon">🎵</div>
-            <p>Arrasta ou cola um link de música do Spotify</p>
-            <div class="spotify-drop-zone-hint">open.spotify.com/track/…</div>
+          <div class="drop-zone" id="drop-theme">
+            <div class="drop-zone-icon">🎵</div>
+            <p>Arrasta ou clica para colar um link de música</p>
+            <div class="drop-zone-hint">open.spotify.com/track/…</div>
           </div>
           <div id="theme-preview"></div>
-          <div class="field-group" style="margin-top:.75rem" id="theme-gif-group" style="display:none">
-            <label class="field-label">GIF de fundo</label>
-            <input class="field-input" type="url" id="music-song-gif" placeholder="https://media.discordapp.net/… ou media.tenor.com/…">
-            <span class="field-hint">Clica com botão direito no GIF no Discord → Copiar endereço da imagem</span>
+          <div id="theme-gif-wrap" style="display:none">
+            <div class="field-group" style="margin-top:.75rem">
+              <label class="field-label">GIF de fundo</label>
+              <input class="input" type="url" id="music-song-gif" placeholder="https://media.discordapp.net/…">
+              <span class="field-hint">Botão direito no GIF no Discord → Copiar endereço da imagem</span>
+            </div>
           </div>
         </div>
-
-        <div style="margin-top:1.75rem">
+        <div style="margin-top:1.5rem">
           <div class="field-label" style="margin-bottom:.5rem">Playlists</div>
-          <div class="spotify-drop-zone" id="drop-playlist">
-            <div class="spotify-drop-zone-icon">🎧</div>
-            <p>Arrasta ou cola um link de playlist do Spotify</p>
-            <div class="spotify-drop-zone-hint">open.spotify.com/playlist/…</div>
+          <div class="drop-zone" id="drop-playlist">
+            <div class="drop-zone-icon">🎧</div>
+            <p>Arrasta ou clica para colar um link de playlist</p>
+            <div class="drop-zone-hint">open.spotify.com/playlist/…</div>
           </div>
           <div class="playlist-setup-list" id="playlist-setup-list"></div>
         </div>
-
-        <button class="settings-save" id="btn-save-music" style="margin-top:1.25rem">Save Music</button>
-        <div class="connection-result" id="music-result"></div>
-
+        <button class="btn-primary btn-sm" id="btn-save-music" style="margin-top:1.25rem">Save Music</button>
+        <div class="result-msg" id="music-result"></div>
         <div class="setup-guide">
           <div class="setup-guide-title">Como usar</div>
-          <ol class="setup-guide">
-            <li>Abre o Spotify → clica nos <strong>três pontos</strong> da música/playlist → <strong>Partilhar</strong> → <strong>Copiar link</strong></li>
-            <li>Cola o link na zona de drop acima — a info é preenchida automaticamente</li>
-            <li>Para o GIF: no Discord, clica com botão direito no GIF → <strong>Copiar endereço da imagem</strong></li>
-            <li>O link deve começar com <code>media.discordapp.net</code> ou <code>media.tenor.com</code></li>
+          <ol>
+            <li>No Spotify: ··· → Partilhar → Copiar link da música/playlist</li>
+            <li>Cola aqui ou arrasta — título, artista e capa preenchidos automaticamente</li>
+            <li>Para GIF: no Discord, botão direito no GIF → Copiar endereço da imagem</li>
+            <li>O link deve começar com <code>media.discordapp.net</code></li>
           </ol>
         </div>
       </div>
 
-      <!-- ── SPOTIFY CREDENTIALS ── -->
-      <div class="settings-section">
+      <!-- Spotify API -->
+      <div class="setup-section">
         <h3>Spo<span>tify API</span></h3>
-        <p>Credenciais para o auto-fetch dos links. Usa a conta com Premium se quiseres trocar.</p>
-        <div class="spotify-creds-fields">
+        <p>Credenciais para auto-fetch de músicas e playlists.</p>
+        <div class="creds-grid">
           <div class="field-group">
             <label class="field-label">Client ID</label>
-            <input class="field-input" type="text" id="spotify-client-id" placeholder="466f8a2cdf…">
+            <input class="input" type="text" id="spotify-client-id" placeholder="466f8a2c…">
           </div>
           <div class="field-group">
             <label class="field-label">Client Secret</label>
-            <input class="field-input" type="password" id="spotify-client-secret" placeholder="••••••••••••">
+            <input class="input" type="password" id="spotify-client-secret" placeholder="••••••••">
           </div>
         </div>
-        <button class="settings-save" id="btn-save-spotify-creds">Save Credentials</button>
-        <div class="connection-result" id="spotify-creds-result"></div>
-
+        <button class="btn-primary btn-sm" id="btn-save-spotify">Save Credentials</button>
+        <div class="result-msg" id="spotify-result"></div>
         <div class="setup-guide">
-          <div class="setup-guide-title">Como obter as credenciais</div>
-          <ol class="setup-guide">
+          <div class="setup-guide-title">Como obter</div>
+          <ol>
             <li>Vai a <a href="https://developer.spotify.com/dashboard" target="_blank">developer.spotify.com/dashboard</a></li>
-            <li>Cria uma app ou abre a existente <strong>Kira Vault</strong></li>
-            <li>Copia o <strong>Client ID</strong> e o <strong>Client Secret</strong></li>
-            <li>Em <strong>Redirect URIs</strong> certifica que tens: <code>https://kira-discord-proxy.ghoullkira.workers.dev/spotify/callback</code></li>
-            <li>Para usar a conta Premium: faz login nessa conta no Spotify e obtém as credenciais dessa app</li>
+            <li>Cria ou abre a app existente</li>
+            <li>Copia o <strong>Client ID</strong> e <strong>Client Secret</strong></li>
+            <li>Para usar conta com Premium: usa as credenciais dessa conta</li>
           </ol>
         </div>
       </div>
 
-      <!-- ── CHANNELS ── -->
-      <div class="settings-section">
+      <!-- Channels -->
+      <div class="setup-section">
         <h3>Chan<span>nels</span></h3>
-        <p>Channels do Discord para backup de conteúdo. Podes adicionar, editar e remover.</p>
-        <div class="channel-editor-list" id="channel-editor-list"></div>
-        <button class="btn-add-channel" id="btn-add-channel">+ Adicionar channel</button>
-        <button class="settings-save" id="btn-save-channels" style="margin-top:1rem">Save Channels</button>
-        <div class="connection-result" id="channels-result"></div>
-        <button class="test-btn" id="btn-test-connection" style="margin-top:.75rem">Test Connection</button>
-        <div class="connection-result" id="connection-result"></div>
-
+        <p>Channels Discord para backup. Adiciona, edita e remove livremente.</p>
+        <div class="channel-list" id="channel-list"></div>
+        <button class="btn-add-row" id="btn-add-channel">+ Adicionar channel</button>
+        <div style="display:flex;gap:.5rem;margin-top:1rem;flex-wrap:wrap">
+          <button class="btn-primary btn-sm" id="btn-save-channels">Save Channels</button>
+          <button class="btn-ghost btn-sm" id="btn-test-connection">Test Connection</button>
+        </div>
+        <div class="result-msg" id="channels-result"></div>
         <div class="setup-guide">
-          <div class="setup-guide-title">Como obter um Channel ID</div>
-          <ol class="setup-guide">
-            <li>No Discord, vai a <strong>Configurações → Avançado → Activa Modo de Programador</strong></li>
-            <li>Clica com botão direito no channel → <strong>Copiar ID do Channel</strong></li>
-            <li>O label é o nome que queres dar (ex: <code>music</code>, <code>notas</code>)</li>
-            <li>A página indica onde este channel é usado para backup</li>
+          <div class="setup-guide-title">Como obter Channel ID</div>
+          <ol>
+            <li>Discord: Configurações → Avançado → Activa Modo de Programador</li>
+            <li>Botão direito no channel → Copiar ID do Channel</li>
+            <li>Label = nome interno (ex: <code>music</code>, <code>projects</code>)</li>
           </ol>
         </div>
       </div>
 
-      <!-- ── THEME ── -->
-      <div class="settings-section settings-section--full">
-        <h3>Theme <span>Editor</span></h3>
-        <p>Changes preview live — save to persist across all devices.</p>
-        <div class="theme-grid">
-          <div class="theme-field"><label>Primary Gold</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-gold-picker" data-target="theme-gold" value="#c9a84c"><input class="field-input theme-color-input" type="text" id="theme-gold" value="#c9a84c"></div></div>
-          <div class="theme-field"><label>Gold Light</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-gold-light-picker" data-target="theme-gold-light" value="#e8d08a"><input class="field-input theme-color-input" type="text" id="theme-gold-light" value="#e8d08a"></div></div>
-          <div class="theme-field"><label>Gold Dim</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-gold-dim-picker" data-target="theme-gold-dim" value="#a07c30"><input class="field-input theme-color-input" type="text" id="theme-gold-dim" value="#a07c30"></div></div>
-          <div class="theme-field"><label>Background</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-bg-picker" data-target="theme-bg" value="#080604"><input class="field-input theme-color-input" type="text" id="theme-bg" value="#080604"></div></div>
-          <div class="theme-field"><label>Surface</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-surface-picker" data-target="theme-surface" value="#0f0c07"><input class="field-input theme-color-input" type="text" id="theme-surface" value="#0f0c07"></div></div>
-          <div class="theme-field"><label>Text</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-text-picker" data-target="theme-text" value="#e8dcc8"><input class="field-input theme-color-input" type="text" id="theme-text" value="#e8dcc8"></div></div>
-          <div class="theme-field"><label>Text Dim</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="theme-text-dim-picker" data-target="theme-text-dim" value="#9a8860"><input class="field-input theme-color-input" type="text" id="theme-text-dim" value="#9a8860"></div></div>
-          <div class="theme-field"><label>Background Image URL</label><input class="field-input" type="url" id="theme-bg-url" placeholder="https://i.imgur.com/…"></div>
-        </div>
-        <div class="theme-field" style="margin-top:1rem;max-width:360px">
-          <label>Background Opacity</label>
-          <div class="range-wrap">
-            <input type="range" id="theme-bg-opacity" min="0" max="1" step="0.05" value="0.45">
-            <span id="theme-bg-opacity-val">0.45</span>
+      <!-- Theme -->
+      <div class="setup-section setup-section-full">
+        <h3>The<span>me</span></h3>
+        <p>Escolhe um tema pré-definido ou personaliza completamente.</p>
+        <div class="theme-picker-grid" id="theme-picker">
+          <div class="theme-option active" data-theme="medieval">
+            <div class="theme-option-preview" style="background:linear-gradient(135deg,#080604,#1e1508);border:1px solid #6b4e1a"></div>
+            <div class="theme-option-name">Medieval</div>
+          </div>
+          <div class="theme-option" data-theme="modern">
+            <div class="theme-option-preview" style="background:linear-gradient(135deg,#0a0a0f,#1f1f28);border:1px solid #2563eb"></div>
+            <div class="theme-option-name">Modern</div>
+          </div>
+          <div class="theme-option" data-theme="space">
+            <div class="theme-option-preview" style="background:linear-gradient(135deg,#020408,#0a1420);border:1px solid #006688"></div>
+            <div class="theme-option-name">Space</div>
+          </div>
+          <div class="theme-option" data-theme="cyberpunk">
+            <div class="theme-option-preview" style="background:linear-gradient(135deg,#06040a,#18142a);border:1px solid #880036"></div>
+            <div class="theme-option-name">Cyberpunk</div>
+          </div>
+          <div class="theme-option" data-theme="nature">
+            <div class="theme-option-preview" style="background:linear-gradient(135deg,#080a07,#1a1f17);border:1px solid #356045"></div>
+            <div class="theme-option-name">Nature</div>
+          </div>
+          <div class="theme-option" data-theme="manga">
+            <div class="theme-option-preview" style="background:linear-gradient(135deg,#08060f,#201830);border:1px solid #701850"></div>
+            <div class="theme-option-name">Manga</div>
           </div>
         </div>
-        <div style="display:flex;gap:.75rem;margin-top:1.5rem;flex-wrap:wrap">
-          <button class="settings-save" id="btn-save-theme">Seal the Theme</button>
-          <button class="test-btn" id="btn-reset-theme">Reset Default</button>
-        </div>
-        <div class="connection-result" id="theme-result"></div>
 
-        <div class="setup-guide" style="margin-top:1.5rem">
-          <div class="setup-guide-title">Background Image</div>
-          <ol class="setup-guide">
-            <li>Upload a imagem para o <a href="https://imgur.com/upload" target="_blank">Imgur</a> ou outro host</li>
-            <li>Copia o link directo da imagem (deve terminar em <code>.jpg</code>, <code>.png</code>, <code>.webp</code>)</li>
-            <li>Cola no campo acima e ajusta a opacidade</li>
-          </ol>
+        <div style="margin-top:2rem">
+          <div class="field-label" style="margin-bottom:1rem">Custom Overrides</div>
+          <div class="color-grid">
+            <div class="color-field"><label>Accent</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="tc-accent" data-var="--accent" value="#c9a84c"><input class="input theme-color-input" type="text" id="ti-accent" value="#c9a84c"></div></div>
+            <div class="color-field"><label>Accent Light</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="tc-accent-light" data-var="--accent-light" value="#e8d08a"><input class="input theme-color-input" type="text" id="ti-accent-light" value="#e8d08a"></div></div>
+            <div class="color-field"><label>Background</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="tc-bg" data-var="--bg" value="#080604"><input class="input theme-color-input" type="text" id="ti-bg" value="#080604"></div></div>
+            <div class="color-field"><label>Text</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="tc-text" data-var="--text" value="#e8dcc8"><input class="input theme-color-input" type="text" id="ti-text" value="#e8dcc8"></div></div>
+            <div class="color-field"><label>Text Dim</label><div class="color-wrap"><input type="color" class="theme-color-picker" id="tc-text-dim" data-var="--text-dim" value="#9a8860"><input class="input theme-color-input" type="text" id="ti-text-dim" value="#9a8860"></div></div>
+            <div class="color-field"><label>Background Image URL</label><input class="input" type="url" id="tc-bg-url" placeholder="https://…"></div>
+          </div>
+          <div class="range-wrap" style="max-width:360px;margin-top:1rem">
+            <label class="field-label" style="white-space:nowrap;margin-right:.5rem">BG Opacity</label>
+            <input type="range" id="tc-bg-opacity" min="0" max="1" step="0.05" value="0.4">
+            <span id="tc-bg-opacity-val">0.40</span>
+          </div>
         </div>
+
+        <div style="display:flex;gap:.75rem;margin-top:1.5rem;flex-wrap:wrap">
+          <button class="btn-primary btn-sm" id="btn-save-theme">Save Theme</button>
+          <button class="btn-ghost btn-sm" id="btn-reset-theme">Reset</button>
+        </div>
+        <div class="result-msg" id="theme-result"></div>
       </div>
 
     </div>
@@ -575,22 +425,48 @@
 
 </div><!-- #app -->
 
+<!-- MODAL: PROJECT -->
+<div class="modal-backdrop" id="modal-project">
+  <div class="modal">
+    <div class="modal-title" id="modal-project-title">Add Project</div>
+    <input type="hidden" id="project-edit-id">
+    <div class="field-group"><label class="field-label">Title</label><input class="input" type="text" id="proj-title" placeholder="Project name…"></div>
+    <div class="field-group"><label class="field-label">Description</label><textarea class="input" id="proj-desc" rows="3" placeholder="What is this project?"></textarea></div>
+    <div class="field-group"><label class="field-label">Stack (comma-separated)</label><input class="input" type="text" id="proj-stack" placeholder="React, Node.js, PostgreSQL…"></div>
+    <div class="field-group"><label class="field-label">Tags (comma-separated)</label><input class="input" type="text" id="proj-tags" placeholder="web, fullstack, open-source…"></div>
+    <div class="input-row">
+      <div class="field-group"><label class="field-label">Live URL</label><input class="input" type="url" id="proj-url" placeholder="https://…"></div>
+      <div class="field-group"><label class="field-label">GitHub URL</label><input class="input" type="url" id="proj-github" placeholder="https://github.com/…"></div>
+    </div>
+    <div class="field-group"><label class="field-label">Image URL</label><input class="input" type="url" id="proj-img" placeholder="https://…"></div>
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem">
+      <input type="checkbox" id="proj-public" checked style="accent-color:var(--accent);width:16px;height:16px">
+      <label class="field-label" style="margin:0;cursor:pointer" for="proj-public">Public</label>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-cancel" data-close="modal-project">Cancel</button>
+      <button class="btn-primary" id="btn-confirm-project">Save Project</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: SHORT -->
 <div class="modal-backdrop" id="modal-short">
   <div class="modal">
-    <div class="modal-title">Add Scroll</div>
-    <div class="field-group"><label class="field-label">Title</label><input class="field-input" type="text" id="short-title" placeholder="Name thy scroll…"></div>
-    <div class="field-group"><label class="field-label">URL</label><input class="field-input" type="url" id="short-url" placeholder="https://…"></div>
-    <div class="field-group"><label class="field-label">Category</label><input class="field-input" type="text" id="short-cat" placeholder="e.g. Gaming, IRL…"></div>
-    <div class="field-group"><label class="field-label">Views (optional)</label><input class="field-input" type="text" id="short-views" placeholder="e.g. 12.4K"></div>
-    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem">
-      <input type="checkbox" id="short-public" checked style="accent-color:var(--gold);width:16px;height:16px">
-      <label class="field-label" style="margin:0;cursor:pointer" for="short-public">Visible to public</label>
+    <div class="modal-title">Add Short</div>
+    <div class="field-group"><label class="field-label">Title</label><input class="input" type="text" id="short-title" placeholder="Title…"></div>
+    <div class="field-group"><label class="field-label">URL</label><input class="input" type="url" id="short-url" placeholder="https://…"></div>
+    <div class="input-row">
+      <div class="field-group"><label class="field-label">Category</label><input class="input" type="text" id="short-cat" placeholder="Gaming, IRL…"></div>
+      <div class="field-group"><label class="field-label">Views</label><input class="input" type="text" id="short-views" placeholder="12.4K"></div>
     </div>
-    <div class="saving-indicator" id="short-saving">Dispatching courier…</div>
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem">
+      <input type="checkbox" id="short-public" checked style="accent-color:var(--accent);width:16px;height:16px">
+      <label class="field-label" style="margin:0;cursor:pointer" for="short-public">Public</label>
+    </div>
     <div class="modal-footer">
       <button class="modal-cancel" data-close="modal-short">Cancel</button>
-      <button class="btn-primary" id="btn-confirm-short">Add Scroll</button>
+      <button class="btn-primary" id="btn-confirm-short">Save</button>
     </div>
   </div>
 </div>
@@ -598,41 +474,52 @@
 <!-- MODAL: VAULT -->
 <div class="modal-backdrop" id="modal-vault">
   <div class="modal">
-    <div class="modal-title">New Chronicle Entry</div>
-    <div class="type-select">
-      <button class="type-opt active" data-type="link">Link</button>
-      <button class="type-opt" data-type="note">Note</button>
-      <button class="type-opt" data-type="idea">Idea</button>
-      <button class="type-opt" data-type="file">File</button>
-      <button class="type-opt" data-type="code">Code</button>
+    <div class="modal-title">New Vault Entry</div>
+    <div style="display:flex;gap:.35rem;flex-wrap:wrap;margin-bottom:1.25rem">
+      <button class="filter-btn active" data-vt="link">Link</button>
+      <button class="filter-btn" data-vt="note">Note</button>
+      <button class="filter-btn" data-vt="idea">Idea</button>
+      <button class="filter-btn" data-vt="file">File</button>
+      <button class="filter-btn" data-vt="code">Code</button>
     </div>
-    <div class="field-group"><label class="field-label">Title</label><input class="field-input" type="text" id="vault-title" placeholder="Title…"></div>
-    <div class="field-group" id="vault-url-group"><label class="field-label">URL</label><input class="field-input" type="url" id="vault-url" placeholder="https://…"></div>
-    <div class="field-group" id="vault-file-group" style="display:none">
-      <label class="field-label">File</label>
-      <div class="file-drop-zone" id="vault-file-drop">
-        <span class="file-drop-icon">📂</span>
-        <span id="vault-file-label">Drag &amp; drop or click to browse</span>
-        <input type="file" id="vault-file-input" accept=".txt,.js,.ts,.py,.cs,.java,.html,.css,.json,.md,.xml,.csv,.sh,.sql" style="display:none">
-      </div>
-      <div class="field-hint">Or paste a direct URL below</div>
-      <input class="field-input" type="url" id="vault-file-url" placeholder="https://…" style="margin-top:.5rem">
-    </div>
-    <div class="field-group" id="vault-lang-group" style="display:none"><label class="field-label">Language</label><input class="field-input" type="text" id="vault-lang" placeholder="e.g. javascript, python…"></div>
-    <div class="field-group"><label class="field-label" id="vault-content-label">Content / Notes</label><textarea class="field-input" id="vault-content" rows="4" placeholder="Write thy chronicle…" style="font-family:var(--mono);font-size:.8rem"></textarea></div>
-    <div class="field-group"><label class="field-label">Tags (comma-separated)</label><input class="field-input" type="text" id="vault-tags" placeholder="e.g. sorcery, battles"></div>
+    <div class="field-group"><label class="field-label">Title</label><input class="input" type="text" id="vault-title" placeholder="Title…"></div>
+    <div class="field-group" id="vault-url-group"><label class="field-label">URL</label><input class="input" type="url" id="vault-url" placeholder="https://…"></div>
+    <div class="field-group" id="vault-lang-group" style="display:none"><label class="field-label">Language</label><input class="input" type="text" id="vault-lang" placeholder="javascript, python…"></div>
+    <div class="field-group"><label class="field-label" id="vault-content-label">Content</label><textarea class="input" id="vault-content" rows="4" placeholder="…"></textarea></div>
+    <div class="field-group"><label class="field-label">Tags</label><input class="input" type="text" id="vault-tags" placeholder="tag1, tag2…"></div>
     <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem">
-      <input type="checkbox" id="vault-public" checked style="accent-color:var(--gold);width:16px;height:16px">
-      <label class="field-label" style="margin:0;cursor:pointer" for="vault-public">Visible to public</label>
+      <input type="checkbox" id="vault-public" checked style="accent-color:var(--accent);width:16px;height:16px">
+      <label class="field-label" style="margin:0;cursor:pointer" for="vault-public">Public</label>
     </div>
-    <div class="saving-indicator" id="vault-saving">Dispatching courier…</div>
     <div class="modal-footer">
       <button class="modal-cancel" data-close="modal-vault">Cancel</button>
-      <button class="btn-primary" id="btn-confirm-vault">Inscribe to Vault</button>
+      <button class="btn-primary" id="btn-confirm-vault">Save</button>
     </div>
   </div>
 </div>
 
+<!-- MODAL: SOCIAL -->
+<div class="modal-backdrop" id="modal-social">
+  <div class="modal">
+    <div class="modal-title">Add Social</div>
+    <div class="input-row">
+      <div class="field-group"><label class="field-label">Platform</label><input class="input" type="text" id="social-platform" placeholder="Instagram, TikTok…"></div>
+      <div class="field-group"><label class="field-label">Icon (emoji)</label><input class="input" type="text" id="social-icon" placeholder="📸"></div>
+    </div>
+    <div class="field-group"><label class="field-label">URL</label><input class="input" type="url" id="social-url" placeholder="https://…"></div>
+    <div class="field-group"><label class="field-label">Handle</label><input class="input" type="text" id="social-handle" placeholder="@kira"></div>
+    <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem">
+      <input type="checkbox" id="social-public" checked style="accent-color:var(--accent);width:16px;height:16px">
+      <label class="field-label" style="margin:0;cursor:pointer" for="social-public">Public</label>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-cancel" data-close="modal-social">Cancel</button>
+      <button class="btn-primary" id="btn-confirm-social">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="kira-toast"></div>
 <script src="js/app.js"></script>
 </body>
 </html>
