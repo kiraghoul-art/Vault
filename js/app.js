@@ -1,36 +1,45 @@
+/* ═══════════════════════════════════════════════
+   KIRA PORTFOLIO — app.js
+   ═══════════════════════════════════════════════ */
+
 const WORKER = 'https://kira-discord-proxy.ghoullkira.workers.dev';
 
 const API = {
   token: null,
-  h() { return { 'Content-Type': 'application/json', ...(this.token ? { 'X-Session-Token': this.token } : {}) }; },
-  async get(p)    { return (await fetch(WORKER + p, { headers: this.h() })).json(); },
-  async post(p,d) { return (await fetch(WORKER + p, { method:'POST',   headers: this.h(), body: JSON.stringify(d) })).json(); },
-  async del(p)    { return (await fetch(WORKER + p, { method:'DELETE', headers: this.h() })).json(); }
+  h()    { return { 'Content-Type': 'application/json', ...(this.token ? { 'X-Session-Token': this.token } : {}) }; },
+  get(p)    { return fetch(WORKER + p, { headers: this.h() }).then(r => r.json()); },
+  post(p,d) { return fetch(WORKER + p, { method:'POST',   headers: this.h(), body: JSON.stringify(d) }).then(r => r.json()); },
+  del(p)    { return fetch(WORKER + p, { method:'DELETE', headers: this.h() }).then(r => r.json()); }
 };
 
-let profile = {}, theme = {}, isOwner = false;
-let vaultItems = [], shorts = [], socials = [];
-let vaultFilter = 'all', vaultType = 'link';
-let musicData = { themeSong: null, playlists: [] };
-let channelRows = [];
+let state = {
+  profile: {}, theme: {}, projects: [], shorts: [], socials: [],
+  vault: [], music: { themeSong: null, playlists: [] }, about: {},
+  channels: [], isOwner: false,
+  vaultFilter: 'all', vaultType: 'link',
+  musicData: { themeSong: null, playlists: [] },
+  channelRows: [], activeTheme: 'medieval'
+};
 
+/* ── INIT ── */
 document.addEventListener('DOMContentLoaded', async () => {
   setupNav();
   setupLoginModal();
-  setupVaultModal();
-  setupShortModal();
+  setupModals();
   setupSettingsListeners();
   setupMusicDropZones();
-  applyStoredTheme();
+  loadStoredTheme();
 
   const tok = sessionStorage.getItem('kira_token');
   if (tok) {
     API.token = tok;
-    const saved = sessionStorage.getItem('kira_profile');
-    const savedTheme = sessionStorage.getItem('kira_theme');
-    if (saved) profile = JSON.parse(saved);
-    if (savedTheme) theme = JSON.parse(savedTheme);
-    await enterOwner(false);
+    try {
+      const saved = sessionStorage.getItem('kira_profile');
+      const savedTheme = sessionStorage.getItem('kira_theme');
+      if (saved) state.profile = JSON.parse(saved);
+      if (savedTheme) state.theme = JSON.parse(savedTheme);
+      await enterOwner(false);
+    } catch(e) { await loadPublic(); }
     return;
   }
   await loadPublic();
@@ -41,13 +50,19 @@ async function loadPublic() {
   try {
     const r = await API.get('/public');
     if (!r.ok) { setStatus('error'); return; }
-    profile = r.profile || {}; theme = r.theme || {};
-    vaultItems = r.items || []; shorts = r.shorts || []; socials = r.socials || [];
-    applyProfile(); applyTheme(theme); applyPageVisibility(); renderAll();
+    state.profile  = r.profile  || {};
+    state.theme    = r.theme    || {};
+    state.projects = r.projects || [];
+    state.shorts   = r.shorts   || [];
+    state.socials  = r.socials  || [];
+    state.music    = r.music    || { themeSong: null, playlists: [] };
+    state.about    = r.about    || {};
+    applyProfile(); applyPageVisibility(); renderAll();
     setStatus('connected');
   } catch(e) { setStatus('error'); }
 }
 
+/* ── NAV ── */
 function setupNav() {
   document.querySelectorAll('.nav-links button[data-page]').forEach(b =>
     b.addEventListener('click', function() { goTo(this.dataset.page); })
@@ -56,14 +71,14 @@ function setupNav() {
     b.addEventListener('click', function() { goTo(this.dataset.goto); })
   );
   const ham = document.getElementById('nav-hamburger');
-  const nl  = document.querySelector('.nav-links');
+  const nl  = document.getElementById('nav-links');
   if (ham && nl) {
     ham.addEventListener('click', e => { e.stopPropagation(); nl.classList.toggle('open'); });
     document.addEventListener('click', () => nl.classList.remove('open'));
   }
   document.getElementById('nav-logo')?.addEventListener('click', () => goTo('home'));
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { closeModal('modal-vault'); closeModal('modal-short'); closeLoginModal(); }
+    if (e.key === 'Escape') { closeAllModals(); closeLogin(); }
   });
 }
 
@@ -72,222 +87,325 @@ function goTo(page) {
   document.querySelectorAll('.nav-links button[data-page]').forEach(b =>
     b.classList.toggle('active', b.dataset.page === page)
   );
-  document.getElementById('page-' + page)?.classList.add('active');
-  document.querySelector('.nav-links')?.classList.remove('open');
+  const el = document.getElementById('page-' + page);
+  if (el) el.classList.add('active');
+  document.getElementById('nav-links')?.classList.remove('open');
   if (page === 'music') loadMusic();
 }
 
 function applyPageVisibility() {
-  ['shorts','vault','socials','curriculum','music'].forEach(p => {
-    const key = 'show' + p.charAt(0).toUpperCase() + p.slice(1);
-    const show = isOwner || profile[key] !== false;
-    const btn = document.querySelector(`.nav-links button[data-page="${p}"]`);
+  const p = state.profile;
+  const pages = [
+    ['projects', p.showProjects !== false],
+    ['music',    p.showMusic    !== false],
+    ['shorts',   p.showShorts   !== false],
+    ['vault',    state.isOwner],
+    ['socials',  p.showSocials  !== false],
+    ['cv',       p.showCv       !== false],
+    ['about',    p.showAbout    !== false],
+    ['setup',    state.isOwner]
+  ];
+  pages.forEach(([name, show]) => {
+    const btn = document.querySelector(`.nav-links button[data-page="${name}"]`);
     if (btn) btn.style.display = show ? '' : 'none';
   });
 }
 
+/* ── LOGIN ── */
 function setupLoginModal() {
-  document.getElementById('btn-open-login')?.addEventListener('click', openLoginModal);
-  document.getElementById('btn-close-login')?.addEventListener('click', closeLoginModal);
-  document.getElementById('login-screen')?.addEventListener('click', function(e) { if (e.target === this) closeLoginModal(); });
+  document.getElementById('btn-open-login')?.addEventListener('click', openLogin);
   document.getElementById('btn-login')?.addEventListener('click', doLogin);
+  document.getElementById('btn-logout')?.addEventListener('click', doLogout);
   document.getElementById('login-pass')?.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
   document.getElementById('login-user')?.addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('login-pass')?.focus(); });
-  document.getElementById('btn-logout')?.addEventListener('click', doLogout);
+  document.getElementById('login-screen')?.addEventListener('click', function(e) { if (e.target === this) closeLogin(); });
 }
 
-function openLoginModal() {
+function openLogin() {
   const s = document.getElementById('login-screen');
   if (s) { s.style.display = 'flex'; document.getElementById('login-user')?.focus(); }
 }
-function closeLoginModal() {
+function closeLogin() {
   const s = document.getElementById('login-screen');
   if (s) s.style.display = 'none';
   setLoginMsg('');
 }
-function setLoginMsg(msg, ok) {
+function setLoginMsg(msg, type) {
   const el = document.getElementById('login-result');
   if (!el) return;
   el.textContent = msg;
-  el.className = 'login-result' + (ok ? ' ok' : msg ? ' err' : '');
-  el.style.display = msg ? 'block' : 'none';
+  el.className = 'login-result' + (type ? ' ' + type : '');
 }
 
 async function doLogin() {
   const user = document.getElementById('login-user')?.value.trim() || '';
   const pass = document.getElementById('login-pass')?.value || '';
-  if (!user || !pass) { setLoginMsg('Fill both fields.'); return; }
+  if (!user || !pass) { setLoginMsg('Fill both fields.', 'err'); return; }
   const btn = document.getElementById('btn-login');
   if (btn) btn.disabled = true;
   setLoginMsg('Verifying…');
   try {
-    const r = await (await fetch(WORKER + '/auth', {
+    const r = await fetch(WORKER + '/auth', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: user, password: pass })
-    })).json();
-    if (!r.ok) { setLoginMsg('Wrong credentials.'); return; }
-    API.token = r.token; profile = r.profile || {}; theme = r.theme || {};
-    sessionStorage.setItem('kira_token', r.token);
-    sessionStorage.setItem('kira_profile', JSON.stringify(profile));
-    sessionStorage.setItem('kira_theme', JSON.stringify(theme));
-    closeLoginModal();
+    }).then(r => r.json());
+    if (!r.ok) { setLoginMsg('Wrong credentials.', 'err'); return; }
+    API.token = r.token;
+    state.profile = r.profile || {};
+    state.theme   = r.theme   || {};
+    sessionStorage.setItem('kira_token',   r.token);
+    sessionStorage.setItem('kira_profile', JSON.stringify(state.profile));
+    sessionStorage.setItem('kira_theme',   JSON.stringify(state.theme));
+    closeLogin();
     await enterOwner(true);
-  } catch(e) { setLoginMsg('Connection error.'); }
+  } catch(e) { setLoginMsg('Connection error.', 'err'); }
   finally { if (btn) btn.disabled = false; }
 }
 
 function doLogout() {
-  API.token = null; isOwner = false;
-  profile = {}; theme = {}; vaultItems = []; shorts = []; socials = [];
+  API.token = null; state.isOwner = false;
   sessionStorage.clear(); location.reload();
 }
 
 async function enterOwner(fetchData) {
-  isOwner = true;
+  state.isOwner = true;
   document.querySelectorAll('.owner-only').forEach(el => el.style.display = '');
-  applyProfile(); applyTheme(theme);
+  applyPageVisibility();
 
   if (fetchData) {
     setStatus('connecting');
     try {
       const r = await API.get('/data');
       if (!r.ok) { setStatus('error'); return; }
-      profile = r.profile || {}; theme = r.theme || {};
-      vaultItems = r.items || []; shorts = r.shorts || []; socials = r.socials || [];
-      sessionStorage.setItem('kira_profile', JSON.stringify(profile));
-      sessionStorage.setItem('kira_theme', JSON.stringify(theme));
+      state.profile  = r.profile  || {};
+      state.theme    = r.theme    || {};
+      state.projects = r.projects || [];
+      state.shorts   = r.shorts   || [];
+      state.socials  = r.socials  || [];
+      state.vault    = r.vault    || [];
+      state.music    = r.music    || { themeSong: null, playlists: [] };
+      state.about    = r.about    || {};
+      state.channels = r.channels || [];
+      sessionStorage.setItem('kira_profile', JSON.stringify(state.profile));
+      sessionStorage.setItem('kira_theme',   JSON.stringify(state.theme));
     } catch(e) { setStatus('error'); return; }
   } else {
-    const r = await API.get('/data');
-    if (r.ok) {
-      profile = r.profile || {}; theme = r.theme || {};
-      vaultItems = r.items || []; shorts = r.shorts || []; socials = r.socials || [];
-      sessionStorage.setItem('kira_profile', JSON.stringify(profile));
-      sessionStorage.setItem('kira_theme', JSON.stringify(theme));
-    }
+    try {
+      const r = await API.get('/data');
+      if (r.ok) {
+        state.profile  = r.profile  || state.profile;
+        state.theme    = r.theme    || state.theme;
+        state.projects = r.projects || [];
+        state.shorts   = r.shorts   || [];
+        state.socials  = r.socials  || [];
+        state.vault    = r.vault    || [];
+        state.music    = r.music    || { themeSong: null, playlists: [] };
+        state.about    = r.about    || {};
+        state.channels = r.channels || [];
+        sessionStorage.setItem('kira_profile', JSON.stringify(state.profile));
+        sessionStorage.setItem('kira_theme',   JSON.stringify(state.theme));
+      }
+    } catch(e) {}
   }
 
-  applyProfile(); applyTheme(theme); applyPageVisibility();
-  await populateSettings();
-  renderAll(); setStatus('connected');
+  applyProfile();
+  applyPageVisibility();
+  populateSetup();
+  renderAll();
+  setStatus('connected');
 }
 
-function renderAll() { renderVault(); renderShorts(); renderSocials(); updateStats(); }
+function renderAll() {
+  applyProfile();
+  renderProjects();
+  renderShorts();
+  renderSocials();
+  renderVault();
+  renderAbout();
+  renderCV();
+  updateStats();
+}
 
+/* ── PROFILE ── */
 function applyProfile() {
-  const bgEl = document.querySelector('.bg-img');
-  if (bgEl && profile.bgUrl) bgEl.style.backgroundImage = 'url(' + profile.bgUrl + ')';
-  const h1 = document.getElementById('hero-title');
-  if (h1) h1.innerHTML = (profile.name || 'Kira') + '<em>creates.</em>';
-  const tg = document.getElementById('hero-tagline');
-  if (tg) tg.textContent = profile.tagline || 'Short-form content, ideas, and a private vault.';
+  const p = state.profile;
+  const bgEl = document.getElementById('bg-img');
+  if (bgEl) {
+    bgEl.style.backgroundImage = p.bgUrl ? `url(${p.bgUrl})` : '';
+    bgEl.style.opacity = state.theme.bgOpacity !== undefined ? state.theme.bgOpacity : 0.4;
+  }
+  const av = document.getElementById('home-avatar');
+  const avSrc = p.avatar || state.about?.image || '';
+  if (av) { av.src = avSrc; av.style.display = avSrc ? '' : 'none'; }
+
+  const el = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val || ''; };
+  el('home-name', p.name || 'Kira');
+  el('home-tagline', p.tagline || '');
+  document.title = (p.name || 'Kira') + ' — Portfolio';
+  document.getElementById('nav-logo').innerHTML = (p.name || 'Kira').charAt(0) + '<span>' + (p.name || 'Kira').slice(1) + '</span>';
+  document.getElementById('login-logo').innerHTML = (p.name || 'Kira').charAt(0) + '<span style="color:var(--accent)">' + (p.name || 'Kira').slice(1) + '</span>';
+
+  const quote = document.getElementById('home-quote');
+  if (quote) { quote.textContent = p.quote || ''; quote.style.display = p.quote ? '' : 'none'; }
+
+  // Home nav chips
+  const chips = document.getElementById('home-nav-links');
+  if (chips) {
+    const pages = ['projects','music','shorts','socials','cv','about'];
+    chips.innerHTML = pages.map(pg => `<button class="home-nav-chip" data-goto="${pg}">${pg.charAt(0).toUpperCase()+pg.slice(1)}</button>`).join('');
+    chips.querySelectorAll('[data-goto]').forEach(b => b.addEventListener('click', function() { goTo(this.dataset.goto); }));
+  }
+
+  // Owner edit areas
+  if (state.isOwner) {
+    ['cv-edit','about-edit'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = ''; });
+  }
 }
 
-function applyTheme(t) {
+/* ── THEME ── */
+function loadStoredTheme() {
+  try {
+    const t = localStorage.getItem('kira_theme_name') || 'medieval';
+    state.activeTheme = t;
+    applyThemeCSS(t);
+    const overrides = localStorage.getItem('kira_theme_overrides');
+    if (overrides) applyThemeOverrides(JSON.parse(overrides));
+  } catch(e) {}
+}
+
+function applyThemeCSS(name) {
+  const link = document.getElementById('theme-css');
+  if (link) link.href = 'css/themes/' + name + '.css';
+  document.querySelectorAll('.theme-option').forEach(o => o.classList.toggle('active', o.dataset.theme === name));
+  state.activeTheme = name;
+  localStorage.setItem('kira_theme_name', name);
+}
+
+function applyThemeOverrides(t) {
   if (!t) return;
   const r = document.documentElement;
-  if (t.gold)       r.style.setProperty('--gold',       t.gold);
-  if (t.goldLight)  r.style.setProperty('--gold-light', t.goldLight);
-  if (t.goldDim)    r.style.setProperty('--gold-dim',   t.goldDim);
-  if (t.bg)         r.style.setProperty('--bg',         t.bg);
-  if (t.surface)    r.style.setProperty('--surface',    t.surface);
-  if (t.text)       r.style.setProperty('--text',       t.text);
-  if (t.textDim)    r.style.setProperty('--text-dim',   t.textDim);
-  if (t.bgOpacity !== undefined) {
-    const bgEl = document.querySelector('.bg-img');
-    if (bgEl) bgEl.style.opacity = t.bgOpacity;
+  const map = { accent:'--accent', accentLight:'--accent-light', accentDim:'--accent-dim', bg:'--bg', text:'--text', textDim:'--text-dim' };
+  Object.entries(map).forEach(([k,v]) => { if (t[k]) r.style.setProperty(v, t[k]); });
+  const bgEl = document.getElementById('bg-img');
+  if (bgEl) {
+    if (t.bgUrl) bgEl.style.backgroundImage = `url(${t.bgUrl})`;
+    if (t.bgOpacity !== undefined) bgEl.style.opacity = t.bgOpacity;
   }
-  localStorage.setItem('kira_theme', JSON.stringify(t));
 }
 
-function applyStoredTheme() {
-  try { const t = localStorage.getItem('kira_theme'); if (t) applyTheme(JSON.parse(t)); } catch(e) {}
+/* ── STATS ── */
+function updateStats() {
+  const si = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  si('stat-projects', state.projects.filter(p => state.isOwner || p.isPublic !== false).length);
+  si('stat-shorts',   state.shorts.filter(s => state.isOwner || s.isPublic !== false).length);
+  si('stat-socials',  state.socials.filter(s => state.isOwner || s.isPublic !== false).length);
 }
 
-/* ── SETTINGS ──────────────────────────────────────────────────── */
-function setupSettingsListeners() {
-  document.getElementById('btn-save-profile')?.addEventListener('click', saveProfile);
-  document.getElementById('btn-save-theme')?.addEventListener('click', saveTheme);
-  document.getElementById('btn-reset-theme')?.addEventListener('click', resetTheme);
-  document.getElementById('btn-test-connection')?.addEventListener('click', testConnection);
-  document.getElementById('btn-add-social')?.addEventListener('click', addSocial);
-  document.getElementById('btn-save-music')?.addEventListener('click', saveMusic);
-  document.getElementById('btn-save-channels')?.addEventListener('click', saveChannels);
-  document.getElementById('btn-add-channel')?.addEventListener('click', () => {
-    channelRows.push({ id: '', label: '', page: '' });
-    renderChannelRows();
-  });
-  document.getElementById('btn-save-spotify-creds')?.addEventListener('click', saveSpotifyCreds);
+/* ── PROJECTS ── */
+function renderProjects() {
+  const grid = document.getElementById('projects-grid');
+  const filterBar = document.getElementById('projects-filter');
+  if (!grid) return;
 
-  document.querySelectorAll('.theme-color-input').forEach(inp => {
-    inp.addEventListener('input', function() {
-      const pk = document.getElementById(this.id + '-picker');
-      if (pk) pk.value = this.value;
-      livePreviewTheme();
-    });
-  });
-  document.querySelectorAll('.theme-color-picker').forEach(p => {
-    p.addEventListener('input', function() {
-      const txt = document.getElementById(this.dataset.target);
-      if (txt) txt.value = this.value;
-      livePreviewTheme();
-    });
-  });
-  const op = document.getElementById('theme-bg-opacity');
-  if (op) op.addEventListener('input', function() {
-    const lbl = document.getElementById('theme-bg-opacity-val');
-    if (lbl) lbl.textContent = parseFloat(this.value).toFixed(2);
-    livePreviewTheme();
-  });
-}
+  const visible = state.projects.filter(p => state.isOwner || p.isPublic !== false);
+  if (!visible.length) { grid.innerHTML = '<div class="music-empty">No projects yet.</div>'; if (filterBar) filterBar.innerHTML = ''; return; }
 
-async function populateSettings() {
-  const sv = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined) el.value = v; };
-  sv('cfg-name', profile.name); sv('cfg-tagline', profile.tagline);
-  ['Shorts','Vault','Socials','Curriculum','Music'].forEach(p => {
-    const cb = document.getElementById('show-' + p.toLowerCase());
-    if (cb) cb.checked = profile['show' + p] !== false;
-  });
-  if (theme.gold)       { sv('theme-gold',       theme.gold);       const pk = document.getElementById('theme-gold-picker');       if (pk) pk.value = theme.gold; }
-  if (theme.goldLight)  { sv('theme-gold-light',  theme.goldLight);  const pk = document.getElementById('theme-gold-light-picker'); if (pk) pk.value = theme.goldLight; }
-  if (theme.goldDim)    { sv('theme-gold-dim',    theme.goldDim);    const pk = document.getElementById('theme-gold-dim-picker');   if (pk) pk.value = theme.goldDim; }
-  if (theme.bg)         { sv('theme-bg',          theme.bg);         const pk = document.getElementById('theme-bg-picker');         if (pk) pk.value = theme.bg; }
-  if (theme.surface)    { sv('theme-surface',     theme.surface);    const pk = document.getElementById('theme-surface-picker');    if (pk) pk.value = theme.surface; }
-  if (theme.text)       { sv('theme-text',        theme.text);       const pk = document.getElementById('theme-text-picker');       if (pk) pk.value = theme.text; }
-  if (theme.textDim)    { sv('theme-text-dim',    theme.textDim);    const pk = document.getElementById('theme-text-dim-picker');   if (pk) pk.value = theme.textDim; }
-  if (theme.bgUrl)      sv('theme-bg-url', theme.bgUrl);
-  if (theme.bgOpacity !== undefined) {
-    sv('theme-bg-opacity', theme.bgOpacity);
-    const lbl = document.getElementById('theme-bg-opacity-val');
-    if (lbl) lbl.textContent = parseFloat(theme.bgOpacity).toFixed(2);
+  const tags = ['all', ...new Set(visible.flatMap(p => (p.tags || '').split(',').map(t => t.trim()).filter(Boolean)))];
+  if (filterBar) {
+    filterBar.innerHTML = tags.map(t => `<button class="filter-btn${t==='all'?' active':''}" data-pf="${esc(t)}">${t==='all'?'All':esc(t)}</button>`).join('');
+    filterBar.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', function() {
+      filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      const f = this.dataset.pf;
+      grid.querySelectorAll('.project-card').forEach(c => {
+        c.style.display = (f === 'all' || c.dataset.tags?.includes(f)) ? '' : 'none';
+      });
+    }));
   }
 
-  const sea = document.getElementById('socials-edit-area'); if (sea) sea.style.display = '';
-  const cea = document.getElementById('cv-edit-area');      if (cea) cea.style.display = '';
+  grid.innerHTML = visible.map(p => {
+    const pub = p.isPublic !== false;
+    const stack = (p.stack || '').split(',').map(s => s.trim()).filter(Boolean);
+    const tags2 = (p.tags  || '').split(',').map(t => t.trim()).filter(Boolean);
+    return `<div class="card project-card" data-pid="${p.id}" data-tags="${esc(p.tags||'')}" style="${!pub&&state.isOwner?'opacity:.6':'}">
+      <div class="project-img-wrap">
+        ${p.img ? `<img class="project-img" src="${esc(p.img)}" alt="">` : `<div class="project-img-placeholder">🗂</div>`}
+        ${state.isOwner?`<div style="position:absolute;top:.5rem;right:.5rem;display:flex;gap:.25rem;z-index:2">
+          <button class="filter-btn" style="padding:.2rem .5rem;font-size:.55rem" onclick="openEditProject('${p.id}')">Edit</button>
+          <button class="filter-btn" style="padding:.2rem .5rem;font-size:.55rem;color:#e06c75" onclick="deleteProject('${p.id}')">✕</button>
+        </div>`:''}
+      </div>
+      <div class="card-title">${esc(p.title||'')}</div>
+      ${p.description?`<div class="card-body">${esc(p.description)}</div>`:''}
+      ${stack.length?`<div class="project-stack">${stack.map(s=>`<span>${esc(s)}</span>`).join('')}</div>`:''}
+      ${tags2.length?`<div class="card-tags">${tags2.map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+      <div class="project-links">
+        ${p.url    ?`<a class="project-link" href="${esc(p.url)}" target="_blank" rel="noopener">↗ Live</a>`:''}
+        ${p.github ?`<a class="project-link" href="${esc(p.github)}" target="_blank" rel="noopener">⌥ GitHub</a>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
 
-  // Load music
+function openAddProject()  { openProjectModal(null); }
+function openEditProject(id) {
+  const p = state.projects.find(x => x.id === id);
+  if (p) openProjectModal(p);
+}
+
+function openProjectModal(p) {
+  const isEdit = !!p;
+  document.getElementById('modal-project-title').textContent = isEdit ? 'Edit Project' : 'Add Project';
+  document.getElementById('project-edit-id').value = p?.id || '';
+  const sv = (id, v) => { const e = document.getElementById(id); if (e) e.value = v || ''; };
+  sv('proj-title', p?.title); sv('proj-desc', p?.description); sv('proj-stack', p?.stack);
+  sv('proj-tags', p?.tags); sv('proj-url', p?.url); sv('proj-github', p?.github); sv('proj-img', p?.img);
+  const pub = document.getElementById('proj-public'); if (pub) pub.checked = p?.isPublic !== false;
+  openModal('modal-project');
+}
+
+async function saveProject() {
+  const id   = document.getElementById('project-edit-id')?.value;
+  const data = {
+    title:       document.getElementById('proj-title')?.value.trim()   || '',
+    description: document.getElementById('proj-desc')?.value.trim()    || '',
+    stack:       document.getElementById('proj-stack')?.value.trim()   || '',
+    tags:        document.getElementById('proj-tags')?.value.trim()    || '',
+    url:         document.getElementById('proj-url')?.value.trim()     || '',
+    github:      document.getElementById('proj-github')?.value.trim()  || '',
+    img:         document.getElementById('proj-img')?.value.trim()     || '',
+    isPublic:    document.getElementById('proj-public')?.checked ?? true
+  };
+  if (!data.title) { toast('Title required.'); return; }
   try {
-    const r = await API.get('/music');
-    if (r.ok) {
-      musicData = { themeSong: r.themeSong || null, playlists: r.playlists || [] };
-      renderMusicSetup();
+    if (id) {
+      await API.post('/projects/update', { id, ...data });
+      const idx = state.projects.findIndex(p => p.id === id);
+      if (idx > -1) state.projects[idx] = { ...state.projects[idx], ...data };
+    } else {
+      const r = await API.post('/projects', data);
+      if (r.ok) state.projects.unshift({ id: r.id, ...data, createdAt: Date.now() });
     }
-  } catch(e) {}
+    renderProjects(); updateStats(); closeModal('modal-project'); toast('✦ Project saved.');
+  } catch(e) { toast('Error: ' + e.message); }
+}
 
-  // Load channels
+async function deleteProject(id) {
+  if (!confirm('Delete project?')) return;
   try {
-    const r = await API.get('/channels');
-    if (r.ok) { channelRows = r.channels || []; renderChannelRows(); }
-  } catch(e) {}
+    await API.del('/projects/' + id);
+    state.projects = state.projects.filter(p => p.id !== id);
+    renderProjects(); updateStats(); toast('Deleted.');
+  } catch(e) { toast('Error.'); }
 }
 
-/* ── MUSIC DROP ZONES ──────────────────────────────────────────── */
+/* ── MUSIC ── */
 function setupMusicDropZones() {
-  setupDropZone('drop-theme', handleThemeDrop);
-  setupDropZone('drop-playlist', handlePlaylistDrop);
+  makeDropZone('drop-theme', handleThemeDrop);
+  makeDropZone('drop-playlist', handlePlaylistDrop);
 }
 
-function setupDropZone(id, handler) {
+function makeDropZone(id, handler) {
   const el = document.getElementById(id);
   if (!el) return;
   el.addEventListener('dragover', e => { e.preventDefault(); el.classList.add('drag-over'); });
@@ -298,135 +416,554 @@ function setupDropZone(id, handler) {
     if (url) handler(url.trim());
   });
   el.addEventListener('click', () => {
-    const inp = prompt('Cola o link do Spotify:');
-    if (inp) handler(inp.trim());
+    const url = prompt('Cola o link do Spotify:');
+    if (url) handler(url.trim());
   });
 }
 
 async function handleThemeDrop(url) {
-  if (!isOwner) return;
+  if (!state.isOwner) return;
   const prev = document.getElementById('theme-preview');
-  if (prev) prev.innerHTML = '<div style="padding:.5rem 0;font-family:var(--serif);font-size:.8rem;color:var(--gold-dim)">A carregar… <span class="spin"></span></div>';
+  if (prev) prev.innerHTML = '<div style="padding:.5rem 0;font-size:.8rem;color:var(--accent-dim)">Loading… <span class="spin"></span></div>';
   try {
     const r = await API.post('/spotify/lookup', { url });
     if (!r.ok) { toast('❌ ' + r.error); if (prev) prev.innerHTML = ''; return; }
-    musicData.themeSong = { title: r.title || r.name, artist: r.artist || '', img: r.img, url: r.url, gif: musicData.themeSong?.gif || '' };
-    renderMusicSetup();
-    toast('✦ Theme song adicionado.');
-  } catch(e) { toast('Erro: ' + e.message); if (prev) prev.innerHTML = ''; }
+    state.musicData.themeSong = { title: r.title || r.name, artist: r.artist || '', img: r.img, url: r.url, gif: state.musicData.themeSong?.gif || '' };
+    renderMusicSetup(); toast('✦ Theme song added.');
+  } catch(e) { toast('Error: ' + e.message); if (prev) prev.innerHTML = ''; }
 }
 
 async function handlePlaylistDrop(url) {
-  if (!isOwner) return;
-  const list = document.getElementById('playlist-setup-list');
-  if (list) {
-    const tmp = document.createElement('div');
-    tmp.style.cssText = 'padding:.5rem 0;font-family:var(--serif);font-size:.8rem;color:var(--gold-dim)';
-    tmp.innerHTML = 'A carregar… <span class="spin"></span>';
-    list.appendChild(tmp);
-  }
+  if (!state.isOwner) return;
   try {
     const r = await API.post('/spotify/lookup', { url });
-    if (!r.ok) { toast('❌ ' + r.error); renderMusicSetup(); return; }
-    musicData.playlists.push({ name: r.name || r.title, img: r.img, url: r.url, gif: '' });
-    renderMusicSetup();
-    toast('✦ Playlist adicionada.');
-  } catch(e) { toast('Erro: ' + e.message); renderMusicSetup(); }
+    if (!r.ok) { toast('❌ ' + r.error); return; }
+    state.musicData.playlists.push({ name: r.name || r.title, img: r.img, url: r.url, gif: '' });
+    renderMusicSetup(); toast('✦ Playlist added.');
+  } catch(e) { toast('Error: ' + e.message); }
 }
 
 function renderMusicSetup() {
-  // Theme preview
   const prev = document.getElementById('theme-preview');
-  const gifGroup = document.getElementById('theme-gif-group');
+  const gifWrap = document.getElementById('theme-gif-wrap');
   if (prev) {
-    if (musicData.themeSong?.title) {
-      const s = musicData.themeSong;
-      prev.innerHTML = `<div class="music-preview-card">
-        ${s.img ? `<img class="music-preview-img" src="${esc(s.img)}" alt="">` : '<div class="music-preview-img" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem">♪</div>'}
-        <div class="music-preview-info">
-          <div class="music-preview-title">${esc(s.title)}</div>
-          ${s.artist ? `<div class="music-preview-artist">${esc(s.artist)}</div>` : ''}
+    const s = state.musicData.themeSong;
+    if (s?.title) {
+      prev.innerHTML = `<div class="music-setup-preview">
+        ${s.img ? `<img class="music-setup-thumb" src="${esc(s.img)}" alt="">` : '<div class="music-setup-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem">♪</div>'}
+        <div class="music-setup-info">
+          <div class="music-setup-title">${esc(s.title)}</div>
+          ${s.artist?`<div class="music-setup-artist">${esc(s.artist)}</div>`:''}
         </div>
-        <button class="music-preview-del" id="btn-del-theme">✕</button>
+        <button class="music-setup-del" id="btn-del-theme">✕</button>
       </div>`;
-      document.getElementById('btn-del-theme')?.addEventListener('click', () => {
-        musicData.themeSong = null; renderMusicSetup();
-      });
-      if (gifGroup) { gifGroup.style.display = ''; document.getElementById('music-song-gif').value = s.gif || ''; }
+      document.getElementById('btn-del-theme')?.addEventListener('click', () => { state.musicData.themeSong = null; renderMusicSetup(); });
+      if (gifWrap) { gifWrap.style.display = ''; const g = document.getElementById('music-song-gif'); if (g) g.value = s.gif || ''; }
     } else {
       prev.innerHTML = '';
-      if (gifGroup) gifGroup.style.display = 'none';
+      if (gifWrap) gifWrap.style.display = 'none';
     }
   }
-
-  // Playlists
   const list = document.getElementById('playlist-setup-list');
   if (!list) return;
-  if (!musicData.playlists.length) { list.innerHTML = ''; return; }
-  list.innerHTML = musicData.playlists.map((p, i) => `
+  if (!state.musicData.playlists.length) { list.innerHTML = ''; return; }
+  list.innerHTML = state.musicData.playlists.map((p, i) => `
     <div class="playlist-setup-item">
       ${p.img ? `<img class="playlist-setup-thumb" src="${esc(p.img)}" alt="">` : '<div class="playlist-setup-thumb" style="display:flex;align-items:center;justify-content:center;font-size:1rem">🎧</div>'}
-      <div class="playlist-setup-name">${esc(p.name)}</div>
-      <input class="playlist-gif-input" type="url" placeholder="GIF URL (opcional)" value="${esc(p.gif||'')}" data-pi="${i}">
+      <div class="playlist-setup-name">${esc(p.name||'')}</div>
+      <input class="playlist-gif-input" type="url" placeholder="GIF URL" value="${esc(p.gif||'')}" data-pi="${i}">
       <button class="playlist-setup-del" data-pi="${i}">✕</button>
     </div>
   `).join('');
-  list.querySelectorAll('.playlist-gif-input').forEach(inp => {
-    inp.addEventListener('input', function() { musicData.playlists[+this.dataset.pi].gif = this.value; });
-  });
-  list.querySelectorAll('.playlist-setup-del').forEach(btn => {
-    btn.addEventListener('click', function() {
-      musicData.playlists.splice(+this.dataset.pi, 1); renderMusicSetup();
+  list.querySelectorAll('.playlist-gif-input').forEach(inp => inp.addEventListener('input', function() { state.musicData.playlists[+this.dataset.pi].gif = this.value; }));
+  list.querySelectorAll('.playlist-setup-del').forEach(btn => btn.addEventListener('click', function() { state.musicData.playlists.splice(+this.dataset.pi, 1); renderMusicSetup(); }));
+}
+
+async function saveMusic() {
+  if (!state.isOwner) return;
+  const el = document.getElementById('music-result');
+  showResult(el, 'Saving…', '');
+  const gifVal = document.getElementById('music-song-gif')?.value.trim() || '';
+  if (state.musicData.themeSong) state.musicData.themeSong.gif = gifVal;
+  try {
+    const r = await API.post('/music', state.musicData);
+    showResult(el, r.ok ? '✅ Saved.' : '❌ Failed.', r.ok ? 'ok' : 'err');
+    if (r.ok) state.music = { ...state.musicData };
+  } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
+}
+
+async function loadMusic() {
+  const c = document.getElementById('music-content');
+  if (!c) return;
+  c.innerHTML = '<div class="music-empty">Loading…</div>';
+  try {
+    const r = await API.get('/music');
+    if (!r.ok) { c.innerHTML = '<div class="music-empty">Could not load music.</div>'; return; }
+    renderMusicPage(r, c);
+  } catch(e) { c.innerHTML = '<div class="music-empty">Connection error.</div>'; }
+}
+
+function renderMusicPage(data, c) {
+  let html = '';
+  if (data.themeSong?.title || data.themeSong?.url) {
+    const s = data.themeSong;
+    const gifBg = s.gif
+      ? `<div class="music-theme-bg"><img src="${esc(s.gif)}" alt=""></div>`
+      : `<div class="music-theme-bg" style="background:linear-gradient(135deg,var(--bg),var(--bg3))"></div>`;
+    html += `<a class="music-theme-card" href="${esc(s.url||'#')}" target="_blank" rel="noopener">
+      ${gifBg}
+      <div class="music-theme-overlay"></div>
+      <div class="music-theme-content">
+        ${s.img ? `<img class="music-theme-cover" src="${esc(s.img)}" alt="" onerror="this.outerHTML='<div class=music-theme-cover-placeholder>♪</div>'">` : '<div class="music-theme-cover-placeholder">♪</div>'}
+        <div class="music-theme-info">
+          <div class="music-now-label"><span class="music-eq"><span></span><span></span><span></span><span></span></span> Theme Song</div>
+          <div class="music-track-title">${esc(s.title||'Untitled')}</div>
+          ${s.artist?`<div class="music-track-artist">${esc(s.artist)}</div>`:''}
+          <div class="music-open-btn">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+            Open in Spotify
+          </div>
+        </div>
+      </div>
+    </a>`;
+  }
+  if (data.playlists?.length) {
+    html += `<div class="music-section-title" style="margin-top:2rem">Playlists</div>
+    <div class="music-playlists-grid">
+      ${data.playlists.map(p => `
+      <a class="music-playlist-card" href="${esc(p.url||'#')}" target="_blank" rel="noopener">
+        <div class="music-playlist-img-wrap">
+          ${p.gif?`<div class="music-playlist-gif"><img src="${esc(p.gif)}" alt=""></div>`:''}
+          ${p.img?`<img class="music-playlist-cover" src="${esc(p.img)}" alt="" onerror="this.style.display='none'">`:(!p.gif?`<div class="music-playlist-placeholder">♫</div>`:'')}
+          <div class="music-playlist-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
+        </div>
+        <div class="music-playlist-info">
+          <div class="music-playlist-name">${esc(p.name||'Playlist')}</div>
+          <div class="music-playlist-meta">Playlist · Spotify</div>
+        </div>
+      </a>`).join('')}
+    </div>`;
+  }
+  c.innerHTML = html || '<div class="music-empty">No music configured yet. Go to Setup → Music.</div>';
+}
+
+/* ── SHORTS ── */
+function renderShorts() {
+  const grid = document.getElementById('shorts-grid');
+  const filterBar = document.getElementById('shorts-filter');
+  if (!grid) return;
+  const visible = state.shorts.filter(s => state.isOwner || s.isPublic !== false);
+  if (!visible.length) { grid.innerHTML = '<div class="short-empty">No shorts yet.</div>'; if (filterBar) filterBar.innerHTML = ''; return; }
+
+  const cats = ['all', ...new Set(visible.map(s => s.cat).filter(Boolean))];
+  if (filterBar) {
+    filterBar.innerHTML = cats.map(c => `<button class="filter-btn${c==='all'?' active':''}" data-sf="${esc(c)}">${c==='all'?'All':esc(c)}</button>`).join('');
+    filterBar.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', function() {
+      filterBar.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      const f = this.dataset.sf;
+      grid.querySelectorAll('.short-card').forEach(c => c.style.display = (f==='all'||c.dataset.cat===f)?'':'none');
+    }));
+  }
+
+  grid.innerHTML = visible.map(s => {
+    const pub = s.isPublic !== false;
+    return `<div class="short-card" data-cat="${esc(s.cat||'')}" data-sid="${s.id}" style="${!pub&&state.isOwner?'opacity:.6':''}">
+      <div class="short-thumb">
+        <div class="short-thumb-overlay"></div>
+        <div class="short-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg></div>
+        ${s.cat?`<div class="short-cat-badge">${esc(s.cat)}</div>`:''}
+        ${state.isOwner?`<div style="position:absolute;top:.4rem;right:.4rem;display:flex;gap:.25rem;z-index:2">
+          <button style="background:rgba(0,0,0,.8);border:1px solid var(--border);color:var(--text-muted);cursor:pointer;font-size:.55rem;padding:.15rem .35rem;border-radius:2px" onclick="toggleShort('${s.id}',${pub})">${pub?'Hide':'Show'}</button>
+          <button style="background:rgba(0,0,0,.8);border:none;color:var(--text-muted);cursor:pointer;font-size:.7rem;padding:.15rem .35rem" onclick="deleteShort('${s.id}')">✕</button>
+        </div>`:''}
+      </div>
+      <div class="short-info">
+        <div class="short-title">${esc(s.titulo||'')}</div>
+        ${s.views?`<div class="short-views">${esc(s.views)} views</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+
+  grid.querySelectorAll('.short-card').forEach((card, i) => {
+    card.addEventListener('click', e => {
+      if (e.target.tagName === 'BUTTON') return;
+      if (visible[i]?.url) window.open(visible[i].url, '_blank');
     });
   });
 }
 
-async function saveMusic() {
-  if (!isOwner) return;
-  const el = document.getElementById('music-result');
-  showResult(el, 'Saving…', '');
-  const gifVal = document.getElementById('music-song-gif')?.value.trim() || '';
-  if (musicData.themeSong) musicData.themeSong.gif = gifVal;
+async function toggleShort(id, isPub) {
   try {
-    const r = await API.post('/music', { themeSong: musicData.themeSong, playlists: musicData.playlists });
-    showResult(el, r.ok ? '✅ Saved.' : '❌ Failed.', r.ok ? 'ok' : 'err');
+    await API.post('/shorts/update', { id, isPublic: !isPub });
+    const idx = state.shorts.findIndex(s => s.id === id);
+    if (idx > -1) state.shorts[idx].isPublic = !isPub;
+    renderShorts(); toast(!isPub ? '👁 Public.' : '🔒 Hidden.');
+  } catch(e) { toast('Error.'); }
+}
+
+async function deleteShort(id) {
+  if (!confirm('Delete?')) return;
+  try {
+    await API.del('/shorts/' + id);
+    state.shorts = state.shorts.filter(s => s.id !== id);
+    renderShorts(); updateStats(); toast('Deleted.');
+  } catch(e) { toast('Error.'); }
+}
+
+async function addShort() {
+  if (!state.isOwner) return;
+  const data = {
+    titulo:   document.getElementById('short-title')?.value.trim()  || '',
+    url:      document.getElementById('short-url')?.value.trim()    || '',
+    cat:      document.getElementById('short-cat')?.value.trim()    || '',
+    views:    document.getElementById('short-views')?.value.trim()  || '',
+    isPublic: document.getElementById('short-public')?.checked ?? true
+  };
+  if (!data.titulo || !data.url) { toast('Title and URL required.'); return; }
+  try {
+    const r = await API.post('/shorts', data);
+    if (r.ok) {
+      state.shorts.unshift({ id: r.id, ...data, createdAt: Date.now() });
+      renderShorts(); updateStats(); closeModal('modal-short'); toast('✦ Added.');
+    } else toast('Error: ' + (r.error||'failed'));
+  } catch(e) { toast('Error: ' + e.message); }
+}
+
+/* ── VAULT ── */
+function renderVault() {
+  const c = document.getElementById('vault-cards');
+  if (!c) return;
+  const q = (document.getElementById('vault-search')?.value || '').toLowerCase();
+  const items = state.vault.filter(i => {
+    if (!state.isOwner && i.isPublic === false) return false;
+    if (state.vaultFilter !== 'all' && i.type !== state.vaultFilter) return false;
+    if (q && !(i.titulo+i.content+i.tags+i.url).toLowerCase().includes(q)) return false;
+    return true;
+  });
+  if (!items.length) { c.innerHTML = '<div class="vault-empty">Nothing found.</div>'; renderVaultTags(); return; }
+  const ic = { link:'⊞', note:'≡', file:'◫', idea:'◇', code:'</>' };
+  c.innerHTML = items.map(i => {
+    const pub = i.isPublic !== false;
+    return `<div class="vault-item" style="${!pub&&state.isOwner?'opacity:.6':''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem">
+        <span class="vault-item-type">${ic[i.type]||'▦'} ${i.type}</span>
+        ${state.isOwner?`<span style="display:flex;gap:.3rem">
+          <button style="background:none;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;font-size:.52rem;padding:.1rem .3rem;border-radius:2px" onclick="toggleVault('${i.id}',${pub})">${pub?'Hide':'Show'}</button>
+          <button style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.7rem" onclick="deleteVault('${i.id}')">✕</button>
+        </span>`:''}
+      </div>
+      <div class="vault-item-title">${esc(i.titulo||'')}</div>
+      ${i.url?`<div class="vault-item-url"><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.url)}</a></div>`:''}
+      ${i.content?`<div class="vault-item-preview">${esc(i.content)}</div>`:''}
+      ${i.tags?`<div class="card-tags">${i.tags.split(',').map(t=>`<span class="tag">${esc(t.trim())}</span>`).join('')}</div>`:''}
+    </div>`;
+  }).join('');
+  renderVaultTags();
+}
+
+function renderVaultTags() {
+  const sb = document.getElementById('vault-tags');
+  if (!sb) return;
+  const tags = new Set();
+  state.vault.forEach(i => { if (i.tags) i.tags.split(',').forEach(t => tags.add(t.trim())); });
+  sb.innerHTML = [...tags].map(t => `<div class="vault-cat" data-vt="${esc(t)}"># ${esc(t)}</div>`).join('');
+  sb.querySelectorAll('[data-vt]').forEach(el => el.addEventListener('click', function() {
+    const inp = document.getElementById('vault-search');
+    if (inp) { inp.value = this.dataset.vt; renderVault(); }
+  }));
+}
+
+async function toggleVault(id, isPub) {
+  try {
+    await API.post('/vault/update', { id, isPublic: !isPub });
+    const idx = state.vault.findIndex(v => v.id === id);
+    if (idx > -1) state.vault[idx].isPublic = !isPub;
+    renderVault(); toast(!isPub ? '👁 Public.' : '🔒 Hidden.');
+  } catch(e) { toast('Error.'); }
+}
+
+async function deleteVault(id) {
+  if (!confirm('Delete?')) return;
+  try {
+    await API.del('/vault/' + id);
+    state.vault = state.vault.filter(v => v.id !== id);
+    renderVault(); toast('Deleted.');
+  } catch(e) { toast('Error.'); }
+}
+
+async function addVaultItem() {
+  if (!state.isOwner) return;
+  const data = {
+    type:     state.vaultType,
+    titulo:   document.getElementById('vault-title')?.value.trim()   || '',
+    url:      document.getElementById('vault-url')?.value.trim()     || '',
+    content:  document.getElementById('vault-content')?.value.trim() || '',
+    tags:     document.getElementById('vault-tags')?.value.trim()    || '',
+    lang:     document.getElementById('vault-lang')?.value.trim()    || '',
+    isPublic: document.getElementById('vault-public')?.checked ?? true
+  };
+  if (!data.titulo) { toast('Title required.'); return; }
+  try {
+    const r = await API.post('/vault', data);
+    if (r.ok) {
+      state.vault.unshift({ id: r.id, ...data, createdAt: Date.now() });
+      renderVault(); closeModal('modal-vault'); toast('✦ Added.');
+    } else toast('Error: ' + (r.error||'failed'));
+  } catch(e) { toast('Error: ' + e.message); }
+}
+
+/* ── SOCIALS ── */
+function renderSocials() {
+  const grid = document.getElementById('socials-grid');
+  if (!grid) return;
+  const visible = state.socials.filter(s => state.isOwner || s.isPublic !== false);
+  if (!visible.length) { grid.innerHTML = '<div class="music-empty">No socials yet.</div>'; return; }
+  grid.innerHTML = visible.map(s => {
+    const pub = s.isPublic !== false;
+    return `<a class="social-card" href="${esc(s.url||'#')}" target="_blank" rel="noopener" style="${!pub&&state.isOwner?'opacity:.6':''}">
+      <div class="social-icon">${s.icon||'🔗'}</div>
+      <div>
+        <div class="social-name">${esc(s.platform||'')}</div>
+        ${s.handle?`<div class="social-handle">${esc(s.handle)}</div>`:''}
+      </div>
+      ${state.isOwner?`<div style="margin-left:auto;display:flex;gap:.25rem">
+        <button style="background:none;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;font-size:.52rem;padding:.1rem .3rem;border-radius:2px" onclick="toggleSocial(event,'${s.id}',${pub})">${pub?'Hide':'Show'}</button>
+        <button style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.7rem" onclick="deleteSocial(event,'${s.id}')">✕</button>
+      </div>`:''}
+    </a>`;
+  }).join('');
+}
+
+async function toggleSocial(e, id, isPub) {
+  e.preventDefault(); e.stopPropagation();
+  try {
+    await API.post('/socials/update', { id, isPublic: !isPub });
+    const idx = state.socials.findIndex(s => s.id === id);
+    if (idx > -1) state.socials[idx].isPublic = !isPub;
+    renderSocials(); toast(!isPub ? '👁 Public.' : '🔒 Hidden.');
+  } catch(err) { toast('Error.'); }
+}
+
+async function deleteSocial(e, id) {
+  e.preventDefault(); e.stopPropagation();
+  if (!confirm('Delete?')) return;
+  try {
+    await API.del('/socials/' + id);
+    state.socials = state.socials.filter(s => s.id !== id);
+    renderSocials(); toast('Deleted.');
+  } catch(err) { toast('Error.'); }
+}
+
+async function addSocial() {
+  if (!state.isOwner) return;
+  const data = {
+    platform: document.getElementById('social-platform')?.value.trim() || '',
+    url:      document.getElementById('social-url')?.value.trim()      || '',
+    handle:   document.getElementById('social-handle')?.value.trim()   || '',
+    icon:     document.getElementById('social-icon')?.value.trim()     || '',
+    isPublic: document.getElementById('social-public')?.checked ?? true
+  };
+  if (!data.platform || !data.url) { toast('Platform and URL required.'); return; }
+  try {
+    const r = await API.post('/socials', data);
+    if (r.ok) {
+      state.socials.push({ id: r.id, ...data });
+      renderSocials(); closeModal('modal-social'); toast('✦ Added.');
+    } else toast('Error: ' + (r.error||'failed'));
+  } catch(e) { toast('Error: ' + e.message); }
+}
+
+/* ── ABOUT ── */
+function renderAbout() {
+  const txt = document.getElementById('about-text');
+  const img = document.getElementById('about-img');
+  const ph  = document.getElementById('about-img-placeholder');
+  const a   = state.about || {};
+  if (txt) txt.textContent = a.text || (state.isOwner ? 'Edit your about section in Setup.' : '');
+  if (img) { img.src = a.image || ''; img.style.display = a.image ? '' : 'none'; }
+  if (ph)  ph.style.display = a.image ? 'none' : '';
+  if (state.isOwner) {
+    const inp = document.getElementById('about-text-input'); if (inp) inp.value = a.text || '';
+    const url = document.getElementById('about-img-url');   if (url) url.value = a.image || '';
+  }
+}
+
+async function saveAbout() {
+  if (!state.isOwner) return;
+  const el = document.getElementById('about-result');
+  const data = {
+    text:  document.getElementById('about-text-input')?.value.trim() || '',
+    image: document.getElementById('about-img-url')?.value.trim()    || ''
+  };
+  showResult(el, 'Saving…', '');
+  try {
+    const r = await API.post('/about', data);
+    if (!r.ok) { showResult(el, '❌ Failed.', 'err'); return; }
+    state.about = data; renderAbout(); showResult(el, '✅ Saved.', 'ok');
   } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
 }
 
-/* ── CHANNELS ──────────────────────────────────────────────────── */
-function renderChannelRows() {
-  const container = document.getElementById('channel-editor-list');
-  if (!container) return;
-  if (!channelRows.length) { container.innerHTML = ''; return; }
-  container.innerHTML = channelRows.map((ch, i) => `
-    <div class="channel-editor-row">
-      <span class="channel-editor-drag">⠿</span>
-      <input type="text" class="field-input" placeholder="Label (ex: music)" value="${esc(ch.label)}" data-ci="${i}" data-cf="label">
-      <input type="text" class="field-input" placeholder="Channel ID" value="${esc(ch.id)}" data-ci="${i}" data-cf="id" style="font-family:var(--mono);font-size:.65rem">
-      <button class="channel-editor-del" data-ci="${i}">✕</button>
-    </div>
-  `).join('');
-  container.querySelectorAll('input[data-ci]').forEach(inp => {
-    inp.addEventListener('input', function() { channelRows[+this.dataset.ci][this.dataset.cf] = this.value; });
-  });
-  container.querySelectorAll('.channel-editor-del').forEach(btn => {
-    btn.addEventListener('click', function() { channelRows.splice(+this.dataset.ci, 1); renderChannelRows(); });
-  });
+/* ── CV ── */
+function renderCV() {
+  const c = document.getElementById('cv-content');
+  if (!c) return;
+  const url = state.profile.cvUrl;
+  if (url) {
+    c.innerHTML = `<iframe class="cv-embed" src="${esc(url)}" frameborder="0"></iframe>`;
+  } else {
+    c.innerHTML = '<div class="cv-empty">No CV uploaded yet.</div>';
+  }
+  if (state.isOwner) {
+    const inp = document.getElementById('cv-url'); if (inp) inp.value = url || '';
+  }
 }
 
-async function saveChannels() {
-  if (!isOwner) return;
-  const el = document.getElementById('channels-result');
+async function saveCV() {
+  if (!state.isOwner) return;
+  const el  = document.getElementById('cv-result');
+  const url = document.getElementById('cv-url')?.value.trim() || '';
   showResult(el, 'Saving…', '');
   try {
-    const r = await API.post('/channels', { channels: channelRows });
-    showResult(el, r.ok ? '✅ Saved.' : '❌ Failed.', r.ok ? 'ok' : 'err');
+    const cur = state.profile;
+    const r = await API.post('/profile', { ...cur, cvUrl: url });
+    if (!r.ok) { showResult(el, '❌ Failed.', 'err'); return; }
+    state.profile = r.profile || { ...cur, cvUrl: url };
+    renderCV(); showResult(el, '✅ Saved.', 'ok');
+  } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
+}
+
+/* ── SETUP ── */
+async function populateSetup() {
+  const sv = (id, v) => { const e = document.getElementById(id); if (e && v !== undefined) e.value = v; };
+  const p = state.profile;
+  sv('cfg-name', p.name); sv('cfg-tagline', p.tagline); sv('cfg-quote', p.quote); sv('cfg-avatar', p.avatar);
+  ['Projects','Music','Shorts','Vault','Socials','Cv','About'].forEach(pg => {
+    const cb = document.getElementById('show-' + pg.toLowerCase());
+    if (cb) cb.checked = p['show' + pg] !== false;
+  });
+
+  // Theme
+  const savedTheme = localStorage.getItem('kira_theme_name') || 'medieval';
+  applyThemeCSS(savedTheme);
+
+  // Load music into setup
+  try {
+    const r = await API.get('/music');
+    if (r.ok) {
+      state.musicData = { themeSong: r.themeSong || null, playlists: r.playlists || [] };
+      renderMusicSetup();
+    }
+  } catch(e) {}
+
+  // Load channels
+  try {
+    const r = await API.get('/channels');
+    if (r.ok) { state.channelRows = r.channels || []; renderChannelRows(); }
+  } catch(e) {}
+}
+
+function renderChannelRows() {
+  const c = document.getElementById('channel-list');
+  if (!c) return;
+  if (!state.channelRows.length) { c.innerHTML = ''; return; }
+  c.innerHTML = state.channelRows.map((ch, i) => `
+    <div class="channel-row">
+      <input class="input" type="text" placeholder="Label (ex: music)" value="${esc(ch.label||'')}" data-ci="${i}" data-cf="label" style="font-family:var(--font-mono);font-size:.65rem">
+      <input class="input" type="text" placeholder="Channel ID" value="${esc(ch.id||'')}" data-ci="${i}" data-cf="id" style="font-family:var(--font-mono);font-size:.65rem">
+      <button class="channel-del" data-ci="${i}">✕</button>
+    </div>
+  `).join('');
+  c.querySelectorAll('input[data-ci]').forEach(inp => inp.addEventListener('input', function() { state.channelRows[+this.dataset.ci][this.dataset.cf] = this.value; }));
+  c.querySelectorAll('.channel-del').forEach(btn => btn.addEventListener('click', function() { state.channelRows.splice(+this.dataset.ci, 1); renderChannelRows(); }));
+}
+
+function setupSettingsListeners() {
+  document.getElementById('btn-save-profile')?.addEventListener('click', saveProfile);
+  document.getElementById('btn-save-music')?.addEventListener('click', saveMusic);
+  document.getElementById('btn-save-spotify')?.addEventListener('click', saveSpotifyCreds);
+  document.getElementById('btn-save-channels')?.addEventListener('click', saveChannels);
+  document.getElementById('btn-test-connection')?.addEventListener('click', testConnection);
+  document.getElementById('btn-save-theme')?.addEventListener('click', saveTheme);
+  document.getElementById('btn-reset-theme')?.addEventListener('click', resetTheme);
+  document.getElementById('btn-save-cv')?.addEventListener('click', saveCV);
+  document.getElementById('btn-save-about')?.addEventListener('click', saveAbout);
+  document.getElementById('btn-add-project')?.addEventListener('click', openAddProject);
+  document.getElementById('btn-add-short')?.addEventListener('click', () => openModal('modal-short'));
+  document.getElementById('btn-add-social')?.addEventListener('click', () => openModal('modal-social'));
+  document.getElementById('btn-add-vault')?.addEventListener('click', () => openModal('modal-vault'));
+  document.getElementById('btn-add-channel')?.addEventListener('click', () => { state.channelRows.push({ id:'', label:'' }); renderChannelRows(); });
+
+  // Theme picker
+  document.querySelectorAll('.theme-option').forEach(o => o.addEventListener('click', function() { applyThemeCSS(this.dataset.theme); }));
+
+  // Color pickers
+  document.querySelectorAll('.theme-color-picker').forEach(pk => {
+    pk.addEventListener('input', function() {
+      const inp = this.closest('.color-field')?.querySelector('.theme-color-input');
+      if (inp) inp.value = this.value;
+      document.documentElement.style.setProperty(this.dataset.var, this.value);
+    });
+  });
+  document.querySelectorAll('.theme-color-input').forEach(inp => {
+    inp.addEventListener('input', function() {
+      const pk = this.closest('.color-field')?.querySelector('.theme-color-picker');
+      if (pk) pk.value = this.value;
+      document.documentElement.style.setProperty(pk?.dataset.var || '', this.value);
+    });
+  });
+  const op = document.getElementById('tc-bg-opacity');
+  if (op) op.addEventListener('input', function() {
+    const lbl = document.getElementById('tc-bg-opacity-val');
+    if (lbl) lbl.textContent = parseFloat(this.value).toFixed(2);
+    const bg = document.getElementById('bg-img'); if (bg) bg.style.opacity = this.value;
+  });
+
+  // Vault modal type btns
+  document.querySelectorAll('[data-vt]').forEach(b => b.addEventListener('click', function() {
+    document.querySelectorAll('[data-vt]').forEach(x => x.classList.remove('active'));
+    this.classList.add('active'); state.vaultType = this.dataset.vt;
+    const ug = document.getElementById('vault-url-group');
+    const lg = document.getElementById('vault-lang-group');
+    const cl = document.getElementById('vault-content-label');
+    if (ug) ug.style.display = (state.vaultType==='note'||state.vaultType==='idea') ? 'none' : '';
+    if (lg) lg.style.display = state.vaultType==='code' ? '' : 'none';
+    if (cl) cl.textContent  = state.vaultType==='code' ? 'Code' : 'Content';
+  }));
+
+  // Vault sidebar cats
+  document.querySelectorAll('.vault-cat[data-vf]').forEach(c => c.addEventListener('click', function() {
+    document.querySelectorAll('.vault-cat[data-vf]').forEach(x => x.classList.remove('active'));
+    this.classList.add('active'); state.vaultFilter = this.dataset.vf; renderVault();
+  }));
+  document.getElementById('vault-search')?.addEventListener('input', renderVault);
+}
+
+async function saveProfile() {
+  if (!state.isOwner) return;
+  const el = document.getElementById('profile-result');
+  showResult(el, 'Saving…', '');
+  const pages = ['Projects','Music','Shorts','Vault','Socials','Cv','About'];
+  const data = {
+    name:    document.getElementById('cfg-name')?.value.trim()    || state.profile.name    || 'Kira',
+    tagline: document.getElementById('cfg-tagline')?.value.trim() || '',
+    quote:   document.getElementById('cfg-quote')?.value.trim()   || '',
+    avatar:  document.getElementById('cfg-avatar')?.value.trim()  || '',
+    cvUrl:   state.profile.cvUrl || ''
+  };
+  pages.forEach(pg => { const cb = document.getElementById('show-' + pg.toLowerCase()); if (cb) data['show' + pg] = cb.checked; });
+  try {
+    const r = await API.post('/profile', data);
+    if (!r.ok) { showResult(el, '❌ Failed.', 'err'); return; }
+    state.profile = r.profile || { ...state.profile, ...data };
+    sessionStorage.setItem('kira_profile', JSON.stringify(state.profile));
+    applyProfile(); applyPageVisibility(); showResult(el, '✅ Saved.', 'ok');
   } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
 }
 
 async function saveSpotifyCreds() {
-  if (!isOwner) return;
-  const el = document.getElementById('spotify-creds-result');
+  if (!state.isOwner) return;
+  const el = document.getElementById('spotify-result');
   const clientId     = document.getElementById('spotify-client-id')?.value.trim()     || '';
   const clientSecret = document.getElementById('spotify-client-secret')?.value.trim() || '';
   if (!clientId && !clientSecret) { showResult(el, '❌ Fill at least one field.', 'err'); return; }
@@ -437,151 +974,18 @@ async function saveSpotifyCreds() {
   } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
 }
 
-/* ── MUSIC PAGE ────────────────────────────────────────────────── */
-async function loadMusic() {
-  const container = document.getElementById('music-content');
-  if (!container) return;
-  container.innerHTML = '<div class="music-empty">Loading…</div>';
-  try {
-    const r = await API.get('/music');
-    if (!r.ok) { container.innerHTML = '<div class="music-empty">Could not load music.</div>'; return; }
-    renderMusic(r, container);
-  } catch(e) { container.innerHTML = '<div class="music-empty">Connection error.</div>'; }
-}
-
-function renderMusic(data, container) {
-  let html = '';
-
-  if (data.themeSong?.title || data.themeSong?.url) {
-    const s = data.themeSong;
-    const coverHtml = s.img
-      ? `<img class="music-theme-cover" src="${esc(s.img)}" alt="${esc(s.title||'')}" onerror="this.outerHTML='<div class=music-theme-cover-placeholder>♪</div>'">`
-      : `<div class="music-theme-cover-placeholder">♪</div>`;
-    const gifBg = s.gif
-      ? `<div class="music-theme-bg"><img src="${esc(s.gif)}" alt=""></div>`
-      : `<div class="music-theme-bg" style="background:linear-gradient(135deg,#0a0704 0%,#1a1006 100%)"></div>`;
-
-    html += `
-    <div class="music-theme-wrap">
-      <div class="music-theme-eyebrow">Theme Song</div>
-      <a class="music-theme-card" href="${esc(s.url||'#')}" target="_blank" rel="noopener">
-        <span class="mc mc-tr"></span>
-        <span class="mc mc-bl"></span>
-        ${gifBg}
-        <div class="music-theme-overlay"></div>
-        <div class="music-theme-content">
-          ${coverHtml}
-          <div class="music-theme-info">
-            <div class="music-theme-label">
-              <span class="music-eq"><span></span><span></span><span></span><span></span></span>
-              Now Playing
-            </div>
-            <div class="music-theme-title">${esc(s.title||'Untitled')}</div>
-            ${s.artist ? `<div class="music-theme-artist">${esc(s.artist)}</div>` : ''}
-            <div class="music-theme-cta">
-              <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
-              Open in Spotify
-            </div>
-          </div>
-        </div>
-      </a>
-    </div>`;
-  }
-
-  if (data.playlists?.length) {
-    html += `
-    <div class="music-playlists-section">
-      <div class="music-section-title">Playlists</div>
-      <div class="music-playlists-grid">
-        ${data.playlists.map(p => {
-          const gifLayer = p.gif ? `<div class="music-playlist-gif"><img src="${esc(p.gif)}" alt=""></div>` : '';
-          const coverLayer = p.img ? `<img class="music-playlist-cover" src="${esc(p.img)}" alt="${esc(p.name||'')}" onerror="this.style.display='none'">` : '';
-          const placeholder = (!p.img && !p.gif) ? `<div class="music-playlist-placeholder">♫</div>` : '';
-          return `
-          <a class="music-playlist-card" href="${esc(p.url||'#')}" target="_blank" rel="noopener">
-            <div class="music-playlist-imgwrap">
-              ${gifLayer}${coverLayer}${placeholder}
-              <div class="music-playlist-play"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg></div>
-            </div>
-            <div class="music-playlist-info">
-              <div class="music-playlist-name">${esc(p.name||'Playlist')}</div>
-              <div class="music-playlist-meta">Playlist · Spotify</div>
-            </div>
-          </a>`;
-        }).join('')}
-      </div>
-    </div>`;
-  }
-
-  container.innerHTML = html || '<div class="music-empty">No music configured yet. Go to Setup → Music.</div>';
-}
-
-/* ── PROFILE / THEME SAVE ──────────────────────────────────────── */
-async function saveProfile() {
-  if (!isOwner) return;
-  const el = document.getElementById('profile-result');
+async function saveChannels() {
+  if (!state.isOwner) return;
+  const el = document.getElementById('channels-result');
   showResult(el, 'Saving…', '');
-  const pages = ['Shorts','Vault','Socials','Curriculum','Music'];
-  const updated = {
-    name:    document.getElementById('cfg-name')?.value.trim()    || profile.name    || 'Kira',
-    tagline: document.getElementById('cfg-tagline')?.value.trim() || profile.tagline || ''
-  };
-  pages.forEach(p => { const cb = document.getElementById('show-' + p.toLowerCase()); if (cb) updated['show' + p] = cb.checked; });
-  if (profile.bgUrl) updated.bgUrl = profile.bgUrl;
   try {
-    const r = await API.post('/profile', updated);
-    if (!r.ok) { showResult(el, '❌ Failed.', 'err'); return; }
-    profile = r.profile || { ...profile, ...updated };
-    sessionStorage.setItem('kira_profile', JSON.stringify(profile));
-    applyProfile(); applyPageVisibility();
-    showResult(el, '✅ Saved.', 'ok');
+    const r = await API.post('/channels', { channels: state.channelRows });
+    showResult(el, r.ok ? '✅ Saved.' : '❌ Failed.', r.ok ? 'ok' : 'err');
   } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
-}
-
-async function saveTheme() {
-  if (!isOwner) return;
-  const el = document.getElementById('theme-result');
-  showResult(el, 'Saving…', '');
-  const t = readThemeForm();
-  try {
-    const r = await API.post('/theme', t);
-    if (!r.ok) { showResult(el, '❌ Failed.', 'err'); return; }
-    theme = r.theme || t; applyTheme(theme);
-    sessionStorage.setItem('kira_theme', JSON.stringify(theme));
-    if (t.bgUrl) { profile.bgUrl = t.bgUrl; sessionStorage.setItem('kira_profile', JSON.stringify(profile)); applyProfile(); }
-    showResult(el, '✅ Theme saved.', 'ok');
-  } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
-}
-
-function livePreviewTheme() { applyTheme(readThemeForm()); }
-function readThemeForm() {
-  const g = id => document.getElementById(id)?.value || '';
-  return {
-    gold: g('theme-gold')||'#c9a84c', goldLight: g('theme-gold-light')||'#e8d08a',
-    goldDim: g('theme-gold-dim')||'#a07c30', bg: g('theme-bg')||'#080604',
-    surface: g('theme-surface')||'#0f0c07', text: g('theme-text')||'#e8dcc8',
-    textDim: g('theme-text-dim')||'#9a8860', bgUrl: g('theme-bg-url'),
-    bgOpacity: parseFloat(document.getElementById('theme-bg-opacity')?.value || '0.45')
-  };
-}
-
-function resetTheme() {
-  const d = { gold:'#c9a84c', goldLight:'#e8d08a', goldDim:'#a07c30', bg:'#080604', surface:'#0f0c07', text:'#e8dcc8', textDim:'#9a8860', bgOpacity:0.45 };
-  const sv = (id, v) => { const el = document.getElementById(id); if (el) el.value = v; };
-  sv('theme-gold', d.gold);       const pk1 = document.getElementById('theme-gold-picker');       if (pk1) pk1.value = d.gold;
-  sv('theme-gold-light', d.goldLight); const pk2 = document.getElementById('theme-gold-light-picker'); if (pk2) pk2.value = d.goldLight;
-  sv('theme-gold-dim', d.goldDim);    const pk3 = document.getElementById('theme-gold-dim-picker');   if (pk3) pk3.value = d.goldDim;
-  sv('theme-bg', d.bg);               const pk4 = document.getElementById('theme-bg-picker');         if (pk4) pk4.value = d.bg;
-  sv('theme-surface', d.surface);     const pk5 = document.getElementById('theme-surface-picker');    if (pk5) pk5.value = d.surface;
-  sv('theme-text', d.text);           const pk6 = document.getElementById('theme-text-picker');       if (pk6) pk6.value = d.text;
-  sv('theme-text-dim', d.textDim);    const pk7 = document.getElementById('theme-text-dim-picker');   if (pk7) pk7.value = d.textDim;
-  sv('theme-bg-opacity', d.bgOpacity);
-  const lbl = document.getElementById('theme-bg-opacity-val'); if (lbl) lbl.textContent = '0.45';
-  applyTheme(d);
 }
 
 async function testConnection() {
-  const el = document.getElementById('connection-result');
+  const el = document.getElementById('channels-result');
   showResult(el, 'Testing…', '');
   try {
     const r = await API.get('/public');
@@ -590,329 +994,76 @@ async function testConnection() {
   } catch(e) { showResult(el, '❌ ' + e.message, 'err'); setStatus('error'); }
 }
 
-/* ── VAULT ─────────────────────────────────────────────────────── */
-function setupVaultModal() {
-  document.querySelectorAll('.vault-cat').forEach(c =>
-    c.addEventListener('click', function() {
-      document.querySelectorAll('.vault-cat').forEach(x => x.classList.remove('active'));
-      this.classList.add('active');
-      vaultFilter = this.dataset.vaultFilter || 'all';
-      renderVault();
-    })
-  );
-  document.getElementById('vault-search-input')?.addEventListener('input', renderVault);
-  document.getElementById('btn-add-vault')?.addEventListener('click', () => openVaultModal());
-  document.querySelectorAll('.type-opt').forEach(b =>
-    b.addEventListener('click', function() {
-      document.querySelectorAll('.type-opt').forEach(x => x.classList.remove('active'));
-      this.classList.add('active'); vaultType = this.dataset.type; updateVaultFields(vaultType);
-    })
-  );
-  document.getElementById('btn-confirm-vault')?.addEventListener('click', addVaultItem);
-  document.querySelector('[data-close="modal-vault"]')?.addEventListener('click', () => closeModal('modal-vault'));
-  document.getElementById('modal-vault')?.addEventListener('click', function(e) { if (e.target === this) closeModal('modal-vault'); });
-  const dz = document.getElementById('vault-file-drop');
-  const fi = document.getElementById('vault-file-input');
-  if (dz && fi) {
-    dz.addEventListener('click', () => fi.click());
-    fi.addEventListener('change', function() { const lbl = document.getElementById('vault-file-label'); if (lbl && this.files[0]) lbl.textContent = this.files[0].name; });
-  }
-}
-
-function openVaultModal(type) {
-  vaultType = type || 'link';
-  document.querySelectorAll('.type-opt').forEach(b => b.classList.toggle('active', b.dataset.type === vaultType));
-  updateVaultFields(vaultType);
-  ['vault-title','vault-url','vault-content','vault-tags','vault-lang','vault-file-url'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  const lbl = document.getElementById('vault-file-label'); if (lbl) lbl.textContent = 'Drag & drop or click to browse';
-  const pub = document.getElementById('vault-public'); if (pub) pub.checked = true;
-  const sav = document.getElementById('vault-saving'); if (sav) sav.style.display = 'none';
-  openModal('modal-vault');
-}
-
-function updateVaultFields(type) {
-  const ug = document.getElementById('vault-url-group');   if (ug) ug.style.display  = (type==='note'||type==='idea') ? 'none' : '';
-  const fg = document.getElementById('vault-file-group');  if (fg) fg.style.display  = type==='file' ? '' : 'none';
-  const lg = document.getElementById('vault-lang-group');  if (lg) lg.style.display  = type==='code' ? '' : 'none';
-  const cl = document.getElementById('vault-content-label'); if (cl) cl.textContent  = type==='code' ? 'Code' : 'Content / Notes';
-}
-
-async function addVaultItem() {
-  if (!isOwner) return;
-  const titulo  = document.getElementById('vault-title')?.value.trim()    || '';
-  const url     = document.getElementById('vault-url')?.value.trim()      || '';
-  const content = document.getElementById('vault-content')?.value.trim()  || '';
-  const tags    = document.getElementById('vault-tags')?.value.trim()     || '';
-  const lang    = document.getElementById('vault-lang')?.value.trim()     || '';
-  const fileUrl = document.getElementById('vault-file-url')?.value.trim() || '';
-  const isPublic = document.getElementById('vault-public')?.checked ?? true;
-  if (!titulo) { toast('Title is required.'); return; }
-  const sav = document.getElementById('vault-saving'); if (sav) sav.style.display = 'block';
+async function saveTheme() {
+  if (!state.isOwner) return;
+  const el = document.getElementById('theme-result');
+  showResult(el, 'Saving…', '');
+  const overrides = {
+    accent:      document.getElementById('ti-accent')?.value      || '',
+    accentLight: document.getElementById('ti-accent-light')?.value|| '',
+    bg:          document.getElementById('ti-bg')?.value          || '',
+    text:        document.getElementById('ti-text')?.value        || '',
+    textDim:     document.getElementById('ti-text-dim')?.value    || '',
+    bgUrl:       document.getElementById('tc-bg-url')?.value      || '',
+    bgOpacity:   parseFloat(document.getElementById('tc-bg-opacity')?.value || '0.4'),
+    themeName:   state.activeTheme
+  };
   try {
-    const r = await API.post('/items', { type: vaultType, titulo, url: url || fileUrl, content, tags, lang, isPublic });
-    if (r.ok) {
-      vaultItems.unshift({ id: r.id, type: vaultType, titulo, url: url || fileUrl, content, tags, lang, isPublic });
-      renderVault(); updateStats(); closeModal('modal-vault'); toast('✦ Added.');
-    } else toast('Error: ' + (r.error || 'failed'));
-  } catch(e) { toast('Error: ' + e.message); }
-  finally { if (sav) sav.style.display = 'none'; }
+    const r = await API.post('/theme', overrides);
+    if (!r.ok) { showResult(el, '❌ Failed.', 'err'); return; }
+    state.theme = overrides;
+    sessionStorage.setItem('kira_theme', JSON.stringify(overrides));
+    localStorage.setItem('kira_theme_overrides', JSON.stringify(overrides));
+    applyThemeOverrides(overrides);
+    showResult(el, '✅ Theme saved.', 'ok');
+  } catch(e) { showResult(el, '❌ ' + e.message, 'err'); }
 }
 
-function renderVault() {
-  const c = document.getElementById('vault-cards');
-  if (!c) return;
-  const q = (document.getElementById('vault-search-input')?.value || '').toLowerCase();
-  const items = vaultItems.filter(i => {
-    if (!isOwner && i.isPublic === false) return false;
-    if (vaultFilter !== 'all' && i.type !== vaultFilter) return false;
-    if (q && !(i.titulo + i.content + i.tags + i.url).toLowerCase().includes(q)) return false;
-    return true;
+function resetTheme() {
+  localStorage.removeItem('kira_theme_overrides');
+  applyThemeCSS(state.activeTheme);
+  document.documentElement.removeAttribute('style');
+  const bg = document.getElementById('bg-img');
+  if (bg) { bg.style.opacity = '0.4'; bg.style.backgroundImage = state.profile.bgUrl ? `url(${state.profile.bgUrl})` : ''; }
+}
+
+/* ── MODALS ── */
+function setupModals() {
+  document.querySelectorAll('.modal-cancel, [data-close]').forEach(b => {
+    const target = b.dataset.close || b.closest('.modal-backdrop')?.id;
+    if (target) b.addEventListener('click', () => closeModal(target));
   });
-  if (!items.length) { c.innerHTML = '<div class="vault-empty">No scrolls found.</div>'; renderTagSidebar(); return; }
-  const ic = { link:'⊞', note:'≡', file:'◫', idea:'◇', code:'</>' };
-  c.innerHTML = items.map(i => {
-    const pub = i.isPublic !== false;
-    return `<div class="vault-item" data-type="${i.type}" style="${!pub&&isOwner?'opacity:.6;border-style:dashed':''}">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
-        <span class="vault-item-type">${ic[i.type]||'▦'} ${i.type}</span>
-        <span style="display:flex;align-items:center;gap:.35rem">
-          <span style="font-size:.65rem;color:${pub?'var(--gold-dark)':'var(--text-muted)'}">${pub?'👁':'🔒'}</span>
-          ${isOwner?`<button class="vtoggle" data-id="${i.id}" data-pub="${pub}" style="background:none;border:1px solid rgba(201,168,76,.2);color:var(--text-muted);cursor:pointer;font-size:.52rem;padding:.1rem .35rem;border-radius:2px;font-family:var(--display);letter-spacing:.06em">${pub?'Hide':'Show'}</button>
-          <button class="vdel" data-id="${i.id}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.75rem;padding:.1rem .3rem">✕</button>`:''}
-        </span>
-      </div>
-      <div class="vault-item-title">${esc(i.titulo)}</div>
-      ${i.url?`<div class="vault-item-url"><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.url)}</a></div>`:''}
-      ${i.content?`<div class="vault-item-preview">${esc(i.content)}</div>`:''}
-      ${i.tags?`<div class="vault-item-footer"><div style="display:flex;gap:.3rem;flex-wrap:wrap">${i.tags.split(',').map(t=>`<span class="vault-tag">${esc(t.trim())}</span>`).join('')}</div></div>`:''}
-    </div>`;
-  }).join('');
-  c.querySelectorAll('.vtoggle').forEach(btn => btn.addEventListener('click', async function(e) {
-    e.stopPropagation();
-    const id = this.dataset.id, newPub = this.dataset.pub !== 'true';
-    try {
-      await API.post('/items/update', { id, isPublic: newPub });
-      const idx = vaultItems.findIndex(x => x.id === id);
-      if (idx > -1) vaultItems[idx].isPublic = newPub;
-      renderVault(); toast(newPub ? '👁 Public.' : '🔒 Hidden.');
-    } catch(err) { toast('Failed.'); }
-  }));
-  c.querySelectorAll('.vdel').forEach(btn => btn.addEventListener('click', async function(e) {
-    e.stopPropagation();
-    if (!confirm('Delete?')) return;
-    try {
-      await API.del('/items/' + this.dataset.id);
-      vaultItems = vaultItems.filter(x => x.id !== this.dataset.id);
-      renderVault(); updateStats(); toast('Deleted.');
-    } catch(err) { toast('Delete failed.'); }
-  }));
-  renderTagSidebar();
-}
-
-function renderTagSidebar() {
-  const sb = document.getElementById('tag-sidebar');
-  if (!sb) return;
-  const tags = new Set();
-  vaultItems.forEach(i => { if (i.tags) i.tags.split(',').forEach(t => tags.add(t.trim())); });
-  sb.innerHTML = [...tags].map(t => `<div class="vault-cat" data-stag="${esc(t)}"># ${esc(t)}</div>`).join('');
-  sb.querySelectorAll('[data-stag]').forEach(el => el.addEventListener('click', function() {
-    const inp = document.getElementById('vault-search-input');
-    if (inp) { inp.value = this.dataset.stag; renderVault(); }
-  }));
-}
-
-/* ── SHORTS ────────────────────────────────────────────────────── */
-function setupShortModal() {
-  document.getElementById('btn-add-short')?.addEventListener('click', openShortModal);
+  document.querySelectorAll('.modal-backdrop').forEach(m => m.addEventListener('click', function(e) { if (e.target === this) closeModal(this.id); }));
+  document.getElementById('btn-confirm-project')?.addEventListener('click', saveProject);
   document.getElementById('btn-confirm-short')?.addEventListener('click', addShort);
-  document.querySelector('[data-close="modal-short"]')?.addEventListener('click', () => closeModal('modal-short'));
-  document.getElementById('modal-short')?.addEventListener('click', function(e) { if (e.target === this) closeModal('modal-short'); });
+  document.getElementById('btn-confirm-vault')?.addEventListener('click', addVaultItem);
+  document.getElementById('btn-confirm-social')?.addEventListener('click', addSocial);
 }
 
-function openShortModal() {
-  ['short-title','short-url','short-cat','short-views'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  const pub = document.getElementById('short-public'); if (pub) pub.checked = true;
-  const sav = document.getElementById('short-saving'); if (sav) sav.style.display = 'none';
-  openModal('modal-short');
-}
+function openModal(id)    { const m = document.getElementById(id); if (m) m.style.display = 'flex'; }
+function closeModal(id)   { const m = document.getElementById(id); if (m) m.style.display = 'none'; }
+function closeAllModals() { document.querySelectorAll('.modal-backdrop').forEach(m => m.style.display = 'none'); }
 
-async function addShort() {
-  if (!isOwner) return;
-  const titulo  = document.getElementById('short-title')?.value.trim() || '';
-  const url     = document.getElementById('short-url')?.value.trim()   || '';
-  const cat     = document.getElementById('short-cat')?.value.trim()   || '';
-  const views   = document.getElementById('short-views')?.value.trim() || '';
-  const isPublic = document.getElementById('short-public')?.checked ?? true;
-  if (!titulo || !url) { toast('Title and URL required.'); return; }
-  const sav = document.getElementById('short-saving'); if (sav) sav.style.display = 'block';
-  try {
-    const r = await API.post('/shorts', { titulo, url, cat, views, isPublic });
-    if (r.ok) {
-      shorts.unshift({ id: r.id, titulo, url, cat, views, isPublic });
-      renderShorts(); updateStats(); closeModal('modal-short'); toast('✦ Scroll added.');
-    } else toast('Error: ' + (r.error || 'failed'));
-  } catch(e) { toast('Error: ' + e.message); }
-  finally { if (sav) sav.style.display = 'none'; }
-}
-
-function renderShorts() {
-  const grid = document.getElementById('shorts-grid');
-  if (!grid) return;
-  const visible = shorts.filter(s => isOwner || s.isPublic !== false);
-  if (!visible.length) { grid.innerHTML = '<div class="short-empty">No scrolls yet.</div>'; return; }
-  const cats = ['all', ...new Set(visible.map(s => s.cat).filter(Boolean))];
-  const fb = document.getElementById('filter-bar');
-  if (fb) {
-    fb.innerHTML = cats.map(c => `<button class="filter-btn${c==='all'?' active':''}" data-fcat="${esc(c)}">${c==='all'?'All':esc(c)}</button>`).join('');
-    fb.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', function() {
-      fb.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-      const f = this.dataset.fcat;
-      grid.querySelectorAll('.short-card').forEach(card => card.style.display = (f==='all'||card.dataset.scat===f)?'':'none');
-    }));
-  }
-  grid.innerHTML = visible.map(s => {
-    const pub = s.isPublic !== false;
-    return `<div class="short-card" data-scat="${esc(s.cat||'')}" data-sid="${s.id}" style="${!pub&&isOwner?'opacity:.6;border-style:dashed':''}">
-      <div class="short-thumb">
-        <div class="thumb-gradient"></div>
-        <div class="play-icon"><svg viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21" fill="currentColor"/></svg></div>
-        ${s.cat?`<div class="thumb-tag">${esc(s.cat)}</div>`:''}
-        ${isOwner?`<div style="position:absolute;top:.4rem;right:.4rem;display:flex;gap:.25rem;z-index:2">
-          <button class="stoggle" data-id="${s.id}" data-pub="${pub}" style="background:rgba(8,6,4,.85);border:1px solid rgba(201,168,76,.25);color:var(--text-muted);cursor:pointer;font-size:.5rem;padding:.15rem .35rem;border-radius:2px;font-family:var(--display)">${pub?'Hide':'Show'}</button>
-          <button class="sdel" data-id="${s.id}" style="background:rgba(8,6,4,.85);border:none;color:var(--text-muted);cursor:pointer;font-size:.7rem;padding:.15rem .35rem">✕</button>
-        </div>`:''}
-      </div>
-      <div class="short-info">
-        <div class="short-title">${esc(s.titulo)}</div>
-        <div class="short-meta">
-          ${s.views?`<span class="short-views">${esc(s.views)} views</span>`:''}
-          <span style="font-size:.6rem;color:${pub?'var(--gold-dark)':'var(--text-muted)'};margin-left:auto">${pub?'👁':'🔒'}</span>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-  grid.querySelectorAll('.short-card').forEach((card, i) => {
-    card.addEventListener('click', e => {
-      if (['stoggle','sdel'].some(c => e.target.classList.contains(c))) return;
-      if (visible[i]?.url) window.open(visible[i].url, '_blank');
-    });
-  });
-  grid.querySelectorAll('.stoggle').forEach(btn => btn.addEventListener('click', async function(e) {
-    e.stopPropagation();
-    const id = this.dataset.id, newPub = this.dataset.pub !== 'true';
-    try {
-      await API.post('/shorts/update', { id, isPublic: newPub });
-      const idx = shorts.findIndex(x => x.id === id);
-      if (idx > -1) shorts[idx].isPublic = newPub;
-      renderShorts(); toast(newPub ? '👁 Public.' : '🔒 Hidden.');
-    } catch(err) { toast('Failed.'); }
-  }));
-  grid.querySelectorAll('.sdel').forEach(btn => btn.addEventListener('click', async function(e) {
-    e.stopPropagation();
-    if (!confirm('Delete?')) return;
-    try {
-      await API.del('/shorts/' + this.dataset.id);
-      shorts = shorts.filter(x => x.id !== this.dataset.id);
-      renderShorts(); updateStats(); toast('Deleted.');
-    } catch(err) { toast('Delete failed.'); }
-  }));
-}
-
-/* ── SOCIALS ───────────────────────────────────────────────────── */
-async function addSocial() {
-  if (!isOwner) return;
-  const platform = document.getElementById('social-platform')?.value.trim() || '';
-  const url      = document.getElementById('social-url')?.value.trim()      || '';
-  const handle   = document.getElementById('social-handle')?.value.trim()   || '';
-  const icon     = document.getElementById('social-icon')?.value.trim()     || '';
-  const isPublic = document.getElementById('social-public')?.checked ?? true;
-  if (!platform || !url) { toast('Platform and URL required.'); return; }
-  try {
-    const r = await API.post('/socials', { platform, url, handle, icon, isPublic });
-    if (r.ok) {
-      socials.push({ id: r.id, platform, url, handle, icon, isPublic });
-      renderSocials();
-      ['social-platform','social-url','social-handle','social-icon'].forEach(id => { const f = document.getElementById(id); if (f) f.value = ''; });
-      showResult(document.getElementById('social-result'), '✅ Added.', 'ok');
-    } else toast('Error: ' + (r.error || 'failed'));
-  } catch(e) { toast('Error: ' + e.message); }
-}
-
-function renderSocials() {
-  const grid = document.getElementById('socials-grid');
-  if (!grid) return;
-  const visible = socials.filter(s => isOwner || s.isPublic !== false);
-  if (!visible.length) { grid.innerHTML = '<div class="socials-empty">No socials yet.</div>'; return; }
-  grid.innerHTML = visible.map(s => {
-    const pub = s.isPublic !== false;
-    return `<a class="social-card" href="${esc(s.url)}" target="_blank" rel="noopener" style="${!pub&&isOwner?'opacity:.6;border-style:dashed':''}">
-      <div class="social-icon-wrap">${s.icon||'🔗'}</div>
-      <div class="social-info">
-        <div class="social-name">${esc(s.platform)}</div>
-        ${s.handle?`<div class="social-handle">${esc(s.handle)}</div>`:''}
-      </div>
-      ${isOwner?`<div style="display:flex;flex-direction:column;gap:.25rem;align-items:flex-end;margin-left:.5rem">
-        <button class="soctoggle" data-id="${s.id}" data-pub="${pub}" style="background:none;border:1px solid rgba(201,168,76,.2);color:var(--text-muted);cursor:pointer;font-size:.5rem;padding:.1rem .3rem;border-radius:2px;font-family:var(--display)">${pub?'Hide':'Show'}</button>
-        <button class="socdel" data-id="${s.id}" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:.7rem">✕</button>
-      </div>`:''}
-    </a>`;
-  }).join('');
-  grid.querySelectorAll('.soctoggle').forEach(btn => btn.addEventListener('click', async function(e) {
-    e.preventDefault(); e.stopPropagation();
-    const id = this.dataset.id, newPub = this.dataset.pub !== 'true';
-    try {
-      await API.post('/socials/update', { id, isPublic: newPub });
-      const idx = socials.findIndex(x => x.id === id);
-      if (idx > -1) socials[idx].isPublic = newPub;
-      renderSocials(); toast(newPub ? '👁 Public.' : '🔒 Hidden.');
-    } catch(err) { toast('Failed.'); }
-  }));
-  grid.querySelectorAll('.socdel').forEach(btn => btn.addEventListener('click', async function(e) {
-    e.preventDefault(); e.stopPropagation();
-    if (!confirm('Delete?')) return;
-    try {
-      await API.del('/socials/' + this.dataset.id);
-      socials = socials.filter(x => x.id !== this.dataset.id);
-      renderSocials(); toast('Deleted.');
-    } catch(err) { toast('Delete failed.'); }
-  }));
-}
-
-/* ── UTILS ─────────────────────────────────────────────────────── */
-function openModal(id)  { const m = document.getElementById(id); if (m) m.style.display = 'flex'; }
-function closeModal(id) { const m = document.getElementById(id); if (m) m.style.display = 'none'; }
-
-function updateStats() {
-  const tags = new Set();
-  vaultItems.forEach(i => { if (i.tags) i.tags.split(',').forEach(t => tags.add(t.trim())); });
-  const si = document.getElementById('stat-items');  if (si) si.textContent = vaultItems.length;
-  const ss = document.getElementById('stat-shorts'); if (ss) ss.textContent = shorts.length;
-  const st = document.getElementById('stat-tags');   if (st) st.textContent = tags.size;
-}
-
-function setStatus(state) {
+/* ── STATUS ── */
+function setStatus(state2) {
   const dot = document.getElementById('discord-dot');
   const lbl = document.getElementById('discord-label');
-  const c = { connected:'#98c379', connecting:'#c9a84c', error:'#e06c75' };
-  const l = { connected:'Discord: connected', connecting:'Connecting…', error:'Connection error' };
-  if (dot) dot.style.background = c[state] || '#666';
-  if (lbl) lbl.textContent = l[state] || '';
+  const c = { connected:'connected', connecting:'', error:'error' };
+  const l = { connected:'Connected', connecting:'Connecting…', error:'Error' };
+  if (dot) { dot.className = 'discord-dot ' + (c[state2]||''); }
+  if (lbl) lbl.textContent = l[state2] || '';
 }
 
+/* ── UTILS ── */
 function showResult(el, msg, type) {
   if (!el) return;
   el.textContent = msg; el.style.display = msg ? 'block' : 'none';
-  el.className = 'connection-result' + (type ? ' ' + type : '');
+  el.className = 'result-msg' + (type ? ' ' + type : '');
 }
 
 function toast(msg) {
-  let t = document.getElementById('kira-toast');
-  if (!t) {
-    t = document.createElement('div'); t.id = 'kira-toast';
-    t.style.cssText = 'position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:rgba(20,16,10,.95);color:#c9a84c;border:1px solid rgba(201,168,76,.3);padding:.75rem 1.5rem;border-radius:4px;font-size:.8rem;letter-spacing:.05em;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;font-family:var(--display,serif)';
-    document.body.appendChild(t);
-  }
+  const t = document.getElementById('kira-toast');
+  if (!t) return;
   t.textContent = msg; t.style.opacity = '1';
   clearTimeout(t._h); t._h = setTimeout(() => t.style.opacity = '0', 3000);
 }
