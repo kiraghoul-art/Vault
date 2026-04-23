@@ -1,0 +1,121 @@
+/* ═══════════════════════════════════
+   THEME: CYBERPUNK / NEON
+   ═══════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:ital,wght@0,300;0,400;0,600;1,300&family=IBM+Plex+Mono:wght@300;400&display=swap');
+
+:root {
+  --accent:        #ff0066;
+  --accent-light:  #ff6699;
+  --accent-dim:    #cc0052;
+  --accent-dark:   #880036;
+  --accent-glow:   rgba(255,0,102,0.3);
+  --accent2:       #00ffcc;
+  --accent2-glow:  rgba(0,255,204,0.2);
+
+  --bg:            #06040a;
+  --bg2:           #0c0812;
+  --bg3:           #120e1c;
+  --bg4:           #18142a;
+
+  --surface:       rgba(12,8,18,0.92);
+  --surface2:      rgba(18,14,28,0.95);
+  --border:        rgba(255,0,102,0.15);
+  --border-med:    rgba(255,0,102,0.3);
+
+  --text:          #f0e8ff;
+  --text-dim:      #9080b0;
+  --text-muted:    #4a3870;
+  --ink:           #faf0ff;
+
+  --font-display:  'Bebas Neue', sans-serif;
+  --font-heading:  'Bebas Neue', sans-serif;
+  --font-body:     'Barlow', sans-serif;
+  --font-mono:     'IBM Plex Mono', monospace;
+  --font-ui:       'Barlow', sans-serif;
+
+  --radius:        0px;
+  --radius-md:     2px;
+  --shadow:        0 4px 24px rgba(0,0,0,0.9);
+  --shadow-accent: 0 0 30px rgba(255,0,102,0.3), 0 4px 12px rgba(0,0,0,0.8);
+
+  --btn-clip:      none;
+}
+
+body { font-family: var(--font-body); background: var(--bg); color: var(--text); font-size: 15px; }
+
+/* Scanline effect */
+body::after {
+  content: '';
+  position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+}
+
+nav::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), var(--accent2), var(--accent), transparent);
+  box-shadow: 0 0 10px var(--accent), 0 0 20px var(--accent-glow);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+}
+.card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, var(--accent), transparent);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-heading);
+  color: var(--text);
+  text-shadow: 2px 2px 0 var(--accent), -1px -1px 0 var(--accent2);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+h1 span, h2 span, h3 span { color: var(--accent); text-shadow: 0 0 10px var(--accent-glow); }
+
+.btn-primary {
+  font-family: var(--font-ui);
+  background: var(--accent);
+  color: #fff;
+  border: 2px solid var(--accent);
+  clip-path: none;
+  box-shadow: 4px 4px 0 var(--accent-dark), 0 0 20px var(--accent-glow);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.btn-primary:hover {
+  background: transparent;
+  color: var(--accent);
+  box-shadow: 4px 4px 0 var(--accent-dark), 0 0 30px var(--accent-glow);
+}
+.btn-ghost {
+  font-family: var(--font-ui);
+  color: var(--accent2);
+  border: 1px solid var(--accent2);
+  background: transparent;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+.btn-ghost:hover { background: rgba(0,255,204,0.08); box-shadow: 0 0 12px var(--accent2-glow); }
+
+.input {
+  font-family: var(--font-mono);
+  background: rgba(6,4,10,0.9);
+  border: 1px solid var(--border);
+  border-bottom: 2px solid var(--accent-dark);
+  color: var(--ink);
+  caret-color: var(--accent);
+}
+.input:focus { border-bottom-color: var(--accent); box-shadow: 0 4px 12px rgba(255,0,102,0.15); outline: none; }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--accent-dark); }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); }

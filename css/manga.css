@@ -1,0 +1,113 @@
+/* ═══════════════════════════════════
+   THEME: MANGA / ANIME
+   ═══════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Nunito:wght@300;400;600;700&family=Source+Code+Pro:wght@400&display=swap');
+
+:root {
+  --accent:        #e040a0;
+  --accent-light:  #ff80cc;
+  --accent-dim:    #b02878;
+  --accent-dark:   #701850;
+  --accent-glow:   rgba(224,64,160,0.3);
+  --accent2:       #7c4dff;
+  --accent2-glow:  rgba(124,77,255,0.2);
+
+  --bg:            #08060f;
+  --bg2:           #100c1a;
+  --bg3:           #181224;
+  --bg4:           #201830;
+
+  --surface:       rgba(16,12,26,0.9);
+  --surface2:      rgba(24,18,36,0.95);
+  --border:        rgba(224,64,160,0.2);
+  --border-med:    rgba(224,64,160,0.38);
+
+  --text:          #f8e8ff;
+  --text-dim:      #b090cc;
+  --text-muted:    #604878;
+  --ink:           #fff0ff;
+
+  --font-display:  'Permanent Marker', cursive;
+  --font-heading:  'Nunito', sans-serif;
+  --font-body:     'Nunito', sans-serif;
+  --font-mono:     'Source Code Pro', monospace;
+  --font-ui:       'Nunito', sans-serif;
+
+  --radius:        12px;
+  --radius-md:     16px;
+  --shadow:        0 4px 24px rgba(0,0,0,0.7);
+  --shadow-accent: 0 0 20px rgba(224,64,160,0.3), 0 4px 12px rgba(0,0,0,0.7);
+
+  --btn-clip:      none;
+}
+
+body { font-family: var(--font-body); background: var(--bg); color: var(--text); }
+
+/* Speed lines on bg */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.03;
+  background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255,255,255,0.1) 0deg 1deg, transparent 1deg 10deg);
+}
+
+nav::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--accent2), var(--accent), var(--accent2));
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.card {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 4px 4px 0 rgba(224,64,160,0.15);
+}
+.card::before { display: none; }
+
+h1, h2, h3 {
+  font-family: var(--font-heading);
+  color: var(--text);
+  font-weight: 700;
+  text-shadow: 2px 2px 0 rgba(224,64,160,0.3);
+}
+h1 span, h2 span, h3 span { color: var(--accent-light); }
+
+.btn-primary {
+  font-family: var(--font-ui);
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  clip-path: none;
+  box-shadow: 0 4px 15px rgba(224,64,160,0.4), 3px 3px 0 rgba(224,64,160,0.3);
+  font-weight: 700;
+}
+.btn-primary:hover {
+  transform: translateY(-2px) translateX(-1px);
+  box-shadow: 0 6px 20px rgba(224,64,160,0.5), 4px 4px 0 rgba(224,64,160,0.4);
+}
+.btn-ghost {
+  font-family: var(--font-ui);
+  color: var(--accent-light);
+  border: 2px solid var(--border-med);
+  background: transparent;
+  border-radius: var(--radius);
+  font-weight: 600;
+}
+.btn-ghost:hover { background: rgba(224,64,160,0.1); border-color: var(--accent); box-shadow: 0 0 12px var(--accent-glow); }
+
+.input {
+  font-family: var(--font-body);
+  background: rgba(8,6,15,0.8);
+  border: 2px solid var(--border);
+  color: var(--ink);
+  border-radius: var(--radius);
+  caret-color: var(--accent);
+  font-weight: 400;
+}
+.input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(224,64,160,0.15), 0 0 12px rgba(224,64,160,0.1); }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: linear-gradient(var(--accent), var(--accent2)); border-radius: 10px; }

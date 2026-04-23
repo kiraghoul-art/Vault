@@ -1,0 +1,100 @@
+/* ═══════════════════════════════════
+   THEME: NATURE / ORGANIC
+   ═══════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&family=Fira+Mono:wght@400&display=swap');
+
+:root {
+  --accent:        #4a7c59;
+  --accent-light:  #7aad88;
+  --accent-dim:    #356045;
+  --accent-dark:   #1e3d2b;
+  --accent-glow:   rgba(74,124,89,0.2);
+
+  --bg:            #080a07;
+  --bg2:           #0e110c;
+  --bg3:           #141812;
+  --bg4:           #1a1f17;
+
+  --surface:       rgba(14,17,12,0.88);
+  --surface2:      rgba(20,24,18,0.93);
+  --border:        rgba(74,124,89,0.18);
+  --border-med:    rgba(74,124,89,0.35);
+
+  --text:          #d8e8d0;
+  --text-dim:      #7a9870;
+  --text-muted:    #3a5030;
+  --ink:           #e8f0e0;
+
+  --font-display:  'Lora', serif;
+  --font-heading:  'Lora', serif;
+  --font-body:     'Inter', sans-serif;
+  --font-mono:     'Fira Mono', monospace;
+  --font-ui:       'Inter', sans-serif;
+
+  --radius:        6px;
+  --radius-md:     10px;
+  --shadow:        0 4px 24px rgba(0,0,0,0.6);
+  --shadow-accent: 0 0 20px rgba(74,124,89,0.2), 0 4px 12px rgba(0,0,0,0.6);
+
+  --btn-clip:      none;
+}
+
+body { font-family: var(--font-body); background: var(--bg); color: var(--text); }
+
+nav::after {
+  content: '';
+  position: absolute; bottom: -1px; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent-dim), var(--accent-light), var(--accent-dim), transparent);
+  opacity: 0.6;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.card::before { display: none; }
+
+h1, h2, h3 {
+  font-family: var(--font-heading);
+  color: var(--accent-light);
+  text-shadow: none;
+  font-style: italic;
+}
+h1 span, h2 span, h3 span { color: var(--accent-light); font-style: normal; }
+
+.btn-primary {
+  font-family: var(--font-ui);
+  background: var(--accent);
+  color: #f0f8ec;
+  border: none;
+  border-radius: var(--radius);
+  clip-path: none;
+  box-shadow: 0 2px 8px rgba(74,124,89,0.35);
+  font-weight: 500;
+}
+.btn-primary:hover { background: var(--accent-light); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(74,124,89,0.4); }
+
+.btn-ghost {
+  font-family: var(--font-ui);
+  color: var(--text-dim);
+  border: 1px solid var(--border-med);
+  background: transparent;
+  border-radius: var(--radius);
+}
+.btn-ghost:hover { color: var(--accent-light); border-color: var(--accent); background: rgba(74,124,89,0.08); }
+
+.input {
+  font-family: var(--font-body);
+  background: rgba(8,10,7,0.7);
+  border: 1px solid var(--border);
+  color: var(--ink);
+  border-radius: var(--radius);
+  caret-color: var(--accent);
+}
+.input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(74,124,89,0.12); }
+
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--accent-dark); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
