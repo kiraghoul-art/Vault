@@ -3,90 +3,424 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>KIRA — Enter the Keep</title>
+<title>KIRA — Login</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,400&family=JetBrains+Mono:wght@400&family=Orbitron:wght@400;500;700&family=Rajdhani:wght@300;400;500&family=Share+Tech+Mono&family=Bebas+Neue&family=Barlow:wght@300;400;600&family=IBM+Plex+Mono:wght@400&family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500&family=DM+Sans:wght@300;400;500&family=Playfair+Display:wght@400;600&family=Permanent+Marker&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:#080604;color:#e8dcc8;font-family:'Cormorant Garamond',Georgia,serif;-webkit-font-smoothing:antialiased}
-body{display:flex;align-items:center;justify-content:center;padding:1.5rem;background:radial-gradient(ellipse at center,#120d05 0%,#080604 70%)}
-.box{width:100%;max-width:400px;background:linear-gradient(160deg,rgba(22,16,8,.98),rgba(10,8,4,.99));border:1px solid rgba(201,168,76,.3);border-radius:3px;padding:2.5rem 2rem;position:relative;box-shadow:0 0 60px rgba(0,0,0,.8)}
-.box::before{content:'';display:block;height:1px;background:linear-gradient(90deg,transparent,#7a5c1e,#c9a84c,#7a5c1e,transparent);margin-bottom:2rem}
-.corner{position:absolute;width:14px;height:14px;border-color:#7a5c1e;border-style:solid}
-.tl{top:8px;left:8px;border-width:1px 0 0 1px}.tr{top:8px;right:8px;border-width:1px 1px 0 0}
-.bl{bottom:8px;left:8px;border-width:0 0 1px 1px}.br{bottom:8px;right:8px;border-width:0 1px 1px 0}
-.logo{font-family:'Cinzel',serif;font-size:2rem;font-weight:700;text-align:center;color:#e8d08a;letter-spacing:.06em;margin-bottom:.3rem;text-shadow:0 0 20px rgba(201,168,76,.4)}
-.logo span{color:#c9a84c;font-weight:400}
-.sub{text-align:center;font-style:italic;font-size:.82rem;color:#5c4e30;margin-bottom:2rem;letter-spacing:.06em}
-.label{font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase;color:#a07c30;display:block;margin-bottom:.4rem}
-input{width:100%;padding:.65rem .85rem;background:rgba(10,8,4,.8);color:#f0e6cc;border:1px solid rgba(201,168,76,.2);border-radius:2px;font-family:'Cormorant Garamond',serif;font-size:.95rem;margin-bottom:1rem;caret-color:#c9a84c;-webkit-appearance:none}
-input:focus{outline:none;border-color:#a07c30;box-shadow:0 0 0 2px rgba(201,168,76,.1)}
-input::placeholder{color:#3a2a10;font-style:italic}
-.btn{width:100%;padding:.75rem;font-family:'Cinzel',serif;font-size:.72rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:#fdf5e0;cursor:pointer;background:linear-gradient(135deg,#3a2508 0%,#6b4e1a 35%,#c9a84c 55%,#6b4e1a 75%,#3a2508 100%);border:1px solid #6b4e1a;border-radius:2px;box-shadow:0 0 0 1px rgba(201,168,76,.2),inset 0 1px 0 rgba(232,208,138,.3);clip-path:polygon(7px 0%,calc(100% - 7px) 0%,100% 7px,100% calc(100% - 7px),calc(100% - 7px) 100%,7px 100%,0% calc(100% - 7px),0% 7px);transition:all .2s;margin-top:.5rem}
-.btn:hover{background:linear-gradient(135deg,#4a3010 0%,#8a6820 35%,#e8d08a 55%,#8a6820 75%,#4a3010 100%)}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.msg{min-height:1.5rem;text-align:center;font-style:italic;font-size:.82rem;margin-top:.75rem;padding:.3rem}
-.err{color:#cc6644}.ok{color:#7aad5a}
-.hint{text-align:center;font-style:italic;font-size:.72rem;color:#3a2a10;margin-top:1rem}
-.back{display:block;text-align:center;margin-top:1.25rem;font-family:'Cinzel',serif;font-size:.62rem;letter-spacing:.1em;color:#5c4e30;text-decoration:none;text-transform:uppercase;transition:color .2s}
-.back:hover{color:#a07c30}
+html,body{height:100%;overflow:hidden}
+body{
+  background:#080604;color:#e8dcc8;
+  font-family:'Cormorant Garamond',Georgia,serif;
+  -webkit-font-smoothing:antialiased;
+  display:flex;align-items:center;justify-content:center;
+}
+canvas#bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5}
+.glow-blob{
+  position:fixed;width:600px;height:600px;
+  background:radial-gradient(ellipse at center,var(--t-glow,rgba(201,168,76,.07)) 0%,transparent 70%);
+  border-radius:50%;top:50%;left:50%;transform:translate(-50%,-50%);
+  z-index:0;pointer-events:none;
+  animation:blob-pulse 6s ease-in-out infinite;
+}
+@keyframes blob-pulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.18)}}
+.card-wrap{
+  position:relative;z-index:1;
+  width:min(400px,calc(100vw - 2.5rem));
+  animation:card-in .65s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes card-in{from{opacity:0;transform:translateY(28px) scale(.97)}to{opacity:1;transform:none}}
+.card{
+  background:var(--t-surface,rgba(18,13,6,.97));
+  border:1px solid var(--t-border-med,rgba(201,168,76,.3));
+  border-radius:var(--t-radius,3px);
+  padding:2.5rem 2rem 2rem;
+  position:relative;overflow:hidden;
+  box-shadow:0 0 0 1px rgba(0,0,0,.5),0 40px 80px rgba(0,0,0,.8),0 0 60px var(--t-glow,rgba(201,168,76,.06));
+}
+.card::before{
+  content:'';position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:linear-gradient(105deg,transparent 40%,var(--t-shimmer,rgba(201,168,76,.03)) 50%,transparent 60%);
+  animation:shimmer 6s ease-in-out infinite;
+}
+@keyframes shimmer{0%,100%{opacity:0;transform:translateX(-100%)}50%{opacity:1;transform:translateX(100%)}}
+.card::after{
+  content:'';position:absolute;top:0;left:10%;right:10%;height:1px;
+  background:linear-gradient(90deg,transparent,var(--t-accent,#c9a84c),transparent);
+  box-shadow:0 0 12px var(--t-glow,rgba(201,168,76,.3));
+}
+.c{position:absolute;width:12px;height:12px;border-style:solid;border-color:var(--t-border-med,rgba(201,168,76,.4))}
+.c.tl{top:7px;left:7px;border-width:1px 0 0 1px}
+.c.tr{top:7px;right:7px;border-width:1px 1px 0 0}
+.c.bl{bottom:7px;left:7px;border-width:0 0 1px 1px}
+.c.br{bottom:7px;right:7px;border-width:0 1px 1px 0}
+.card-inner{position:relative;z-index:1}
+.logo-wrap{text-align:center;margin-bottom:1.75rem}
+.logo-emblem{width:44px;height:44px;margin:0 auto .75rem;opacity:.75;color:var(--t-accent,#c9a84c)}
+.logo-emblem svg{width:100%;height:100%}
+.logo{
+  font-family:var(--t-font-display,'Cinzel',serif);
+  font-size:2rem;font-weight:700;letter-spacing:.08em;
+  color:var(--t-accent-light,#e8d08a);
+  text-shadow:0 0 30px var(--t-glow,rgba(201,168,76,.3));
+  line-height:1;
+}
+.logo span{color:var(--t-accent,#c9a84c);font-weight:400}
+.sub{font-style:italic;font-size:.78rem;color:var(--t-text-muted,#5c4e30);letter-spacing:.1em;margin-top:.4rem}
+.divider{display:flex;align-items:center;gap:.75rem;margin-bottom:1.75rem}
+.dl{flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--t-border-med,rgba(201,168,76,.25)))}
+.dl.r{background:linear-gradient(270deg,transparent,var(--t-border-med,rgba(201,168,76,.25)))}
+.dd{width:5px;height:5px;border:1px solid var(--t-border-med,rgba(201,168,76,.35));transform:rotate(45deg);flex-shrink:0}
+.field{margin-bottom:1.1rem}
+.lbl{
+  font-family:var(--t-font-ui,'Cinzel',serif);
+  font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--t-accent-dim,#a07c30);display:block;margin-bottom:.45rem;
+}
+.inp-wrap{position:relative}
+.inp-icon{
+  position:absolute;left:.75rem;top:50%;transform:translateY(-50%);
+  font-size:.85rem;opacity:.35;pointer-events:none;
+  color:var(--t-accent,#c9a84c);
+}
+input{
+  width:100%;padding:.62rem .85rem .62rem 2.1rem;
+  background:rgba(0,0,0,.35);color:var(--t-ink,#f0e6cc);
+  border:1px solid var(--t-border,rgba(201,168,76,.16));
+  border-radius:var(--t-radius,2px);
+  font-family:var(--t-font-body,'Cormorant Garamond',serif);font-size:.95rem;
+  caret-color:var(--t-accent,#c9a84c);
+  transition:border-color .2s,box-shadow .2s,background .2s;
+  -webkit-appearance:none;outline:none;
+}
+input:focus{
+  border-color:var(--t-accent-dim,rgba(201,168,76,.45));
+  background:rgba(0,0,0,.5);
+  box-shadow:0 0 0 2px var(--t-glow,rgba(201,168,76,.08));
+}
+input::placeholder{color:var(--t-text-muted,#2a1e0a);opacity:.5;font-style:italic}
+.inp-bar{
+  position:absolute;bottom:0;left:0;height:1px;width:0;
+  background:linear-gradient(90deg,transparent,var(--t-accent,#c9a84c),transparent);
+  transition:width .3s;pointer-events:none;
+}
+input:focus ~ .inp-bar{width:100%}
+.btn-wrap{margin-top:1.5rem}
+button{
+  width:100%;padding:.78rem;
+  font-family:var(--t-font-ui,'Cinzel',serif);
+  font-size:.68rem;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--t-btn-text,#fdf5e0);cursor:pointer;
+  background:var(--t-btn-bg,linear-gradient(135deg,#2e1c06,#c9a84c,#2e1c06));
+  border:1px solid var(--t-btn-border,var(--t-accent-dark,rgba(201,168,76,.35)));
+  border-radius:var(--t-radius,2px);
+  clip-path:var(--t-btn-clip,none);
+  box-shadow:0 0 20px var(--t-glow,rgba(201,168,76,.1));
+  transition:all .2s;position:relative;overflow:hidden;
+}
+button::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,transparent 40%,rgba(255,255,255,.07) 50%,transparent 60%);
+  transform:translateX(-100%);transition:transform .4s;
+}
+button:hover::after{transform:translateX(100%)}
+button:hover{filter:brightness(1.15);transform:translateY(-1px);box-shadow:0 0 28px var(--t-glow,rgba(201,168,76,.3))}
+button:active{transform:translateY(0)}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.btn-dots{display:none;gap:4px;align-items:center;justify-content:center}
+.btn-dots span{width:4px;height:4px;border-radius:50%;background:var(--t-btn-text,#fff);display:block;animation:dot-blink 1.2s ease-in-out infinite}
+.btn-dots span:nth-child(2){animation-delay:.2s}
+.btn-dots span:nth-child(3){animation-delay:.4s}
+@keyframes dot-blink{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
+button.loading .btn-text{display:none}
+button.loading .btn-dots{display:flex}
+.msg{min-height:1.4rem;font-style:italic;font-size:.82rem;text-align:center;margin-top:.85rem;opacity:0;transition:opacity .2s}
+.msg.show{opacity:1}
+.msg.err{color:#cc6644}
+.msg.ok{color:#7aad5a}
+.footer{margin-top:1.5rem;display:flex;flex-direction:column;align-items:center;gap:.6rem;padding-top:1.25rem;border-top:1px solid var(--t-border,rgba(201,168,76,.08))}
+.hint{font-style:italic;font-size:.7rem;color:var(--t-text-muted,#2e2010);letter-spacing:.04em}
+.back{
+  font-family:var(--t-font-ui,'Cinzel',serif);font-size:.58rem;
+  letter-spacing:.12em;text-transform:uppercase;
+  color:var(--t-text-muted,#3a2a12);text-decoration:none;
+  transition:color .2s;display:flex;align-items:center;gap:.4rem;
+}
+.back:hover{color:var(--t-accent-dim,#a07c30)}
+.back::before{content:'←';font-family:serif;font-size:.75rem}
+@keyframes shake{0%,100%{transform:translateX(0)}15%{transform:translateX(-6px)}30%{transform:translateX(5px)}45%{transform:translateX(-4px)}60%{transform:translateX(3px)}75%{transform:translateX(-2px)}}
+.card.shake{animation:shake .45s ease}
 </style>
 </head>
 <body>
-<div class="box">
-  <div class="corner tl"></div><div class="corner tr"></div>
-  <div class="corner bl"></div><div class="corner br"></div>
-  <div class="logo">K<span>ira</span></div>
-  <p class="sub">Ye Private Chamber</p>
-  <label class="label" for="u">Username</label>
-  <input type="text" id="u" placeholder="Enter your name" autocomplete="username" autocorrect="off" autocapitalize="none">
-  <label class="label" for="p">Password</label>
-  <input type="password" id="p" placeholder="••••••••" autocomplete="current-password">
-  <div class="msg" id="msg"></div>
-  <button class="btn" id="btn">Enter the Keep</button>
-  <p class="hint">Thy session fadeth when the tab is sealed</p>
-  <a href="index.html" class="back">← Return to the Keep</a>
+<canvas id="bg"></canvas>
+<div class="glow-blob"></div>
+
+<div class="card-wrap">
+  <div class="card" id="card">
+    <div class="c tl"></div><div class="c tr"></div>
+    <div class="c bl"></div><div class="c br"></div>
+    <div class="card-inner">
+      <div class="logo-wrap">
+        <div class="logo-emblem">
+          <svg viewBox="0 0 60 55" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 44 L14 28 L22 36 L30 14 L38 36 L46 28 L46 44 Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" fill="none" opacity=".6"/>
+            <line x1="12" y1="44" x2="48" y2="44" stroke="currentColor" stroke-width="1" opacity=".4"/>
+            <circle cx="30" cy="14" r="2" fill="currentColor" opacity=".55"/>
+            <circle cx="14" cy="28" r="1.5" fill="currentColor" opacity=".35"/>
+            <circle cx="46" cy="28" r="1.5" fill="currentColor" opacity=".35"/>
+            <line x1="22" y1="44" x2="22" y2="50" stroke="currentColor" stroke-width="1" opacity=".3"/>
+            <line x1="30" y1="44" x2="30" y2="52" stroke="currentColor" stroke-width="1" opacity=".3"/>
+            <line x1="38" y1="44" x2="38" y2="50" stroke="currentColor" stroke-width="1" opacity=".3"/>
+          </svg>
+        </div>
+        <div class="logo" id="logo-text">K<span>ira</span></div>
+        <p class="sub" id="logo-sub">Enter the Keep</p>
+      </div>
+      <div class="divider"><div class="dl"></div><div class="dd"></div><div class="dl r"></div></div>
+      <div class="field">
+        <label class="lbl" for="u">Username</label>
+        <div class="inp-wrap">
+          <span class="inp-icon" id="icon-u">⚔</span>
+          <input type="text" id="u" placeholder="Enter your name" autocomplete="username" autocorrect="off" autocapitalize="none">
+          <div class="inp-bar"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="lbl" for="p">Password</label>
+        <div class="inp-wrap">
+          <span class="inp-icon" id="icon-p">◈</span>
+          <input type="password" id="p" placeholder="••••••••" autocomplete="current-password">
+          <div class="inp-bar"></div>
+        </div>
+      </div>
+      <div class="btn-wrap">
+        <button id="btn">
+          <span class="btn-text" id="btn-label">Enter the Keep</span>
+          <span class="btn-dots"><span></span><span></span><span></span></span>
+        </button>
+      </div>
+      <div class="msg" id="msg"></div>
+      <div class="footer">
+        <p class="hint">Session ends when the tab is closed</p>
+        <a href="index.html" class="back">Return to the Keep</a>
+      </div>
+    </div>
+  </div>
 </div>
+
 <script>
 const WORKER = 'https://kira-discord-proxy.ghoullkira.workers.dev';
-const btn = document.getElementById('btn');
-const msg = document.getElementById('msg');
 
-function show(ok, text) {
-  msg.textContent = text;
-  msg.className = 'msg ' + (ok ? 'ok' : 'err');
+const THEMES = {
+  medieval: {
+    bg:'#080604',bg2:'#120d05',
+    surface:'rgba(18,13,6,.97)',
+    accent:'#c9a84c',accentLight:'#e8d08a',accentDim:'#a07c30',accentDark:'rgba(201,168,76,.4)',
+    glow:'rgba(201,168,76,.18)',shimmer:'rgba(201,168,76,.04)',
+    border:'rgba(201,168,76,.18)',borderMed:'rgba(201,168,76,.35)',
+    text:'#e8dcc8',textMuted:'#5c4e30',ink:'#f0e6cc',
+    fontDisplay:"'Cinzel Decorative','Cinzel',serif",
+    fontBody:"'Cormorant Garamond',Georgia,serif",
+    fontUi:"'Cinzel',serif",
+    radius:'3px',
+    btnClip:'polygon(8px 0%,calc(100% - 8px) 0%,100% 8px,100% calc(100% - 8px),calc(100% - 8px) 100%,8px 100%,0% calc(100% - 8px),0% 8px)',
+    btnBg:'linear-gradient(135deg,#2e1c06 0%,#5a3f12 30%,#c9a84c 55%,#5a3f12 78%,#2e1c06 100%)',
+    btnText:'#fdf5e0',btnBorder:'rgba(201,168,76,.35)',
+    sub:'Enter the Keep',iconU:'⚔',iconP:'◈',btnLabel:'Enter the Keep',
+    particleR:201,particleG:168,particleB:76
+  },
+  modern: {
+    bg:'#0a0a0f',bg2:'#111118',
+    surface:'rgba(17,17,24,.97)',
+    accent:'#2563eb',accentLight:'#60a5fa',accentDim:'#1d4ed8',accentDark:'rgba(37,99,235,.4)',
+    glow:'rgba(37,99,235,.2)',shimmer:'rgba(37,99,235,.03)',
+    border:'rgba(255,255,255,.08)',borderMed:'rgba(255,255,255,.14)',
+    text:'#f0f0f5',textMuted:'#50505f',ink:'#f8f8fc',
+    fontDisplay:"'Playfair Display',serif",
+    fontBody:"'DM Sans',sans-serif",
+    fontUi:"'DM Sans',sans-serif",
+    radius:'10px',btnClip:'none',
+    btnBg:'#2563eb',btnText:'#ffffff',btnBorder:'transparent',
+    sub:'Log in to your portfolio',iconU:'@',iconP:'●',btnLabel:'Sign In',
+    particleR:37,particleG:99,particleB:235
+  },
+  space: {
+    bg:'#020408',bg2:'#040810',
+    surface:'rgba(4,8,16,.97)',
+    accent:'#00d4ff',accentLight:'#7eeeff',accentDim:'#0099bb',accentDark:'#006688',
+    glow:'rgba(0,212,255,.2)',shimmer:'rgba(0,212,255,.03)',
+    border:'rgba(0,212,255,.12)',borderMed:'rgba(0,212,255,.3)',
+    text:'#c8eeff',textMuted:'#304858',ink:'#e0f4ff',
+    fontDisplay:"'Orbitron',monospace",
+    fontBody:"'Rajdhani',sans-serif",
+    fontUi:"'Orbitron',monospace",
+    radius:'2px',
+    btnClip:'polygon(6px 0%,calc(100% - 6px) 0%,100% 6px,100% calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,0% calc(100% - 6px),0% 6px)',
+    btnBg:'transparent',btnText:'#00d4ff',btnBorder:'#00d4ff',
+    sub:'AUTHENTICATION REQUIRED',iconU:'>',iconP:'*',btnLabel:'AUTHENTICATE',
+    particleR:0,particleG:212,particleB:255
+  },
+  cyberpunk: {
+    bg:'#06040a',bg2:'#0c0812',
+    surface:'rgba(12,8,18,.97)',
+    accent:'#ff0066',accentLight:'#ff6699',accentDim:'#cc0052',accentDark:'#880036',
+    glow:'rgba(255,0,102,.25)',shimmer:'rgba(255,0,102,.03)',
+    border:'rgba(255,0,102,.15)',borderMed:'rgba(255,0,102,.3)',
+    text:'#f0e8ff',textMuted:'#4a3870',ink:'#faf0ff',
+    fontDisplay:"'Bebas Neue',sans-serif",
+    fontBody:"'Barlow',sans-serif",
+    fontUi:"'Barlow',sans-serif",
+    radius:'0px',btnClip:'none',
+    btnBg:'#ff0066',btnText:'#ffffff',btnBorder:'#ff0066',
+    sub:'JACK IN TO THE GRID',iconU:'$',iconP:'#',btnLabel:'JACK IN',
+    particleR:255,particleG:0,particleB:102
+  },
+  nature: {
+    bg:'#080a07',bg2:'#0e110c',
+    surface:'rgba(14,17,12,.97)',
+    accent:'#4a7c59',accentLight:'#7aad88',accentDim:'#356045',accentDark:'#1e3d2b',
+    glow:'rgba(74,124,89,.2)',shimmer:'rgba(74,124,89,.03)',
+    border:'rgba(74,124,89,.18)',borderMed:'rgba(74,124,89,.35)',
+    text:'#d8e8d0',textMuted:'#3a5030',ink:'#e8f0e0',
+    fontDisplay:"'Lora',serif",
+    fontBody:"'Inter',sans-serif",
+    fontUi:"'Inter',sans-serif",
+    radius:'8px',btnClip:'none',
+    btnBg:'#4a7c59',btnText:'#f0f8ec',btnBorder:'transparent',
+    sub:'Enter the grove',iconU:'✦',iconP:'◉',btnLabel:'Enter',
+    particleR:74,particleG:124,particleB:89
+  },
+  manga: {
+    bg:'#08060f',bg2:'#100c1a',
+    surface:'rgba(16,12,26,.97)',
+    accent:'#e040a0',accentLight:'#ff80cc',accentDim:'#b02878',accentDark:'#701850',
+    glow:'rgba(224,64,160,.25)',shimmer:'rgba(224,64,160,.04)',
+    border:'rgba(224,64,160,.2)',borderMed:'rgba(224,64,160,.38)',
+    text:'#f8e8ff',textMuted:'#604878',ink:'#fff0ff',
+    fontDisplay:"'Permanent Marker',cursive",
+    fontBody:"'Nunito',sans-serif",
+    fontUi:"'Nunito',sans-serif",
+    radius:'14px',btnClip:'none',
+    btnBg:'linear-gradient(135deg,#e040a0,#7c4dff)',btnText:'#ffffff',btnBorder:'transparent',
+    sub:'ログイン',iconU:'★',iconP:'♡',btnLabel:'Log In',
+    particleR:224,particleG:64,particleB:160
+  }
+};
+
+function applyTheme(name) {
+  const t = THEMES[name] || THEMES.medieval;
+  let ov = {};
+  try { ov = JSON.parse(localStorage.getItem('kira_theme_overrides') || '{}'); } catch(e) {}
+
+  const r = document.documentElement;
+  const s = (v, val) => r.style.setProperty(v, val);
+  s('--t-surface',    t.surface);
+  s('--t-accent',     ov.accent      || t.accent);
+  s('--t-accent-light',ov.accentLight|| t.accentLight);
+  s('--t-accent-dim', ov.accentDim   || t.accentDim);
+  s('--t-accent-dark',t.accentDark);
+  s('--t-glow',       t.glow);
+  s('--t-shimmer',    t.shimmer);
+  s('--t-border',     t.border);
+  s('--t-border-med', t.borderMed);
+  s('--t-text',       ov.text        || t.text);
+  s('--t-text-muted', t.textMuted);
+  s('--t-ink',        t.ink);
+  s('--t-font-display',t.fontDisplay);
+  s('--t-font-body',  t.fontBody);
+  s('--t-font-ui',    t.fontUi);
+  s('--t-radius',     t.radius);
+  s('--t-btn-clip',   t.btnClip);
+  s('--t-btn-bg',     t.btnBg);
+  s('--t-btn-text',   t.btnText);
+  s('--t-btn-border', t.btnBorder);
+
+  const bg = ov.bg || t.bg;
+  document.body.style.background = `radial-gradient(ellipse at 50% 40%,${t.bg2} 0%,${bg} 70%)`;
+  document.querySelector('.logo-emblem').style.color = ov.accent || t.accent;
+  document.getElementById('logo-sub').textContent  = t.sub;
+  document.getElementById('icon-u').textContent    = t.iconU;
+  document.getElementById('icon-p').textContent    = t.iconP;
+  document.getElementById('btn-label').textContent = t.btnLabel;
+
+  // background image override
+  const bgUrl = ov.bgUrl || '';
+  if (bgUrl) {
+    const bgLayer = `url(${bgUrl})`;
+    document.body.style.backgroundImage = bgLayer;
+    document.body.style.backgroundSize  = 'cover';
+    document.body.style.backgroundPosition = 'center';
+  }
+
+  return t;
 }
+
+const name = localStorage.getItem('kira_theme_name') || 'medieval';
+const T = applyTheme(name);
+
+/* ── PARTICLES ── */
+(function(T) {
+  const c = document.getElementById('bg');
+  const ctx = c.getContext('2d');
+  let W, H;
+  const resize = () => { W = c.width = window.innerWidth; H = c.height = window.innerHeight; };
+  resize(); window.addEventListener('resize', resize);
+  const pts = Array.from({length:55}, () => ({
+    x:Math.random()*window.innerWidth, y:Math.random()*window.innerHeight,
+    r:Math.random()*1.2+.2, vx:(Math.random()-.5)*.18, vy:(Math.random()-.5)*.18,
+    a:Math.random()*Math.PI*2
+  }));
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+    pts.forEach(p => {
+      p.x+=p.vx; p.y+=p.vy; p.a+=.008;
+      if(p.x<0)p.x=W; if(p.x>W)p.x=0;
+      if(p.y<0)p.y=H; if(p.y>H)p.y=0;
+      const alpha = .28 + Math.sin(p.a)*.2;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle = `rgba(${T.particleR},${T.particleG},${T.particleB},${alpha})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+})(T);
+
+/* ── LOGIN ── */
+const btn  = document.getElementById('btn');
+const msg  = document.getElementById('msg');
+const card = document.getElementById('card');
+
+function show(ok, text) { msg.textContent=text; msg.className='msg show '+(ok?'ok':'err'); }
 
 async function doLogin() {
   const u = document.getElementById('u').value.trim();
   const p = document.getElementById('p').value;
-  if (!u || !p) { show(false, 'Provide thy name and seal.'); return; }
-  btn.disabled = true;
-  btn.textContent = 'Verifying…';
+  if(!u||!p){ shake(); show(false,'Fill both fields.'); return; }
+  btn.disabled=true; btn.classList.add('loading'); msg.className='msg';
   try {
-    const r = await fetch(WORKER + '/auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username: u, password: p })
-    });
+    const r = await fetch(WORKER+'/auth',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:u,password:p})});
     const d = await r.json();
-    btn.disabled = false;
-    btn.textContent = 'Enter the Keep';
-    if (!d.ok) { show(false, 'Identity unknown to the Keep.'); return; }
-    sessionStorage.setItem('kira_token', d.token);
-    sessionStorage.setItem('kira_cfg', JSON.stringify(d.config || {}));
-    show(true, 'Welcome. Entering…');
-    setTimeout(() => { window.location.href = d.firstTime ? 'index.html?setup=1' : 'index.html'; }, 600);
-  } catch(e) {
-    btn.disabled = false;
-    btn.textContent = 'Enter the Keep';
-    show(false, 'The courier cannot be reached.');
-  }
+    if(!d.ok){ shake(); show(false,'Wrong credentials.'); return; }
+    sessionStorage.setItem('kira_token',d.token);
+    if(d.profile) sessionStorage.setItem('kira_profile',JSON.stringify(d.profile));
+    if(d.theme)   sessionStorage.setItem('kira_theme',  JSON.stringify(d.theme));
+    show(true,'Welcome back.');
+    setTimeout(()=>{ window.location.href='index.html'; },700);
+  } catch(e){ shake(); show(false,'Could not reach the server.'); }
+  finally{ btn.disabled=false; btn.classList.remove('loading'); }
 }
 
-btn.addEventListener('click', doLogin);
-document.getElementById('p').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-document.getElementById('u').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('p').focus(); });
+function shake() {
+  card.classList.remove('shake'); void card.offsetWidth;
+  card.classList.add('shake');
+  card.addEventListener('animationend',()=>card.classList.remove('shake'),{once:true});
+}
+
+btn.addEventListener('click',doLogin);
+document.getElementById('p').addEventListener('keydown',e=>{ if(e.key==='Enter')doLogin(); });
+document.getElementById('u').addEventListener('keydown',e=>{ if(e.key==='Enter')document.getElementById('p').focus(); });
 </script>
 </body>
 </html>
