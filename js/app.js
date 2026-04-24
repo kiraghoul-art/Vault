@@ -231,8 +231,9 @@ function applyProfile() {
   const p = state.profile;
   const bgEl = document.getElementById('bg-img');
   if (bgEl) {
-    bgEl.style.backgroundImage = p.bgUrl ? `url(${p.bgUrl})` : '';
-    bgEl.style.opacity = state.theme.bgOpacity !== undefined ? state.theme.bgOpacity : 0.4;
+    if (p.bgUrl) bgEl.style.backgroundImage = `url(${p.bgUrl})`;
+    const op = state.theme?.bgOpacity !== undefined ? state.theme.bgOpacity : 0.4;
+    bgEl.style.opacity = op;
   }
   const av = document.getElementById('home-avatar');
   const avSrc = p.avatar || state.about?.image || '';
@@ -268,8 +269,13 @@ function loadStoredTheme() {
     const t = localStorage.getItem('kira_theme_name') || 'medieval';
     state.activeTheme = t;
     applyThemeCSS(t);
-    const overrides = localStorage.getItem('kira_theme_overrides');
-    if (overrides) applyThemeOverrides(JSON.parse(overrides));
+    const raw = localStorage.getItem('kira_theme_overrides');
+    if (raw) {
+      const overrides = JSON.parse(raw);
+      applyThemeOverrides(overrides);
+      // merge into state.theme so applyProfile picks up bgOpacity
+      state.theme = { ...state.theme, ...overrides };
+    }
   } catch(e) {}
 }
 
@@ -327,7 +333,7 @@ function renderProjects() {
     const pub = p.isPublic !== false;
     const stack = (p.stack || '').split(',').map(s => s.trim()).filter(Boolean);
     const tags2 = (p.tags  || '').split(',').map(t => t.trim()).filter(Boolean);
-    return `<div class="card project-card" data-pid="${p.id}" data-tags="${esc(p.tags||'')}" style="${!pub&&state.isOwner?'opacity:.6':'}">
+    return `<div class="card project-card" data-pid="${p.id}" data-tags="${esc(p.tags||'')}" style="${!pub&&state.isOwner?'opacity:.6':''}">
       <div class="project-img-wrap">
         ${p.img ? `<img class="project-img" src="${esc(p.img)}" alt="">` : `<div class="project-img-placeholder">🗂</div>`}
         ${state.isOwner?`<div style="position:absolute;top:.5rem;right:.5rem;display:flex;gap:.25rem;z-index:2">
